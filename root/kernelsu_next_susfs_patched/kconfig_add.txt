@@ -1,0 +1,4 @@
+Add it at the end before "endmenu"
+^
+source "drivers/kernelsu/Kconfig"
+

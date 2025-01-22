@@ -1,0 +1,5 @@
+Add it at the end
+^
+obj-$(CONFIG_KSU) += kernelsu/
+
+
