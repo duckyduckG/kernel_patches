@@ -1,0 +1,469 @@
+From 5e8625647fa60b093fd3fc85691dcee986209489 Mon Sep 17 00:00:00 2001
+From: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Date: Mon, 13 Jan 2025 13:25:32 +0500
+Subject: [PATCH 162/175] scsi: Import xiaomi modifications for ufs health info
+ Change-Id: I9cda6a4ff138319652336153ef427f37bc57442d Signed-off-by:
+ UtsavBalar1231 <utsavbalar1231@gmail.com>
+
+---
+ drivers/scsi/scsi.c            | 105 ++++++++++++++++++++++++++++
+ drivers/scsi/scsi_lib.c        |   4 ++
+ drivers/scsi/scsi_priv.h       |   5 ++
+ drivers/scsi/scsi_sysfs.c      |  52 ++++++++++++++
+ drivers/scsi/ufs/ufs-debugfs.c | 121 ++++++++++++++++++++++++++++++++-
+ drivers/scsi/ufs/ufshcd.c      |  12 ++++
+ drivers/scsi/ufs/ufshcd.h      |   1 +
+ 7 files changed, 297 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index acd118da88bf..5d0e593ca65f 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -365,6 +365,111 @@ static int scsi_vpd_inquiry(struct scsi_device *sdev, unsigned char *buffer,
+ 	return result + 4;
+ }
+ 
++/**
++get toshiba hr inquiry
++ */
++int scsi_hr_inquiry(struct scsi_device *sdev, char *hr_inq, int len)
++{
++	int result;
++	unsigned char cmd[16] = {0};
++	if (!hr_inq)
++		return -EINVAL;
++	cmd[0] = INQUIRY;
++	cmd[1] = 0x69;		/* EVPD */
++	cmd[2] = 0xC0;
++	cmd[3] = len >> 8;
++	cmd[4] = len & 0xff;
++	cmd[5] = 0;		/* Control byte */
++	result = scsi_execute(sdev, cmd, DMA_FROM_DEVICE, hr_inq,
++				  len, NULL, NULL, 30 * HZ, 3, 0, RQF_PM, NULL);
++	if (result) {
++		pr_err("ufs: get hr_inquiry result error\n");
++		return -EIO;
++	}
++	/* Sanity check that we got the page back that we asked for */
++	if (hr_inq[1] != 0xC0)
++		pr_err("ufs: hr_inruiry data error\n");
++	return 0;
++}
++/**
++get sandisk device report
++ */
++int scsi_sdr(struct scsi_device *sdev, char *sdr, int len)
++{
++	int result;
++	unsigned char cmd[16] = {0};
++	if (!sdr)
++		return -EINVAL;
++	cmd[0] = READ_BUFFER;
++	cmd[1] = 0x01;		/* mode vendor specific*/
++	cmd[2] = 0x01;		/* buffer ID*/
++	cmd[3] = 0x7D;
++	cmd[4] = 0x9C;
++	cmd[5] = 0x69;
++	cmd[6] = 0x00;
++	cmd[7] = 0x02;
++	cmd[8] = 0x00;
++	cmd[9] = 0;		/* Control byte */
++	result = scsi_execute_req(sdev, cmd, DMA_FROM_DEVICE, sdr,
++				  len, NULL, 30 * HZ, 3, NULL);
++	if (result) {
++		pr_err("ufs: get sdr result error\n");
++		return -EIO;
++	}
++	return 0;
++}
++/**
++get micron hr
++ */
++int scsi_mhr(struct scsi_device *sdev, char *hr, int len)
++{
++	int result;
++	unsigned char write_buffer[16] = {0x3B, 0xE1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2C, 0x00};
++	unsigned char read_buffer[16] = {0x3C, 0xC1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00};
++	char VU[0x2c] = {0};
++	VU[0] = 0xFE;
++	VU[1] = 0x40;
++	VU[3] = 0x10;
++	VU[4] = 0x01;
++	if (!hr)
++		return -EINVAL;
++	result = scsi_execute_req(sdev, write_buffer, DMA_TO_DEVICE, VU,
++				  0x2c, NULL, 30 * HZ, 3, NULL);
++	if (result) {
++		pr_err("ufs: hr write buffer  error\n");
++		return -EIO;
++	}
++	result = scsi_execute_req(sdev, read_buffer, DMA_FROM_DEVICE, hr,
++				  len, NULL, 30 * HZ, 3, NULL);
++	if (result) {
++		pr_err("ufs: hr read buffer  error\n");
++		return -EIO;
++	}
++	return 0;
++}
++/**
++get samsung osv
++ */
++int scsi_osv(struct scsi_device *sdev, char *osv, int len)
++{
++	int result;
++	unsigned char cmd[16] = {0};
++	if (!osv)
++		return -EINVAL;
++	cmd[0] = 0xc0; /*VENDOR_SPECIFIC_CDB;*/
++	cmd[1] = 0x40;
++	cmd[4] = 0x01;
++	cmd[5] = 0x0c;
++	cmd[15] = 0x1c;
++	result = scsi_execute(sdev, cmd, DMA_FROM_DEVICE, osv,
++				len, NULL, NULL, 30 * HZ, 3, 0, RQF_PM, NULL);
++	if (result) {
++		pr_err("ufs: get osv result error\n");
++		return -EIO;
++	}
++	return 0;
++}
++
+ /**
+  * scsi_get_vpd_page - Get Vital Product Data from a SCSI device
+  * @sdev: The device to ask
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 2656d6ace8ff..b638c22e3848 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -277,6 +277,10 @@ int __scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ 		goto out;
+ 
+ 	rq->cmd_len = COMMAND_SIZE(cmd[0]);
++	
++	if (cmd[0] == 0xc0)
++		rq->cmd_len = 16;
++
+ 	memcpy(rq->cmd, cmd, rq->cmd_len);
+ 	rq->retries = retries;
+ 	if (likely(!sdev->timeout_override))
+diff --git a/drivers/scsi/scsi_priv.h b/drivers/scsi/scsi_priv.h
+index 99f1db5e467e..5ec966d70c4e 100644
+--- a/drivers/scsi/scsi_priv.h
++++ b/drivers/scsi/scsi_priv.h
+@@ -194,4 +194,9 @@ static inline void scsi_dh_release_device(struct scsi_device *sdev) { }
+ 
+ #define SCSI_DEVICE_BLOCK_MAX_TIMEOUT	600	/* units in seconds */
+ 
++int scsi_hr_inquiry(struct scsi_device *sdev, char *hr_inq, int len);
++int scsi_sdr(struct scsi_device *sdev, char *sdr, int len);
++int scsi_osv(struct scsi_device *sdev, char *osv, int len);
++int scsi_mhr(struct scsi_device *sdev, char *sdr, int len);
++
+ #endif /* _SCSI_PRIV_H */
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 436eae746ed2..328dd7e4d698 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1158,6 +1158,57 @@ static DEVICE_ATTR(queue_ramp_up_period, S_IRUGO | S_IWUSR,
+ 		   sdev_show_queue_ramp_up_period,
+ 		   sdev_store_queue_ramp_up_period);
+ 
++int ufshcd_get_hynix_hr(struct scsi_device *sdev, u8 *buf, u32 size);
++static ssize_t
++sdev_show_hr(struct device *dev,
++			       struct device_attribute *attr,
++			       char *buf)
++{
++	struct scsi_device *sdev;
++	int i, n = 0;
++	int err = 0;
++	int len = 512; /*0x200*/
++	char *hr;
++	sdev = to_scsi_device(dev);
++	if (!sdev) {
++		pr_err("get sdev fail\n");
++		return n;
++	}
++	hr =  kzalloc(len, GFP_KERNEL);
++	if (!hr) {
++		pr_err("kzalloc fail\n");
++		return -ENOMEM;
++	}
++	if (!strncmp(sdev->vendor, "WDC", 3)) {
++		err = scsi_sdr(sdev, hr, len);
++	} else if (!strncmp(sdev->vendor, "TOSHIBA", 7)) {
++		err = scsi_hr_inquiry(sdev, hr, len);
++	} else if (!strncmp(sdev->vendor, "SAMSUNG", 7)) {
++		err = scsi_osv(sdev, hr, 0x1c);/*0x200 is the same with 0x1c*/
++	} else if (!strncmp(sdev->vendor, "MICRON", 6)) {
++			err = scsi_mhr(sdev, hr, len);
++	} else if (!strncmp(sdev->vendor, "SKhynix", 7)) {
++		err = ufshcd_get_hynix_hr(sdev, hr, len);
++	} else {
++		n += snprintf(buf,  PAGE_SIZE - n, "NOT SUPPORTED %s\n", sdev->vendor);
++		goto out;
++	}
++	if (err) {
++		n += snprintf(buf,  PAGE_SIZE - n, "Fail to get hr, err is: %d\n", err);
++	} else {
++		for (i = 0; i < 512; i++)
++			n += snprintf(buf + n, PAGE_SIZE - n, "%02x", hr[i]);
++		n += snprintf(buf + n, PAGE_SIZE - n, "\n");
++	}
++out:
++	kfree(hr);
++	return n;
++}
++
++static DEVICE_ATTR(hr, S_IRUGO | S_IWUSR,
++		sdev_show_hr,
++		NULL);
++
+ static umode_t scsi_sdev_attr_is_visible(struct kobject *kobj,
+ 					 struct attribute *attr, int i)
+ {
+@@ -1223,6 +1274,7 @@ static struct attribute *scsi_sdev_attrs[] = {
+ 	&dev_attr_queue_type.attr,
+ 	&dev_attr_wwid.attr,
+ 	&dev_attr_blacklist.attr,
++	&dev_attr_hr.attr,
+ #ifdef CONFIG_SCSI_DH
+ 	&dev_attr_dh_state.attr,
+ 	&dev_attr_access_state.attr,
+diff --git a/drivers/scsi/ufs/ufs-debugfs.c b/drivers/scsi/ufs/ufs-debugfs.c
+index ea4fc23cfe3d..2c3c00be2e01 100644
+--- a/drivers/scsi/ufs/ufs-debugfs.c
++++ b/drivers/scsi/ufs/ufs-debugfs.c
+@@ -27,6 +27,7 @@
+ enum field_width {
+ 	BYTE	= 1,
+ 	WORD	= 2,
++	DWORD   = 4,
+ };
+ 
+ struct desc_field_offset {
+@@ -876,6 +877,52 @@ static const struct file_operations ufsdbg_host_regs_fops = {
+ 	.release        = single_release,
+ };
+ 
++static int ufsdbg_dump_health_desc_show(struct seq_file *file, void *data)
++{
++	int err = 0;
++	int buff_len = QUERY_DESC_HEALTH_DEF_SIZE;
++	u8 desc_buf[QUERY_DESC_HEALTH_DEF_SIZE];
++	struct ufs_hba *hba = (struct ufs_hba *)file->private;
++	struct desc_field_offset health_desc_field_name[] = {
++		{"bLength",		0x00, BYTE},
++		{"bDescriptorType",	0x01, BYTE},
++		{"bPreEOLInfo",		0x02, BYTE},
++		{"bDeviceLifeTimeEstA",	0x03, BYTE},
++		{"bDeviceLifeTimeEstB",	0x04, BYTE},
++	};
++	pm_runtime_get_sync(hba->dev);
++	err = ufshcd_read_health_desc(hba, desc_buf, buff_len);
++	pm_runtime_put_sync(hba->dev);
++	if (!err) {
++		int i;
++		struct desc_field_offset *tmp;
++		for (i = 0; i < ARRAY_SIZE(health_desc_field_name); ++i) {
++			tmp = &health_desc_field_name[i];
++			if (tmp->width_byte == BYTE) {
++				seq_printf(file,
++					   "Device Descriptor[Byte offset 0x%x]: %s = 0x%x\n",
++					   tmp->offset,
++					   tmp->name,
++					   (u8)desc_buf[tmp->offset]);
++			} else if (tmp->width_byte == WORD) {
++				seq_printf(file,
++					   "Device Descriptor[Byte offset 0x%x]: %s = 0x%x\n",
++					   tmp->offset,
++					   tmp->name,
++					   *(u16 *)&desc_buf[tmp->offset]);
++			} else {
++				seq_printf(file,
++				"Device Descriptor[offset 0x%x]: %s. Wrong Width = %d",
++				tmp->offset, tmp->name, tmp->width_byte);
++			}
++		}
++	} else {
++		seq_printf(file, "Reading Device Descriptor failed. err = %d\n",
++			   err);
++	}
++	return err;
++}
++
+ static int ufsdbg_dump_device_desc_show(struct seq_file *file, void *data)
+ {
+ 	int err = 0;
+@@ -910,7 +957,15 @@ static int ufsdbg_dump_device_desc_show(struct seq_file *file, void *data)
+ 		{"bUD0BaseOffset",	0x1A, BYTE},
+ 		{"bUDConfigPLength",	0x1B, BYTE},
+ 		{"bDeviceRTTCap",	0x1C, BYTE},
+-		{"wPeriodicRTCUpdate",	0x1D, WORD}
++		{"wPeriodicRTCUpdate",	0x1D, WORD},
++		{"bUFSFeaturesSupport", 0x1F, BYTE},
++		{"bFFUTimeout", 0x20, BYTE},
++		{"bQueueDepth", 0x21, BYTE},
++		{"wDeviceVersion", 0x22, WORD},
++		{"bNumSecureWpArea", 0x24, BYTE},
++		{"dPSAMaxDataSize", 0x25, DWORD},
++		{"bPSAStateTimeout", 0x29, BYTE},
++		{"iProductRevisionLevel", 0x2A, BYTE},
+ 	};
+ 
+ 	pm_runtime_get_sync(hba->dev);
+@@ -936,7 +991,13 @@ static int ufsdbg_dump_device_desc_show(struct seq_file *file, void *data)
+ 					   tmp->offset,
+ 					   tmp->name,
+ 					   *(u16 *)&desc_buf[tmp->offset]);
+-			} else {
++			} else if (tmp->width_byte == DWORD) {
++				seq_printf(file,
++					   "Device Descriptor[Byte offset 0x%x]: %s = 0x%x\n",
++					   tmp->offset,
++					   tmp->name,
++					   *(u32 *)&desc_buf[tmp->offset]);
++			}else {
+ 				seq_printf(file,
+ 				"Device Descriptor[offset 0x%x]: %s. Wrong Width = %d",
+ 				tmp->offset, tmp->name, tmp->width_byte);
+@@ -950,6 +1011,15 @@ static int ufsdbg_dump_device_desc_show(struct seq_file *file, void *data)
+ 	return err;
+ }
+ 
++static int ufsdbg_string_desc_serial_show(struct seq_file *file, void *data)
++{
++	int err = 0;
++	char *serial = ufs_get_serial();
++	
++	seq_printf(file, "serial:%s\n", serial);
++	return err;
++}
++
+ static int ufsdbg_show_hba_show(struct seq_file *file, void *data)
+ {
+ 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
+@@ -1053,6 +1123,25 @@ static const struct file_operations ufsdbg_dump_device_desc = {
+ 	.release	= single_release,
+ };
+ 
++static int ufsdbg_string_desc_serial_open(struct inode *inode, struct file *file)
++{
++	return single_open(file,
++			ufsdbg_string_desc_serial_show, inode->i_private);
++}
++static const struct file_operations ufsdbg_dump_string_desc_serial = {
++	.open		= ufsdbg_string_desc_serial_open,
++	.read		= seq_read,
++};
++static int ufsdbg_dump_health_desc_open(struct inode *inode, struct file *file)
++{
++	return single_open(file,
++			   ufsdbg_dump_health_desc_show, inode->i_private);
++}
++static const struct file_operations ufsdbg_dump_health_desc = {
++	.open		= ufsdbg_dump_health_desc_open,
++	.read		= seq_read,
++};
++
+ static int ufsdbg_power_mode_show(struct seq_file *file, void *data)
+ {
+ 	struct ufs_hba *hba = (struct ufs_hba *)file->private;
+@@ -1563,10 +1652,14 @@ DEFINE_DEBUGFS_ATTRIBUTE(ufsdbg_err_state,
+ 
+ void ufsdbg_add_debugfs(struct ufs_hba *hba)
+ {
++	char root_name[sizeof("ufshcd00")];
+ 	if (!hba) {
+ 		pr_err("%s: NULL hba, exiting\n", __func__);
+ 		return;
+ 	}
++	
++	snprintf(root_name, ARRAY_SIZE(root_name), "%s%d", UFSHCD,
++		hba->host->host_no);
+ 
+ 	hba->debugfs_files.debugfs_root = debugfs_create_dir(dev_name(hba->dev),
+ 							     NULL);
+@@ -1583,6 +1676,8 @@ void ufsdbg_add_debugfs(struct ufs_hba *hba)
+ 			"%s: NULL debugfs root directory, exiting\n", __func__);
+ 		goto err_no_root;
+ 	}
++	
++	debugfs_create_symlink(root_name, NULL, dev_name(hba->dev));
+ 
+ 	hba->debugfs_files.stats_folder = debugfs_create_dir("stats",
+ 					hba->debugfs_files.debugfs_root);
+@@ -1646,7 +1741,7 @@ void ufsdbg_add_debugfs(struct ufs_hba *hba)
+ 	}
+ 
+ 	hba->debugfs_files.dump_dev_desc =
+-		debugfs_create_file("dump_device_desc", 0400,
++		debugfs_create_file("dump_device_desc", S_IRUGO,
+ 				    hba->debugfs_files.debugfs_root, hba,
+ 				    &ufsdbg_dump_device_desc);
+ 	if (!hba->debugfs_files.dump_dev_desc) {
+@@ -1654,6 +1749,26 @@ void ufsdbg_add_debugfs(struct ufs_hba *hba)
+ 			"%s:  NULL dump_device_desc file, exiting\n", __func__);
+ 		goto err;
+ 	}
++	
++	hba->debugfs_files.dump_string_desc_serial =
++		debugfs_create_file("dump_string_desc_serial", S_IRUGO,
++					hba->debugfs_files.debugfs_root, hba,
++					&ufsdbg_dump_string_desc_serial);
++	if (!hba->debugfs_files.dump_string_desc_serial) {
++		dev_err(hba->dev,
++			"%s:  NULL dump_device_desc file, exiting", __func__);
++		goto err;
++	}
++	
++	hba->debugfs_files.dump_heatlth_desc =
++		debugfs_create_file("dump_health_desc", S_IRUGO,
++				    hba->debugfs_files.debugfs_root, hba,
++				    &ufsdbg_dump_health_desc);
++	if (!hba->debugfs_files.dump_heatlth_desc) {
++		dev_err(hba->dev,
++			"%s:  NULL dump_health_desc file, exiting", __func__);
++		goto err;
++	}
+ 
+ 	hba->debugfs_files.power_mode =
+ 		debugfs_create_file("power_mode", 0600,
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index c7ac560c1cde..65091ff9bea4 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -4617,6 +4617,18 @@ int ufshcd_read_device_desc(struct ufs_hba *hba, u8 *buf, u32 size)
+ 	return ufshcd_read_desc(hba, QUERY_DESC_IDN_DEVICE, 0, buf, size);
+ }
+ 
++int ufshcd_read_health_desc(struct ufs_hba *hba, u8 *buf, u32 size)
++{
++	return ufshcd_read_desc(hba, QUERY_DESC_IDN_HEALTH, 0, buf, size);
++}
++int ufshcd_get_hynix_hr(struct scsi_device *sdev, u8 *buf, u32 size)
++{
++	struct ufs_hba *hba;
++	hba = shost_priv(sdev->host);
++	size = QUERY_DESC_HEALTH_DEF_SIZE;
++	return ufshcd_read_desc(hba, QUERY_DESC_IDN_HEALTH, 0, buf, size);
++}
++
+ /**
+  * ufshcd_read_string_desc - read string descriptor
+  * @hba: pointer to adapter instance
+diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
+index ccdcfa4ed1ac..92b09b1d7823 100644
+--- a/drivers/scsi/ufs/ufshcd.h
++++ b/drivers/scsi/ufs/ufshcd.h
+@@ -1350,6 +1350,7 @@ static inline int ufshcd_dme_rmw(struct ufs_hba *hba, u32 mask,
+ }
+ 
+ int ufshcd_read_device_desc(struct ufs_hba *hba, u8 *buf, u32 size);
++int ufshcd_read_health_desc(struct ufs_hba *hba, u8 *buf, u32 size);
+ 
+ static inline bool ufshcd_is_hs_mode(struct ufs_pa_layer_attr *pwr_info)
+ {
+-- 
+2.48.1
+

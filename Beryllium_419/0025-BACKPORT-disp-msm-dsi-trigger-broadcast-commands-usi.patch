@@ -1,0 +1,168 @@
+From 6ad22b4687cc756dd8a0042abe4dde23116b6988 Mon Sep 17 00:00:00 2001
+From: Satya Rama Aditya Pinapala <psraditya30@codeaurora.org>
+Date: Wed, 25 Nov 2020 15:11:17 -0800
+Subject: [PATCH 025/175] BACKPORT: disp: msm: dsi: trigger broadcast commands
+ using DMA start window
+
+As per the HW requirements it is highly recommended to use DMA start
+window to trigger  broadcast commands. If not used then it can
+result in a hardware hang with the DSI controllers going out
+of sync. This behavior is even more prominent in cases of higher
+refresh rates. As part of the change we change the default DMA
+scheduling behavior to default to maximum possible DMA window
+in case it is not specified in the panel device tree.
+
+Change-Id: Ied4df9063664cedbc18ce009054d4e5ecae30ab2
+Signed-off-by: Satya Rama Aditya Pinapala <psraditya30@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_ctrl.c        | 13 ++++++-------
+ techpack/display/msm/dsi/dsi_ctrl.h        |  3 +++
+ techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c |  3 ---
+ techpack/display/msm/dsi/dsi_display.c     | 12 ++++++++----
+ techpack/display/msm/dsi/dsi_display.h     |  3 +++
+ techpack/display/msm/dsi/dsi_drm.c         |  6 ++++++
+ 6 files changed, 26 insertions(+), 14 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 1cb5e3220eb8..22ec49c01097 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -1344,17 +1344,16 @@ static void dsi_configure_command_scheduling(struct dsi_ctrl *dsi_ctrl,
+ 	}
+ 
+ 	/*
+-	 * In case of command scheduling in command mode, the window size
+-	 * is reset to zero, if the total scheduling window is greater
+-	 * than the panel height.
++	 * In case of command scheduling in command mode, set the maximum
++	 * possible size of the DMA start window in case no schedule line and
++	 * window size properties are defined by the panel.
+ 	 */
+ 	if ((dsi_ctrl->host_config.panel_mode == DSI_OP_CMD_MODE) &&
+ 			dsi_hw_ops.configure_cmddma_window) {
+-		sched_line_no = line_no;
+-
+-		if ((sched_line_no + window) > timing->v_active)
+-			window = 0;
+ 
++		sched_line_no = (line_no == 0) ? TEARCHECK_WINDOW_SIZE :
++					line_no;
++		window = (window == 0) ? timing->v_active : window;
+ 		sched_line_no += timing->v_active;
+ 
+ 		dsi_hw_ops.configure_cmddma_window(&dsi_ctrl->hw, cmd_mem,
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.h b/techpack/display/msm/dsi/dsi_ctrl.h
+index 19625c530ad1..c22c7ddfd862 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.h
++++ b/techpack/display/msm/dsi/dsi_ctrl.h
+@@ -53,6 +53,9 @@
+ /* max size supported for dsi cmd transfer using TPG */
+ #define DSI_CTRL_MAX_CMD_FIFO_STORE_SIZE 64
+ 
++/*Default tearcheck window size as programmed by MDP*/
++#define TEARCHECK_WINDOW_SIZE	5
++
+ /**
+  * enum dsi_power_state - defines power states for dsi controller.
+  * @DSI_CTRL_POWER_VREG_OFF:    Digital and analog supplies for DSI controller
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+index ce165d5c69d4..98cf4a8d1710 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+@@ -147,9 +147,6 @@ void dsi_ctrl_hw_22_configure_cmddma_window(struct dsi_ctrl_hw *ctrl,
+ {
+ 	u32 reg = 0;
+ 
+-	if (!window)
+-		return;
+-
+ 	if (cmd->en_broadcast) {
+ 		reg = DSI_R32(ctrl, DSI_TRIG_CTRL);
+ 		if (cmd->is_master) {
+diff --git a/techpack/display/msm/dsi/dsi_display.c b/techpack/display/msm/dsi/dsi_display.c
+index 94cbddb1eceb..7e09c09def99 100644
+--- a/techpack/display/msm/dsi/dsi_display.c
++++ b/techpack/display/msm/dsi/dsi_display.c
+@@ -953,7 +953,7 @@ static int dsi_display_cmd_rx(struct dsi_display *display,
+ 	flags |= (DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_READ);
+ 	if ((m_ctrl->ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) ||
+ 			((cmd->msg.flags & MIPI_DSI_MSG_CMD_DMA_SCHED) &&
+-			 (display->panel->panel_initialized)))
++			 (display->enabled)))
+ 		flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
+ 
+ 	rc = dsi_ctrl_cmd_transfer(m_ctrl->ctrl, &cmd->msg, &flags);
+@@ -3029,8 +3029,12 @@ static int dsi_display_broadcast_cmd(struct dsi_display *display,
+ 		m_flags |= DSI_CTRL_CMD_LAST_COMMAND;
+ 	}
+ 
+-	if ((msg->flags & MIPI_DSI_MSG_CMD_DMA_SCHED) &&
+-				(display->panel->panel_initialized)) {
++	/*
++	 * During broadcast command dma scheduling is always recommended.
++	 * As long as the display is enabled and TE is running the
++	 * DSI_CTRL_CMD_CUSTOM_DMA_SCHED flag should be set.
++	 */
++	if (display->enabled) {
+ 		flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
+ 		m_flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
+ 	}
+@@ -3203,7 +3207,7 @@ static ssize_t dsi_host_transfer(struct mipi_dsi_host *host,
+ 			cmd_flags |= DSI_CTRL_CMD_ASYNC_WAIT;
+ 
+ 		if ((msg->flags & MIPI_DSI_MSG_CMD_DMA_SCHED) &&
+-				(display->panel->panel_initialized))
++				(display->enabled))
+ 			cmd_flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
+ 
+ 		rc = dsi_ctrl_cmd_transfer(display->ctrl[ctrl_idx].ctrl, msg,
+diff --git a/techpack/display/msm/dsi/dsi_display.h b/techpack/display/msm/dsi/dsi_display.h
+index 4eba9ce5d774..e93f71fbbe65 100644
+--- a/techpack/display/msm/dsi/dsi_display.h
++++ b/techpack/display/msm/dsi/dsi_display.h
+@@ -190,6 +190,7 @@ struct dsi_display_ext_bridge {
+  *				wait sequence.
+  * @tx_cmd_buf_ndx:   Index to the DSI debugfs TX CMD buffer.
+  * @cmd_set:	      Debugfs TX cmd set.
++ * @enabled:	      Boolean to indicate display enabled.
+  */
+ struct dsi_display {
+ 	struct platform_device *pdev;
+@@ -279,6 +280,8 @@ struct dsi_display {
+ 
+ 	int tx_cmd_buf_ndx;
+ 	struct dsi_panel_cmd_set cmd_set;
++
++	bool enabled;
+ };
+ 
+ int dsi_display_dev_probe(struct platform_device *pdev);
+diff --git a/techpack/display/msm/dsi/dsi_drm.c b/techpack/display/msm/dsi/dsi_drm.c
+index 8bbeba5f94b4..ea57b890861c 100644
+--- a/techpack/display/msm/dsi/dsi_drm.c
++++ b/techpack/display/msm/dsi/dsi_drm.c
+@@ -243,6 +243,9 @@ static void dsi_bridge_enable(struct drm_bridge *bridge)
+ 		DSI_ERR("[%d] DSI display post enabled failed, rc=%d\n",
+ 		       c_bridge->id, rc);
+ 
++	if (display)
++		display->enabled = true;
++
+ 	if (display && display->drm_conn) {
+ 		sde_connector_helper_bridge_enable(display->drm_conn);
+ 		if (c_bridge->dsi_mode.dsi_mode_flags & DSI_MODE_FLAG_POMS)
+@@ -266,6 +269,9 @@ static void dsi_bridge_disable(struct drm_bridge *bridge)
+ 	private_flags =
+ 		bridge->encoder->crtc->state->adjusted_mode.private_flags;
+ 
++	if (display)
++		display->enabled = false;
++
+ 	if (display && display->drm_conn) {
+ 		display->poms_pending =
+ 			private_flags & MSM_MODE_FLAG_SEAMLESS_POMS;
+-- 
+2.48.1
+

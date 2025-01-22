@@ -1,0 +1,58 @@
+From 6242bdb7afdf42b583c14cb3f71ab2dd405fc539 Mon Sep 17 00:00:00 2001
+From: DevriesL <therkduan@gmail.com>
+Date: Sat, 31 Jul 2021 21:22:19 +0530
+Subject: [PATCH 033/175] techpack: display: msm: dsi: add get_main_display
+
+Change-Id: Id670875adc18659521c424a716cf0ef194f9627f
+Signed-off-by: Jebaitedneko <Jebaitedneko@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_display.c | 7 +++++++
+ techpack/display/msm/dsi/dsi_display.h | 2 ++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/techpack/display/msm/dsi/dsi_display.c b/techpack/display/msm/dsi/dsi_display.c
+index 7e09c09def99..903238ac8d11 100644
+--- a/techpack/display/msm/dsi/dsi_display.c
++++ b/techpack/display/msm/dsi/dsi_display.c
+@@ -46,6 +46,8 @@ static const struct of_device_id dsi_display_dt_match[] = {
+ 	{}
+ };
+ 
++struct dsi_display *primary_display;
++
+ static void dsi_display_mask_ctrl_error_interrupts(struct dsi_display *display,
+ 			u32 mask, bool enable)
+ {
+@@ -6717,6 +6719,7 @@ int dsi_display_get_modes(struct dsi_display *display,
+ exit:
+ 	*out_modes = display->modes;
+ 	rc = 0;
++	primary_display = display;
+ 
+ error:
+ 	if (rc)
+@@ -8209,6 +8212,10 @@ int dsi_display_unprepare(struct dsi_display *display)
+ 	return rc;
+ }
+ 
++struct dsi_display *get_main_display(void) {
++	return primary_display;
++}
++
+ static int __init dsi_display_register(void)
+ {
+ 	dsi_phy_drv_register();
+diff --git a/techpack/display/msm/dsi/dsi_display.h b/techpack/display/msm/dsi/dsi_display.h
+index e93f71fbbe65..0aae1e394706 100644
+--- a/techpack/display/msm/dsi/dsi_display.h
++++ b/techpack/display/msm/dsi/dsi_display.h
+@@ -754,4 +754,6 @@ int dsi_display_cont_splash_config(void *display);
+ int dsi_display_get_panel_vfp(void *display,
+ 	int h_active, int v_active);
+ 
++struct dsi_display *get_main_display(void);
++
+ #endif /* _DSI_DISPLAY_H_ */
+-- 
+2.48.1
+

@@ -1,0 +1,101 @@
+From 43a12b11e4859ac05252a2fb193d602da7090c8b Mon Sep 17 00:00:00 2001
+From: Odelu Kukatla <okukatla@codeaurora.org>
+Date: Mon, 6 Jun 2016 22:19:53 +0530
+Subject: [PATCH 069/175] clk: qcom: Add support for gate clocks
+
+Add gate clocks support where the clocks could be
+ - Either a branch clock with no branch halt check during
+   enable/disable.
+ - Clocks which have just enable/disable bit.
+
+Change-Id: Ia3adcab26f54a4b34a08fec031be5dfb029376c2
+Signed-off-by: Odelu Kukatla <okukatla@codeaurora.org>
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/clk-branch.c | 36 +++++++++++++++++++++++++++++++++++
+ drivers/clk/qcom/clk-branch.h | 16 ++++++++++++++++
+ 2 files changed, 52 insertions(+)
+
+diff --git a/drivers/clk/qcom/clk-branch.c b/drivers/clk/qcom/clk-branch.c
+index 46e2e1861c99..7cf1d9ac9d76 100644
+--- a/drivers/clk/qcom/clk-branch.c
++++ b/drivers/clk/qcom/clk-branch.c
+@@ -452,6 +452,42 @@ const struct clk_ops clk_branch2_hw_ctl_ops = {
+ };
+ EXPORT_SYMBOL_GPL(clk_branch2_hw_ctl_ops);
+ 
++static int clk_gate_toggle(struct clk_hw *hw, bool en)
++{
++	struct clk_gate2 *gt = to_clk_gate2(hw);
++	int ret = 0;
++
++	if (en) {
++		ret = clk_enable_regmap(hw);
++		if (ret)
++			return ret;
++	} else {
++		clk_disable_regmap(hw);
++	}
++
++	if (gt->udelay)
++		udelay(gt->udelay);
++
++	return ret;
++}
++
++static int clk_gate2_enable(struct clk_hw *hw)
++{
++	return clk_gate_toggle(hw, true);
++}
++
++static void clk_gate2_disable(struct clk_hw *hw)
++{
++	clk_gate_toggle(hw, false);
++}
++
++const struct clk_ops clk_gate2_ops = {
++	.enable = clk_gate2_enable,
++	.disable = clk_gate2_disable,
++	.is_enabled = clk_is_enabled_regmap,
++};
++EXPORT_SYMBOL_GPL(clk_gate2_ops);
++
+ const struct clk_ops clk_branch_simple_ops = {
+ 	.enable = clk_enable_regmap,
+ 	.disable = clk_disable_regmap,
+diff --git a/drivers/clk/qcom/clk-branch.h b/drivers/clk/qcom/clk-branch.h
+index 43b6309cdd43..47549b8e0da2 100644
+--- a/drivers/clk/qcom/clk-branch.h
++++ b/drivers/clk/qcom/clk-branch.h
+@@ -41,12 +41,28 @@ struct clk_branch {
+ 	struct clk_regmap clkr;
+ };
+ 
++/**
++ * struct clk_gate2 - gating clock with status bit and dynamic hardware gating
++ * @udelay: halt delay in microseconds on clock branch Enable/Disable
++ * @clkr: handle between common and hardware-specific interfaces
++ *
++ * Clock which can gate its output.
++ */
++struct clk_gate2 {
++	u32	udelay;
++	struct	clk_regmap clkr;
++};
++
+ extern const struct clk_ops clk_branch_ops;
+ extern const struct clk_ops clk_branch2_ops;
+ extern const struct clk_ops clk_branch2_hw_ctl_ops;
++extern const struct clk_ops clk_gate2_ops;
+ extern const struct clk_ops clk_branch_simple_ops;
+ 
+ #define to_clk_branch(_hw) \
+ 	container_of(to_clk_regmap(_hw), struct clk_branch, clkr)
+ 
++#define to_clk_gate2(_hw) \
++	container_of(to_clk_regmap(_hw), struct clk_gate2, clkr)
++
+ #endif
+-- 
+2.48.1
+

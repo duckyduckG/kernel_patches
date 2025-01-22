@@ -1,0 +1,26 @@
+From 20c8fe006bdf91feda2eb4ab848d56e517b89517 Mon Sep 17 00:00:00 2001
+From: Santhosh <santhosh.user.why.red@gmail.com>
+Date: Mon, 13 Jan 2025 23:48:38 +0500
+Subject: [PATCH 164/175] mm: ksm: Enable kernel samepage merging by default
+ This feature disabled by default,so enable it during the boot itself
+
+---
+ mm/ksm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 5d7dbfcc7e34..ab8011652dbc 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -292,7 +292,7 @@ static int ksm_nr_node_ids = 1;
+ #define KSM_RUN_MERGE	1
+ #define KSM_RUN_UNMERGE	2
+ #define KSM_RUN_OFFLINE	4
+-static unsigned long ksm_run = KSM_RUN_STOP;
++static unsigned long ksm_run = KSM_RUN_MERGE;
+ static void wait_while_offlining(void);
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(ksm_thread_wait);
+-- 
+2.48.1
+

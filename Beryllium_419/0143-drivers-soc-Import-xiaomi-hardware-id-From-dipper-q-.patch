@@ -1,0 +1,114 @@
+From 64cf1ad2aa026af5024b225343210941155c11c0 Mon Sep 17 00:00:00 2001
+From: tanz3 <3222839916@qq.com>
+Date: Thu, 20 Jul 2023 02:36:24 -0400
+Subject: [PATCH 143/175] drivers: soc: Import xiaomi hardware id * From
+ dipper-q-oss
+
+Signed-off-by: tanz3 <3222839916@qq.com>
+---
+ drivers/soc/qcom/socinfo.c | 48 +++++++++++++++++++++++++++++++++++++-
+ include/soc/qcom/socinfo.h | 17 ++++++++++++++
+ 2 files changed, 64 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/soc/qcom/socinfo.c b/drivers/soc/qcom/socinfo.c
+index df794df11d29..5ba75e53b64f 100644
+--- a/drivers/soc/qcom/socinfo.c
++++ b/drivers/soc/qcom/socinfo.c
+@@ -57,6 +57,12 @@ enum {
+ 	HW_PLATFORM_SBC = 24,
+ 	HW_PLATFORM_HDK = 31,
+ 	HW_PLATFORM_IDP = 34,
++	HW_PLATFORM_D5X = 40,
++	HW_PLATFORM_E1N = 50,
++	HW_PLATFORM_E10 = 60,
++	HW_PLATFORM_E1S = 70,
++	HW_PLATFORM_E8  = 80,
++	HW_PLATFORM_E5  = 90,
+ 	HW_PLATFORM_INVALID
+ };
+ 
+@@ -78,7 +84,13 @@ const char *hw_platform[] = {
+ 	[HW_PLATFORM_STP] = "STP",
+ 	[HW_PLATFORM_SBC] = "SBC",
+ 	[HW_PLATFORM_HDK] = "HDK",
+-	[HW_PLATFORM_IDP] = "IDP"
++	[HW_PLATFORM_IDP] = "IDP",
++	[HW_PLATFORM_D5X] = "POLARIS",
++	[HW_PLATFORM_E1N] = "DIPPER",
++	[HW_PLATFORM_E10] = "BERYLLIUM",
++	[HW_PLATFORM_E1S] = "EQUULEUS",
++	[HW_PLATFORM_E8] = "URSA",
++	[HW_PLATFORM_E5] = "PERSEUS"
+ };
+ 
+ enum {
+@@ -2053,6 +2065,40 @@ static void socinfo_select_format(void)
+ 	}
+ }
+ 
++uint32_t get_hw_version_platform(void)
++{
++	uint32_t hw_type = socinfo_get_platform_type();
++	if (hw_type == HW_PLATFORM_E1N)
++		return HARDWARE_PLATFORM_DIPPERN;
++	else if (hw_type == HW_PLATFORM_D5X)
++		return HARDWARE_PLATFORM_POLARIS;
++	else if (hw_type == HW_PLATFORM_E10)
++		return HARDWARE_PLATFORM_BERYLLIUM;
++	else if (hw_type == HW_PLATFORM_E1S)
++		return HARDWARE_PLATFORM_EQUULEUS;
++	else if (hw_type == HW_PLATFORM_E8)
++		return HARDWARE_PLATFORM_URSA;
++	else if (hw_type == HW_PLATFORM_E5)
++		return HARDWARE_PLATFORM_PERSEUS;
++	else
++		return HARDWARE_PLATFORM_UNKNOWN;
++}
++EXPORT_SYMBOL(get_hw_version_platform);
++
++uint32_t get_hw_version_major(void)
++{
++	uint32_t version = socinfo_get_platform_version();
++	return ((version & HW_MAJOR_VERSION_MASK) >> HW_MAJOR_VERSION_SHIFT) & 0xF;
++}
++EXPORT_SYMBOL(get_hw_version_major);
++
++uint32_t get_hw_version_minor(void)
++{
++	uint32_t version = socinfo_get_platform_version();
++	return (version & HW_MINOR_VERSION_MASK) >> HW_MINOR_VERSION_SHIFT;
++}
++EXPORT_SYMBOL(get_hw_version_minor);
++
+ int __init socinfo_init(void)
+ {
+ 	static bool socinfo_init_done;
+diff --git a/include/soc/qcom/socinfo.h b/include/soc/qcom/socinfo.h
+index b858ec606b78..71c56912d30f 100644
+--- a/include/soc/qcom/socinfo.h
++++ b/include/soc/qcom/socinfo.h
+@@ -343,4 +343,21 @@ int socinfo_get_feature_code(void);
+ int socinfo_get_pcode(void);
+ char *socinfo_get_partinfo_details(unsigned int part_id);
+ 
++#define HARDWARE_PLATFORM_UNKNOWN 0
++#define HARDWARE_PLATFORM_POLARIS 2
++#define HARDWARE_PLATFORM_DIPPERN 3
++#define HARDWARE_PLATFORM_BERYLLIUM 4
++#define HARDWARE_PLATFORM_URSA 5
++#define HARDWARE_PLATFORM_PERSEUS 6
++#define HARDWARE_PLATFORM_EQUULEUS 7
++
++#define HW_MAJOR_VERSION_SHIFT 16
++#define HW_MAJOR_VERSION_MASK  0xFFFF0000
++#define HW_MINOR_VERSION_SHIFT 0
++#define HW_MINOR_VERSION_MASK  0x0000FFFF
++
++uint32_t get_hw_version_platform(void);
++uint32_t get_hw_version_major(void);
++uint32_t get_hw_version_minor(void);
++
+ #endif
+-- 
+2.48.1
+

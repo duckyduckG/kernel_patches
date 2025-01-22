@@ -1,0 +1,82 @@
+From 37b95d2a18b8c544078fd79a909c6deb476e4118 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 23 Aug 2023 17:11:43 +0000
+Subject: [PATCH 112/175] msm: vidc: Allow to use ar50 bw governor
+
+---
+ drivers/media/platform/msm/vidc/msm_vidc_res_parse.c |  3 +++
+ drivers/media/platform/msm/vidc/msm_vidc_resources.h |  1 +
+ drivers/media/platform/msm/vidc/venus_hfi.c          | 10 ++++++++--
+ drivers/media/platform/msm/vidc/venus_hfi.h          |  2 ++
+ 4 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+index a55ad394dfdc..c60ead7eb47f 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+@@ -442,6 +442,9 @@ static int msm_vidc_populate_bus(struct device *dev,
+ 	if (!strcmp(bus->mode, PERF_GOV))
+ 		bus->is_prfm_gov_used = true;
+ 
++	if (strstr(bus->mode, "ar50"))
++		bus->is_ar50_gov_used = true;
++
+ 	rc = of_property_read_u32_array(dev->of_node, "qcom,bus-range-kbps",
+ 			range, ARRAY_SIZE(range));
+ 	if (rc) {
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_resources.h b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+index 790e88c647f5..b85131e1c527 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_resources.h
++++ b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+@@ -104,6 +104,7 @@ struct bus_info {
+ 	unsigned int range[2];
+ 	struct device *dev;
+ 	struct msm_bus_client_handle *client;
++	bool is_ar50_gov_used;
+ 	bool is_prfm_gov_used;
+ 	const char *mode;
+ };
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index 5e09145eb0f6..a9e70ea37edd 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -1017,7 +1017,10 @@ static int __unvote_buses(struct venus_hfi_device *device)
+ 
+ 	venus_hfi_for_each_bus(device, bus) {
+ 		if (!bus->is_prfm_gov_used) {
+-			freq = __calc_bw(bus, &device->bus_vote);
++			if (bus->is_ar50_gov_used)
++				freq = __calc_bw_ar50(bus, &device->bus_vote);
++			else
++				freq = __calc_bw(bus, &device->bus_vote);
+ 			rc = __vote_bandwidth(bus, &freq);
+ 		}
+ 		else
+@@ -1062,7 +1065,10 @@ static int __vote_buses(struct venus_hfi_device *device,
+ 	venus_hfi_for_each_bus(device, bus) {
+ 		if (bus && bus->client) {
+ 			if (!bus->is_prfm_gov_used) {
+-				freq = __calc_bw(bus, &device->bus_vote);
++				if (bus->is_ar50_gov_used)
++					freq = __calc_bw_ar50(bus, &device->bus_vote);
++				else
++					freq = __calc_bw(bus, &device->bus_vote);
+ 			} else {
+ 				freq = bus->range[1];
+ 				dprintk(VIDC_DBG, "%s %s perf Vote %u\n",
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.h b/drivers/media/platform/msm/vidc/venus_hfi.h
+index 04ae650ac9f3..1d6d0e033a23 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.h
++++ b/drivers/media/platform/msm/vidc/venus_hfi.h
+@@ -52,6 +52,8 @@
+ 
+ extern unsigned long __calc_bw(struct bus_info *bus,
+ 			struct msm_vidc_gov_data *vidc_data);
++extern unsigned long __calc_bw_ar50(struct bus_info *bus,
++			struct msm_vidc_gov_data *vidc_data);
+ 
+ struct hfi_queue_table_header {
+ 	u32 qtbl_version;
+-- 
+2.48.1
+

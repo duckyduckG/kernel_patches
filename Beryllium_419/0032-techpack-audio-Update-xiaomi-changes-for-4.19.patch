@@ -1,0 +1,202 @@
+From f4c5c2c9d3f125124b3a3912c2858abf7215da09 Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Tue, 28 Dec 2021 14:11:00 +0400
+Subject: [PATCH 032/175] techpack: audio: Update xiaomi changes for 4.19
+
+---
+ techpack/audio/asoc/codecs/wcd-mbhc-adc.c         |  2 +-
+ techpack/audio/asoc/codecs/wcd-mbhc-v2.c          |  4 ++--
+ techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c | 12 ++++++------
+ techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h |  4 ++--
+ techpack/audio/asoc/codecs/wcd934x/wcd934x.c      | 10 +++++-----
+ techpack/audio/asoc/msm-pcm-routing-v2.c          |  2 +-
+ techpack/audio/asoc/sdm845.c                      | 12 ++++++------
+ 7 files changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/techpack/audio/asoc/codecs/wcd-mbhc-adc.c b/techpack/audio/asoc/codecs/wcd-mbhc-adc.c
+index 0f9e24a194e6..1c44a0d1b7fb 100644
+--- a/techpack/audio/asoc/codecs/wcd-mbhc-adc.c
++++ b/techpack/audio/asoc/codecs/wcd-mbhc-adc.c
+@@ -578,7 +578,7 @@ static void wcd_mbhc_adc_update_fsm_source(struct wcd_mbhc *mbhc,
+ 	case MBHC_PLUG_TYPE_HEADSET:
+ 	case MBHC_PLUG_TYPE_ANC_HEADPHONE:
+ 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
+-		mbhc->mbhc_cb->mbhc_micbias_control(mbhc->codec,
++		mbhc->mbhc_cb->mbhc_micbias_control(mbhc->component,
+ 				MIC_BIAS_2, MICB_PULLUP_ENABLE);
+ 		break;
+ 	default:
+diff --git a/techpack/audio/asoc/codecs/wcd-mbhc-v2.c b/techpack/audio/asoc/codecs/wcd-mbhc-v2.c
+index dbfa9bbdc9f4..0ed6075512d9 100644
+--- a/techpack/audio/asoc/codecs/wcd-mbhc-v2.c
++++ b/techpack/audio/asoc/codecs/wcd-mbhc-v2.c
+@@ -828,7 +828,7 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
+ 			/* Disable HW FSM and current source */
+ 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 0);
+ 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
+-			mbhc->mbhc_cb->mbhc_micbias_control(mbhc->codec,
++			mbhc->mbhc_cb->mbhc_micbias_control(mbhc->component,
+ 							MIC_BIAS_2, MICB_PULLUP_DISABLE);
+ 			/* Setup for insertion detection */
+ 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_ELECT_DETECTION_TYPE,
+@@ -961,7 +961,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
+ 		/* Disable HW FSM */
+ 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 0);
+ 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
+-		mbhc->mbhc_cb->mbhc_micbias_control(mbhc->codec,
++		mbhc->mbhc_cb->mbhc_micbias_control(mbhc->component,
+ 						MIC_BIAS_2, MICB_PULLUP_DISABLE);
+ 		if (mbhc->mbhc_cb->mbhc_common_micb_ctrl)
+ 			mbhc->mbhc_cb->mbhc_common_micb_ctrl(component,
+diff --git a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c
+index 986c6390643a..aad5ca40f316 100644
+--- a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c
++++ b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c
+@@ -1006,19 +1006,19 @@ int tavil_mbhc_get_impedance(struct wcd934x_mbhc *wcd934x_mbhc,
+ }
+ EXPORT_SYMBOL(tavil_mbhc_get_impedance);
+ 
+-int tavil_mb_pull_down(struct snd_soc_codec *codec, bool active,
++int tavil_mb_pull_down(struct snd_soc_component *component, bool active,
+ 		int value)
+ {
+ 	int oldv = 0;
+ 
+ 	if (active) {
+-		oldv = snd_soc_read(codec, WCD934X_ANA_MICB2);
+-		snd_soc_update_bits(codec, WCD934X_ANA_MBHC_ELECT,
++		oldv = snd_soc_component_read32(component, WCD934X_ANA_MICB2);
++		snd_soc_component_update_bits(component, WCD934X_ANA_MBHC_ELECT,
+ 				0x80, 0x00);
+-		snd_soc_update_bits(codec, WCD934X_ANA_MICB2, 0xC0, 0xC0);
++		snd_soc_component_update_bits(component, WCD934X_ANA_MICB2, 0xC0, 0xC0);
+ 	} else {
+-		snd_soc_write(codec, WCD934X_ANA_MICB2, value);
+-		snd_soc_update_bits(codec, WCD934X_ANA_MBHC_ELECT,
++		snd_soc_component_write(component, WCD934X_ANA_MICB2, value);
++		snd_soc_component_update_bits(component, WCD934X_ANA_MBHC_ELECT,
+ 				0x80, 0x80);
+ 	}
+ 
+diff --git a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h
+index 20e6278acb2e..7e8095b63592 100644
+--- a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h
++++ b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h
+@@ -39,7 +39,7 @@ extern int tavil_mbhc_post_ssr_init(struct wcd934x_mbhc *mbhc,
+ 				    struct snd_soc_component *component);
+ extern int tavil_mbhc_get_impedance(struct wcd934x_mbhc *wcd934x_mbhc,
+ 				    uint32_t *zl, uint32_t *zr);
+-extern int tavil_mb_pull_down(struct snd_soc_codec *codec, bool active,
++extern int tavil_mb_pull_down(struct snd_soc_component *component, bool active,
+ 			int value);
+ #else
+ static inline int tavil_mbhc_init(struct wcd934x_mbhc **mbhc,
+@@ -74,7 +74,7 @@ static inline int tavil_mbhc_get_impedance(struct wcd934x_mbhc *wcd934x_mbhc,
+ 		*zr = 0;
+ 	return -EINVAL;
+ }
+-static inline int tavil_mb_pull_down(struct snd_soc_codec *codec, bool active,
++static inline int tavil_mb_pull_down(struct snd_soc_component *component, bool active,
+ 			int value)
+ {
+ 	return 0;
+diff --git a/techpack/audio/asoc/codecs/wcd934x/wcd934x.c b/techpack/audio/asoc/codecs/wcd934x/wcd934x.c
+index 4f05abd1b147..ffde1172fee9 100644
+--- a/techpack/audio/asoc/codecs/wcd934x/wcd934x.c
++++ b/techpack/audio/asoc/codecs/wcd934x/wcd934x.c
+@@ -6205,7 +6205,7 @@ static int tavil_mad_input_put(struct snd_kcontrol *kcontrol,
+ 
+ 	if (!strcmp("AMIC2", mad_input_widget)) {
+ 		mic_bias_found = 2;
+-		dev_info(codec->dev,
++		dev_info(component->dev,
+ 			"%s: tavil input widget = %s, enable MIC BIAS2 directly.\n",
+ 			__func__, mad_input_widget);
+ 	} else {
+@@ -6213,7 +6213,7 @@ static int tavil_mad_input_put(struct snd_kcontrol *kcontrol,
+ 			if (!strcmp(card->of_dapm_routes[i].sink, mad_input_widget)) {
+ 				source_widget = card->of_dapm_routes[i].source;
+ 				if (!source_widget) {
+-					dev_err(codec->dev,
++					dev_err(component->dev,
+ 						"%s: invalid source widget\n",
+ 						__func__);
+ 					return -EINVAL;
+@@ -6430,8 +6430,8 @@ static int tavil_rx_hph_mode_put(struct snd_kcontrol *kcontrol,
+ static int codec_version_get(struct snd_kcontrol *kcontrol,
+ 				 struct snd_ctl_elem_value *ucontrol)
+ {
+-	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+-	struct tavil_priv *tavil = snd_soc_codec_get_drvdata(codec);
++	struct snd_soc_component *component = snd_soc_kcontrol_component(kcontrol);
++	struct tavil_priv *tavil = snd_soc_component_get_drvdata(component);
+ 
+ 	struct wcd9xxx *wcd9xxx= tavil->wcd9xxx;
+ 
+@@ -6451,7 +6451,7 @@ static int codec_version_get(struct snd_kcontrol *kcontrol,
+ 		ucontrol->value.integer.value[0] = 4;
+ 		break;
+ 	default:
+-		dev_warn(codec->dev, "%s:Invalid codec version %d\n",
++		dev_warn(component->dev, "%s:Invalid codec version %d\n",
+ 			__func__, wcd9xxx->version);
+ 	}
+ 
+diff --git a/techpack/audio/asoc/msm-pcm-routing-v2.c b/techpack/audio/asoc/msm-pcm-routing-v2.c
+index 7f5d5b18545a..c0d14006e5f0 100644
+--- a/techpack/audio/asoc/msm-pcm-routing-v2.c
++++ b/techpack/audio/asoc/msm-pcm-routing-v2.c
+@@ -5725,7 +5725,7 @@ static int msm_routing_ec_ref_rx_put(struct snd_kcontrol *kcontrol,
+ 
+ 	if (state_rx || (!state_rx && wakeup_ext_ec_ref == 0 && voip_ext_ec_common_ref == 0)) {
+ 		pr_info("%s: update state!\n", __func__);
+-		adm_ec_ref_rx_id(ec_ref_port_id);
++		adm_ec_ref_rx_id(msm_ec_ref_port_id);
+ 		mutex_unlock(&routing_lock);
+ 		snd_soc_dapm_mux_update_power(widget->dapm, kcontrol,
+ 					msm_route_ec_ref_rx, e, update);
+diff --git a/techpack/audio/asoc/sdm845.c b/techpack/audio/asoc/sdm845.c
+index 7294ae9ddf28..7e2f2b9ec7a1 100644
+--- a/techpack/audio/asoc/sdm845.c
++++ b/techpack/audio/asoc/sdm845.c
+@@ -2951,15 +2951,15 @@ static int msm_qos_ctl_put(struct snd_kcontrol *kcontrol,
+ static int usbhs_direction_get(struct snd_kcontrol *kcontrol,
+ 				struct snd_ctl_elem_value *ucontrol)
+ {
+-	struct snd_soc_codec *codec = NULL;
++	struct snd_soc_component *component  = NULL;
+ 	struct snd_soc_card *card = NULL;
+ 	struct msm_asoc_mach_data *pdata = NULL;
+ 
+ 	ucontrol->value.integer.value[0] = 0;
+ 
+-	codec = snd_soc_kcontrol_codec(kcontrol);
+-	if (codec) {
+-		card = codec->component.card;
++	component = snd_soc_kcontrol_component(kcontrol);
++	if (component) {
++		card = component->card;
+ 		if (card) {
+ 			pdata = snd_soc_card_get_drvdata(card);
+ 			if (pdata){
+@@ -3892,7 +3892,7 @@ static bool msm_usbc_swap_gnd_mic(struct snd_soc_component *component, bool acti
+ 	/* if active and usbc_en2_gpio_p defined, swap using usbc_en2_gpio_p */
+ 	if (active) {
+ 		dev_dbg(component->dev, "%s: enter\n", __func__);
+-		oldv = tavil_mb_pull_down(codec, true, 0);
++		oldv = tavil_mb_pull_down(component, true, 0);
+ 		if (pdata->usbc_en2_gpio_p) {
+ 			value = gpio_get_value_cansleep(pdata->usbc_en2_gpio);
+ 			if (value)
+@@ -3905,7 +3905,7 @@ static bool msm_usbc_swap_gnd_mic(struct snd_soc_component *component, bool acti
+ 			value = gpio_get_value_cansleep(pdata->usbc_en2_gpio);
+ 			gpio_set_value_cansleep(pdata->usbc_en2_gpio, !value);
+ 		}
+-		tavil_mb_pull_down(codec, false, oldv);
++		tavil_mb_pull_down(component, false, oldv);
+ 		pr_info("%s: swap select switch %d to %d\n", __func__,
+ 			value, !value);
+ 		ret = true;
+-- 
+2.48.1
+

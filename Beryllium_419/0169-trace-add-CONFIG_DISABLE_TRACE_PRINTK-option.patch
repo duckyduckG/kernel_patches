@@ -1,0 +1,64 @@
+From 156a522e49af729e3dcbaf8ffed123b864e9027f Mon Sep 17 00:00:00 2001
+From: arter97 <qkrwngud825@gmail.com>
+Date: Tue, 14 Jan 2025 12:54:16 +0500
+Subject: [PATCH 169/175] trace: add CONFIG_DISABLE_TRACE_PRINTK option Poorly
+ made kernel trees often use trace_printk() without properly guarding them in
+ a #ifdef macro. Such usage of trace_printk() causes a warning at boot and
+ additional memory allocation.
+
+This option serves to disable those all at once with ease.
+
+Signed-off-by: Park Ju Hyung <qkrwngud825@gmail.com>
+Change-Id: Ifb7c04b60205271252e577c8d51ac7c5bae1bcb7
+---
+ include/linux/kernel.h |  4 ++++
+ kernel/trace/Kconfig   | 11 +++++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index f46f34a596a2..f07f923d811e 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -691,6 +691,9 @@ do {									\
+  * let gcc optimize the rest.
+  */
+ 
++#ifdef CONFIG_DISABLE_TRACE_PRINTK
++#define trace_printk pr_debug
++#else
+ #define trace_printk(fmt, ...)				\
+ do {							\
+ 	char _______STR[] = __stringify((__VA_ARGS__));	\
+@@ -713,6 +716,7 @@ do {									\
+ 	else								\
+ 		__trace_printk(_THIS_IP_, fmt, ##args);			\
+ } while (0)
++#endif
+ 
+ extern __printf(2, 3)
+ int __trace_bprintk(unsigned long ip, const char *fmt, ...);
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index 9a1ff3413194..2d1938562b8d 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -146,6 +146,17 @@ config GENERIC_TRACER
+ 	bool
+ 	select TRACING
+ 
++if TRACING
++config DISABLE_TRACE_PRINTK
++	bool "Force disable trace_printk() usage"
++	default y
++	help
++	  When trace_printk() is used in any of the kernel source, it enables
++	  debugging functions which are not desired for production kernel.
++	  Enabling this option will replace trace_printk() with pr_debug().
++	  If in doubt, say Y.
++endif
++
+ #
+ # Minimum requirements an architecture has to meet for us to
+ # be able to offer generic tracing facilities:
+-- 
+2.48.1
+

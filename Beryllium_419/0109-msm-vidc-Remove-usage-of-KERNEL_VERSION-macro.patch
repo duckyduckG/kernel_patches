@@ -1,0 +1,25 @@
+From 2820beb6cd95637598a31af343f4bb02ffcc6bcb Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 7 Jun 2023 02:22:05 +0000
+Subject: [PATCH 109/175] msm: vidc: Remove usage of KERNEL_VERSION macro
+
+---
+ drivers/media/platform/msm/vidc/msm_vidc_internal.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_internal.h b/drivers/media/platform/msm/vidc/msm_vidc_internal.h
+index b2cad6dab3e2..3ef56ab63951 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_internal.h
++++ b/drivers/media/platform/msm/vidc/msm_vidc_internal.h
+@@ -37,7 +37,7 @@
+ #include <linux/timer.h>
+ 
+ #define MSM_VIDC_DRV_NAME "msm_vidc_driver"
+-#define MSM_VIDC_VERSION KERNEL_VERSION(0, 0, 1)
++#define MSM_VIDC_VERSION     ((0 << 16) + (4 << 8) + 19)
+ #define MAX_DEBUGFS_NAME 50
+ #define DEFAULT_TIMEOUT 3
+ #define DEFAULT_HEIGHT 1088
+-- 
+2.48.1
+

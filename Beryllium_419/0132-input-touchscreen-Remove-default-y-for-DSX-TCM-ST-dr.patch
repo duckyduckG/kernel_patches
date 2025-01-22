@@ -1,0 +1,242 @@
+From f16e8068d6415e5517d4ff7262552939f0ad33dc Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Sat, 8 Jan 2022 12:39:56 +0200
+Subject: [PATCH 132/175] input: touchscreen: Remove default y for DSX/TCM/ST
+ drivers
+
+These drivers were initially checked in with default of y,
+while most devices will want to have them disabled.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/input/touchscreen/Kconfig             | 46 -------------------
+ drivers/input/touchscreen/st/Kconfig          | 19 +++-----
+ .../input/touchscreen/synaptics_dsx/Kconfig   | 16 +++++--
+ .../input/touchscreen/synaptics_tcm/Kconfig   |  7 ---
+ 4 files changed, 17 insertions(+), 71 deletions(-)
+
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 3ee51c5d49a7..eb6664fc0432 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -857,17 +857,6 @@ config TOUCHSCREEN_WM97XX_ZYLONITE
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called zylonite-wm97xx.
+ 
+-config SECURE_TOUCH_SYNAPTICS_DSX
+-	bool "Secure Touch"
+-	depends on TOUCHSCREEN_SYNAPTICS_DSX_I2C
+-	help
+-	  Say Y here to enable Secure Touch in supported driver.
+-
+-	  If unsure, say N.
+-
+-	  To compile the supported driver with Secure Touch enabled,
+-	  choose M here.
+-
+ config TOUCHSCREEN_USB_COMPOSITE
+ 	tristate "USB Touchscreen Driver"
+ 	depends on USB_ARCH_HAS_HCD
+@@ -1311,45 +1300,10 @@ config TOUCHSCREEN_ROHM_BU21023
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called bu21023_ts.
+ 
+-config TOUCHSCREEN_ST
+-	tristate "STMicroelectronics Touchscreen Driver"
+-	depends on I2C
+-	default y
+-	help
+-	  Say Y here if you have a STMicroelectronics Touchscreen.
+-
+-	  If unsure, say N.
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called st.
+-
+ source "drivers/input/touchscreen/st/Kconfig"
+ 
+-config TOUCHSCREEN_SYNAPTICS_DSX
+-	bool "Synaptics DSX Touchscreen Driver"
+-	depends on I2C
+-	default y
+-	help
+-	  Say Y here if you have a Synaptics Touchscreen.
+-
+-	  If unsure, say N.
+-
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called synaptics_dsx.
+-
+ source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
+ 
+-config TOUCHSCREEN_SYNAPTICS_TCM
+-	bool "Synaptics TCM Touchscreen Driver"
+-	depends on I2C
+-	default y
+-	help
+-	  Say Y here if you have a Synaptics Touchscreen.
+-
+-	  If unsure, say N.
+-
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called synaptics_tcm.
+-
+ source "drivers/input/touchscreen/synaptics_tcm/Kconfig"
+ 
+ source "drivers/input/touchscreen/focaltech_touch/Kconfig"
+diff --git a/drivers/input/touchscreen/st/Kconfig b/drivers/input/touchscreen/st/Kconfig
+index a3af3d49572d..83705bee294d 100644
+--- a/drivers/input/touchscreen/st/Kconfig
++++ b/drivers/input/touchscreen/st/Kconfig
+@@ -3,16 +3,12 @@
+ # STMicroelectronics touchscreen driver configuration
+ #
+ 
+-#config TOUCHSCREEN_ST
+-#	bool "STMicroelectronics Touchscreen Driver"
+-#	default n
+-#	depends on I2C
+-#	help
+-#	  Say Y here if you have a STMicroelectronics Touchscreen.
+-#	  If unsure, say N.
+-#
+-
+-#if TOUCHSCREEN_ST
++config TOUCHSCREEN_ST
++	bool "STMicroelectronics Touchscreen Driver"
++	depends on I2C
++	help
++	  Say Y here if you have a STMicroelectronics Touchscreen.
++	  If unsure, say N.
+ 
+ config TOUCHSCREEN_ST_I2C
+ 	#tristate "STMicroelectronics i2c touchscreen"
+@@ -21,6 +17,3 @@ config TOUCHSCREEN_ST_I2C
+ 	depends on TOUCHSCREEN_ST
+ 	help
+ 	 This enables support for ST touch panel over I2C based touchscreens.
+-
+-#endif
+-
+diff --git a/drivers/input/touchscreen/synaptics_dsx/Kconfig b/drivers/input/touchscreen/synaptics_dsx/Kconfig
+index cc2d34eed2f4..d73b2cd73d6e 100755
+--- a/drivers/input/touchscreen/synaptics_dsx/Kconfig
++++ b/drivers/input/touchscreen/synaptics_dsx/Kconfig
+@@ -28,7 +28,6 @@ endchoice
+ config TOUCHSCREEN_SYNAPTICS_DSX_CORE
+ 	tristate "Synaptics DSX core driver module"
+ 	depends on I2C || SPI_MASTER
+-	default y
+ 	help
+ 	  Say Y here to enable basic touch reporting functionality.
+ 
+@@ -40,7 +39,6 @@ config TOUCHSCREEN_SYNAPTICS_DSX_CORE
+ config TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV
+ 	tristate "Synaptics DSX RMI device module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_DSX_CORE
+-	default y
+ 	help
+ 	  Say Y here to enable support for direct RMI register access.
+ 
+@@ -52,7 +50,6 @@ config TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV
+ config TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE
+ 	tristate "Synaptics DSX firmware update module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_DSX_CORE
+-	default y
+ 	help
+ 	  Say Y here to enable support for doing firmware update.
+ 
+@@ -64,7 +61,6 @@ config TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE
+ config TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_EXTRA_SYSFS
+ 	bool "Synaptics DSX firmware update sysfs attributes"
+ 	depends on TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE
+-	default y
+ 	help
+ 	  Say Y here to enable support for sysfs attributes for
+ 	  performing firmware update in a development environment.
+@@ -75,7 +71,6 @@ config TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_EXTRA_SYSFS
+ config TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING
+ 	tristate "Synaptics DSX test reporting module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_DSX_CORE
+-	default y
+ 	help
+ 	  Say Y here to enable support for retrieving production test reports.
+ 
+@@ -139,4 +134,15 @@ config TOUCHSCREEN_SYNAPTICS_DSX_DEBUG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called synaptics_dsx_debug.
+ 
++config SECURE_TOUCH_SYNAPTICS_DSX
++	bool "Synaptics Secure Touch"
++	depends on TOUCHSCREEN_SYNAPTICS_DSX_I2C
++	help
++	  Say Y here to enable Secure Touch in supported driver.
++		
++	  If unsure, say N.
++	
++	  To compile the supported driver with Secure Touch enabled,
++	  choose M here.
++
+ endif
+diff --git a/drivers/input/touchscreen/synaptics_tcm/Kconfig b/drivers/input/touchscreen/synaptics_tcm/Kconfig
+index b217f5b6580f..88bd4159967b 100644
+--- a/drivers/input/touchscreen/synaptics_tcm/Kconfig
++++ b/drivers/input/touchscreen/synaptics_tcm/Kconfig
+@@ -3,7 +3,6 @@
+ #
+ menuconfig TOUCHSCREEN_SYNAPTICS_TCM
+ 	bool "Synaptics TCM touchscreen"
+-	default y
+ 	help
+ 	  Say Y here if you have a Synaptics TCM touchscreen connected
+ 	  to your system.
+@@ -42,7 +41,6 @@ endchoice
+ config TOUCHSCREEN_SYNAPTICS_TCM_CORE
+ 	tristate "Synaptics TCM core module"
+ 	depends on I2C || SPI_MASTER
+-	default y
+ 	help
+ 	  Say Y here to enable core functionality.
+ 
+@@ -54,7 +52,6 @@ config TOUCHSCREEN_SYNAPTICS_TCM_CORE
+ config TOUCHSCREEN_SYNAPTICS_TCM_TOUCH
+ 	tristate "Synaptics TCM touch module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_TCM_CORE
+-	default y
+ 	help
+ 	  Say Y here to enable support for touch reporting.
+ 
+@@ -66,7 +63,6 @@ config TOUCHSCREEN_SYNAPTICS_TCM_TOUCH
+ config TOUCHSCREEN_SYNAPTICS_TCM_DEVICE
+ 	tristate "Synaptics TCM device module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_TCM_CORE
+-	default y
+ 	help
+ 	  Say Y here to enable support for TCM device functionality.
+ 
+@@ -89,7 +85,6 @@ config TOUCHSCREEN_SYNAPTICS_TCM_TESTING
+ config TOUCHSCREEN_SYNAPTICS_TCM_REFLASH
+ 	tristate "Synaptics TCM reflash module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_TCM_CORE
+-	default N
+ 	help
+ 	  Say Y here to enable support for reflash functionality.
+ 
+@@ -101,7 +96,6 @@ config TOUCHSCREEN_SYNAPTICS_TCM_REFLASH
+ config TOUCHSCREEN_SYNAPTICS_TCM_RECOVERY
+ 	tristate "Synaptics TCM recovery module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_TCM_CORE
+-	default N
+ 	help
+ 	  Say Y here to enable support for recovery functionality.
+ 
+@@ -124,7 +118,6 @@ config TOUCHSCREEN_SYNAPTICS_TCM_ZEROFLASH
+ config TOUCHSCREEN_SYNAPTICS_TCM_DIAGNOSTICS
+ 	tristate "Synaptics TCM diagnostics module"
+ 	depends on TOUCHSCREEN_SYNAPTICS_TCM_CORE
+-	default y
+ 	help
+ 	  Say Y here to enable support for diagnostics functionality.
+ 
+-- 
+2.48.1
+

@@ -1,0 +1,32 @@
+From 065c0dd7a019660bd95631319da1ea5f86c559ae Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Mon, 3 Jul 2023 04:08:53 +0300
+Subject: [PATCH 010/175] techpack: display: Disable SDE encoder during cont
+ splash
+
+This change prevents the 3 fps behavior until the first
+cycle of turning the display off/on.
+Reference https://github.com/sonyxperiadev/kernel-copyleft/blob/52.0.A.3.xxx/drivers/gpu/drm/msm/sde/sde_encoder_phys_cmd.c#L388-L390
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ techpack/display/msm/sde/sde_encoder_phys_cmd.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/techpack/display/msm/sde/sde_encoder_phys_cmd.c b/techpack/display/msm/sde/sde_encoder_phys_cmd.c
+index f9f3873e3d11..454e83694db4 100644
+--- a/techpack/display/msm/sde/sde_encoder_phys_cmd.c
++++ b/techpack/display/msm/sde/sde_encoder_phys_cmd.c
+@@ -404,7 +404,9 @@ static void sde_encoder_phys_cmd_cont_splash_mode_set(
+ 	}
+ 
+ 	phys_enc->cached_mode = *adj_mode;
++#ifndef CONFIG_ARCH_SDM845
+ 	phys_enc->enable_state = SDE_ENC_ENABLED;
++#endif
+ 
+ 	if (!phys_enc->hw_ctl || !phys_enc->hw_pp) {
+ 		SDE_DEBUG("invalid ctl:%d pp:%d\n",
+-- 
+2.48.1
+

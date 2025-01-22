@@ -1,0 +1,28 @@
+From 59b3f0525aa43ee5ded69a76589770ab0fba3886 Mon Sep 17 00:00:00 2001
+From: me-cafebabe <me.cafebabe@gmail.com>
+Date: Fri, 28 Apr 2023 05:33:30 +0800
+Subject: [PATCH 011/175] techpack: Search for symlinks too
+
+Change-Id: I152b2ea59308052e5863c708f51e91ecdcef397c
+---
+ techpack/Kbuild | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/techpack/Kbuild b/techpack/Kbuild
+index d5f247d78d85..804ba279e459 100644
+--- a/techpack/Kbuild
++++ b/techpack/Kbuild
+@@ -1,8 +1,8 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ TECHPACK?=y
+ 
+-techpack-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -not -name ".*")
++techpack-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -o -type l -not -name ".*")
+ obj-${TECHPACK} += stub/ $(addsuffix /,$(subst $(srctree)/techpack/,,$(techpack-dirs)))
+ 
+-techpack-header-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -not -name ".*")
++techpack-header-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -o -type l -not -name ".*")
+ header-${TECHPACK} += $(addsuffix /include/uapi/,$(subst $(srctree)/techpack/,,$(techpack-header-dirs)))
+-- 
+2.48.1
+

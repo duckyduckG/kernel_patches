@@ -1,0 +1,873 @@
+From bf8b967d108cf43dff9d34a434c34d5eeb4df4f7 Mon Sep 17 00:00:00 2001
+From: tanz3 <3222839916@qq.com>
+Date: Thu, 20 Jul 2023 02:43:57 -0400
+Subject: [PATCH 149/175] drivers: usb: Import xiaomi modifications * From
+ dipper-q-oss
+
+Signed-off-by: tanz3 <3222839916@qq.com>
+---
+ drivers/usb/core/hub.c                   |  24 ++-
+ drivers/usb/dwc3/dwc3-msm.c              |  20 ++-
+ drivers/usb/gadget/configfs.c            |  22 +++
+ drivers/usb/gadget/function/f_gsi.c      |   6 +-
+ drivers/usb/gadget/function/f_qc_rndis.c |  12 +-
+ drivers/usb/host/xhci-plat.c             |  11 ++
+ drivers/usb/host/xhci-ring.c             |  18 ++
+ drivers/usb/pd/policy_engine.c           | 140 ++++++++++++++++
+ drivers/usb/phy/phy-msm-qusb-v2.c        | 202 ++++++++++++++++++++++-
+ 9 files changed, 436 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index e5fd1a2912a5..a13ad6418cab 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -125,6 +125,10 @@ static int hub_port_disable(struct usb_hub *hub, int port1, int set_state);
+ static bool hub_port_warm_reset_required(struct usb_hub *hub, int port1,
+ 		u16 portstatus);
+ 
++unsigned int connected_usb_idVendor;
++unsigned int connected_usb_idProduct;
++unsigned int connected_usb_devnum = 0xff;
++
+ static inline char *portspeed(struct usb_hub *hub, int portstatus)
+ {
+ 	if (hub_is_superspeedplus(hub->hdev))
+@@ -2196,6 +2200,14 @@ void usb_disconnect(struct usb_device **pdev)
+ 	dev_info(&udev->dev, "USB disconnect, device number %d\n",
+ 			udev->devnum);
+ 
++	if (connected_usb_devnum == udev->devnum)
++	{
++		dev_info(&udev->dev, "xiaomi headset removed, devnum %d\n", udev->devnum);
++		connected_usb_idVendor = 0;
++		connected_usb_idProduct = 0;
++		connected_usb_devnum = 0xff;
++	}
++
+ 	/*
+ 	 * Ensure that the pm runtime code knows that the USB device
+ 	 * is in the process of being disconnected.
+@@ -2534,6 +2546,15 @@ int usb_new_device(struct usb_device *udev)
+ 	udev->dev.devt = MKDEV(USB_DEVICE_MAJOR,
+ 			(((udev->bus->busnum-1) * 128) + (udev->devnum-1)));
+ 
++	if ((0x2717 == le16_to_cpu(udev->descriptor.idVendor))
++			&&(0x3801 == le16_to_cpu(udev->descriptor.idProduct)))
++	{
++		connected_usb_idVendor = le16_to_cpu(udev->descriptor.idVendor);
++		connected_usb_idProduct = le16_to_cpu(udev->descriptor.idProduct);
++		connected_usb_devnum = udev->devnum;
++		dev_info(&udev->dev, "xiaomi headset identified, devnum %d\n", udev->devnum);
++	}
++
+ 	/* Tell the world! */
+ 	announce_device(udev);
+ 
+@@ -4931,7 +4952,8 @@ hub_port_init(struct usb_hub *hub, struct usb_device *udev, int port1,
+ 	/* notify HCD that we have a device connected and addressed */
+ 	if (hcd->driver->update_device)
+ 		hcd->driver->update_device(hcd, udev);
+-	hub_set_initial_usb2_lpm_policy(udev);
++	if (0) /*disable USB 2.0 Link PM to fix long time usb storage recognition issue*/
++		hub_set_initial_usb2_lpm_policy(udev);
+ fail:
+ 	if (retval) {
+ 		hub_port_disable(hub, port1, 0);
+diff --git a/drivers/usb/dwc3/dwc3-msm.c b/drivers/usb/dwc3/dwc3-msm.c
+index 8e0b552138fb..6996054f25ed 100644
+--- a/drivers/usb/dwc3/dwc3-msm.c
++++ b/drivers/usb/dwc3/dwc3-msm.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ #include <linux/module.h>
+@@ -51,7 +52,7 @@ static bool bc12_compliance;
+ module_param(bc12_compliance, bool, 0644);
+ MODULE_PARM_DESC(bc12_compliance, "Disable sending dp pulse for CDP");
+ 
+-#define SDP_CONNETION_CHECK_TIME 10000 /* in ms */
++#define SDP_CONNETION_CHECK_TIME 5000 /* in ms */
+ #define EXTCON_SYNC_EVENT_TIMEOUT_MS 1500 /* in ms */
+ 
+ /* time out to wait for USB cable status notification (in ms)*/
+@@ -3346,6 +3347,8 @@ static void check_for_sdp_connection(struct work_struct *w)
+ 	struct dwc3_msm *mdwc =
+ 		container_of(w, struct dwc3_msm, sdp_check.work);
+ 	struct dwc3 *dwc = platform_get_drvdata(mdwc->dwc3);
++	union power_supply_propval pval = {0};
++	int ret;
+ 
+ 	if (!mdwc->vbus_active)
+ 		return;
+@@ -3361,6 +3364,15 @@ static void check_for_sdp_connection(struct work_struct *w)
+ 	if (dwc->gadget.state < USB_STATE_DEFAULT &&
+ 		dwc3_gadget_get_link_state(dwc) != DWC3_LINK_STATE_CMPLY) {
+ 		mdwc->vbus_active = 0;
++		if (!mdwc->usb_psy)
++			mdwc->usb_psy = power_supply_get_by_name("usb");
++		if (mdwc->usb_psy) {
++			pval.intval = 1;
++			ret = power_supply_set_property(mdwc->usb_psy,
++					POWER_SUPPLY_PROP_RERUN_APSD, &pval);
++			if (ret)
++				dev_dbg(mdwc->dev, "error when set property\n");
++		}
+ 		dbg_event(0xFF, "Q RW SPD CHK", mdwc->vbus_active);
+ 		queue_work(mdwc->dwc3_wq, &mdwc->resume_work);
+ 	}
+@@ -4634,6 +4646,7 @@ static int get_psy_type(struct dwc3_msm *mdwc)
+ 	return pval.intval;
+ }
+ 
++#define ENUMERATE_MA		500
+ static int dwc3_msm_gadget_vbus_draw(struct dwc3_msm *mdwc, unsigned int mA)
+ {
+ 	union power_supply_propval pval = {0};
+@@ -4656,7 +4669,10 @@ static int dwc3_msm_gadget_vbus_draw(struct dwc3_msm *mdwc, unsigned int mA)
+ 		goto set_prop;
+ 	}
+ 
+-	if (mdwc->max_power == mA || psy_type != POWER_SUPPLY_TYPE_USB)
++	if (mdwc->max_power == mA
++			|| (psy_type == POWER_SUPPLY_TYPE_USB_CDP)
++			|| ((psy_type != POWER_SUPPLY_TYPE_USB)
++				&& (mA != ENUMERATE_MA)))
+ 		return 0;
+ 
+ 	/* Set max current limit in uA */
+diff --git a/drivers/usb/gadget/configfs.c b/drivers/usb/gadget/configfs.c
+index 07bbc5e1b876..a79ea713f7b9 100644
+--- a/drivers/usb/gadget/configfs.c
++++ b/drivers/usb/gadget/configfs.c
+@@ -9,6 +9,7 @@
+ #include "configfs.h"
+ #include "u_f.h"
+ #include "u_os_desc.h"
++#include <linux/power_supply.h>
+ 
+ #ifdef CONFIG_USB_CONFIGFS_UEVENT
+ #include <linux/platform_device.h>
+@@ -1436,6 +1437,26 @@ static int configfs_composite_bind(struct usb_gadget *gadget,
+ 	return ret;
+ }
+ 
++static int smblib_canncel_recheck(void)
++{
++	union power_supply_propval pval = {0};
++	struct power_supply     *usb_psy = NULL;
++
++	if (!usb_psy) {
++		usb_psy = power_supply_get_by_name("usb");
++		if (!usb_psy) {
++			pr_err("Could not get usb psy by canncel recheck\n");
++			return -ENODEV;
++		}
++	}
++
++	pval.intval = 0;
++	power_supply_set_property(usb_psy, POWER_SUPPLY_PROP_TYPE_RECHECK,
++			&pval);
++
++	return pval.intval;
++}
++
+ #ifdef CONFIG_USB_CONFIGFS_UEVENT
+ static void android_work(struct work_struct *data)
+ {
+@@ -1473,6 +1494,7 @@ static void android_work(struct work_struct *data)
+ 		kobject_uevent_env(&gi->dev->kobj,
+ 					KOBJ_CHANGE, configured);
+ 		pr_info("%s: sent uevent %s\n", __func__, configured[0]);
++		smblib_canncel_recheck();
+ 		uevent_sent = true;
+ 	}
+ 
+diff --git a/drivers/usb/gadget/function/f_gsi.c b/drivers/usb/gadget/function/f_gsi.c
+index f42d98c5f6d4..ed2470502e4b 100644
+--- a/drivers/usb/gadget/function/f_gsi.c
++++ b/drivers/usb/gadget/function/f_gsi.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ #include <linux/module.h>
+@@ -2880,12 +2881,7 @@ static int gsi_bind(struct usb_configuration *c, struct usb_function *f)
+ 		 * drivers published by usbif.
+ 		 * Linux rndis host driver supports MISC_ACTIVE_SYNC and
+ 		 * WIRELESS_CONTROLLER_REMOTE_NDIS as of now.
+-		 * Default to rndis over ethernet which loads NDIS6 drivers
+-		 * for windows7/windows10 to avoid data stall issues
+ 		 */
+-		if (gsi->rndis_id == RNDIS_ID_UNKNOWN)
+-			gsi->rndis_id = MISC_RNDIS_OVER_ETHERNET;
+-
+ 		switch (gsi->rndis_id) {
+ 		default:
+ 			/* fall throug */
+diff --git a/drivers/usb/gadget/function/f_qc_rndis.c b/drivers/usb/gadget/function/f_qc_rndis.c
+index 0bdf5a22263a..763caff61171 100644
+--- a/drivers/usb/gadget/function/f_qc_rndis.c
++++ b/drivers/usb/gadget/function/f_qc_rndis.c
+@@ -164,9 +164,9 @@ static struct usb_interface_descriptor rndis_qc_control_intf = {
+ 	/* .bInterfaceNumber = DYNAMIC */
+ 	/* status endpoint is optional; this could be patched later */
+ 	.bNumEndpoints =	1,
+-	.bInterfaceClass =	USB_CLASS_WIRELESS_CONTROLLER,
+-	.bInterfaceSubClass =   0x01,
+-	.bInterfaceProtocol =   0x03,
++	.bInterfaceClass =	USB_CLASS_MISC,
++	.bInterfaceSubClass =   0x04,
++	.bInterfaceProtocol =   0x01,
+ 	/* .iInterface = DYNAMIC */
+ };
+ 
+@@ -225,9 +225,9 @@ rndis_qc_iad_descriptor = {
+ 	.bDescriptorType =	USB_DT_INTERFACE_ASSOCIATION,
+ 	.bFirstInterface =	0, /* XXX, hardcoded */
+ 	.bInterfaceCount =	2, /* control + data */
+-	.bFunctionClass =	USB_CLASS_WIRELESS_CONTROLLER,
+-	.bFunctionSubClass =	0x01,
+-	.bFunctionProtocol =	0x03,
++	.bFunctionClass =	USB_CLASS_MISC,
++	.bFunctionSubClass =	0x04,
++	.bFunctionProtocol =	0x01,
+ 	/* .iFunction = DYNAMIC */
+ };
+ 
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 94edbf487430..f21998995d2c 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -3,6 +3,7 @@
+  * xhci-plat.c - xHCI host controller driver platform Bus Glue.
+  *
+  * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com
++ * Copyright (C) 2019 XiaoMi, Inc.
+  * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+  *
+  * A lot of code borrowed from the Linux xHCI driver.
+@@ -180,6 +181,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ {
+ 	const struct xhci_plat_priv *priv_match;
+ 	const struct hc_driver	*driver;
++	struct device		*dwc = NULL;
+ 	struct device		*sysdev, *tmpdev;
+ 	struct xhci_hcd		*xhci;
+ 	struct resource         *res;
+@@ -209,6 +211,10 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 		if (is_of_node(sysdev->fwnode) ||
+ 			is_acpi_device_node(sysdev->fwnode))
+ 			break;
++
++	if (sysdev->parent && !sysdev->of_node && sysdev->parent->of_node)
++		dwc =sysdev->parent;
++
+ #ifdef CONFIG_PCI
+ 		else if (sysdev->bus == &pci_bus_type)
+ 			break;
+@@ -342,6 +348,11 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	if (device_property_read_u32(&pdev->dev, "usb-core-id", &xhci->core_id))
+ 		xhci->core_id = -EINVAL;
+ 
++	if (dwc)
++		hcd->usb_phy = devm_usb_get_phy_by_phandle(dwc, "usb-phy", 0);
++	else
++		hcd->usb_phy = devm_usb_get_phy_by_phandle(sysdev, "usb-phy", 0);
++
+ 	hcd->usb_phy = devm_usb_get_phy_by_phandle(sysdev, "usb-phy", 0);
+ 	if (IS_ERR(hcd->usb_phy)) {
+ 		ret = PTR_ERR(hcd->usb_phy);
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index d29e82fac69b..a214239c1faf 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3,6 +3,7 @@
+  * xHCI host controller driver
+  *
+  * Copyright (C) 2008 Intel Corp.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  *
+  * Author: Sarah Sharp
+  * Some code borrowed from the Linux EHCI driver.
+@@ -58,6 +59,9 @@
+ #include "xhci.h"
+ #include "xhci-trace.h"
+ #include "xhci-mtk.h"
++extern void kick_usbpd_vbus_sm(void);
++extern unsigned int connected_usb_idVendor;
++extern int connected_usb_idProduct;
+ 
+ /*
+  * Returns zero if the TRB isn't in this segment, otherwise it returns the DMA
+@@ -287,6 +291,8 @@ void xhci_ring_cmd_db(struct xhci_hcd *xhci)
+ 
+ static bool xhci_mod_cmd_timer(struct xhci_hcd *xhci, unsigned long delay)
+ {
++	if (connected_usb_idVendor == 0x2717 && connected_usb_idProduct == 0x3801)
++		delay = msecs_to_jiffies(1000);
+ 	return mod_delayed_work(system_wq, &xhci->cmd_timer, delay);
+ }
+ 
+@@ -343,6 +349,7 @@ static int xhci_abort_cmd_ring(struct xhci_hcd *xhci, unsigned long flags)
+ 	union xhci_trb *new_deq		= xhci->cmd_ring->dequeue;
+ 	u64 crcr;
+ 	int ret;
++	int delay;
+ 
+ 	xhci_dbg(xhci, "Abort command ring\n");
+ 
+@@ -369,8 +376,19 @@ static int xhci_abort_cmd_ring(struct xhci_hcd *xhci, unsigned long flags)
+ 	 * In the future we should distinguish between -ENODEV and -ETIMEDOUT
+ 	 * and try to recover a -ETIMEDOUT with a host controller reset.
+ 	 */
++
++	if (connected_usb_idVendor == 0x2717 && connected_usb_idProduct == 0x3801) {
++		delay = 500 * 1000;
++		pr_err("xhci_abort_cmd_ring em headset\n");
++	}
++	else {
++		delay = 5000 * 1000;
++		pr_err("xhci_abort_cmd_ring other\n");
++	}
++
+ 	ret = xhci_handshake_check_state(xhci, &xhci->op_regs->cmd_ring,
+ 			CMD_RING_RUNNING, 0, 1000 * 1000);
++
+ 	if (ret < 0) {
+ 		xhci_err(xhci, "Abort failed to stop command ring: %d\n", ret);
+ 		xhci_halt(xhci);
+diff --git a/drivers/usb/pd/policy_engine.c b/drivers/usb/pd/policy_engine.c
+index 6dca69d619b4..8c7068e9c7e6 100644
+--- a/drivers/usb/pd/policy_engine.c
++++ b/drivers/usb/pd/policy_engine.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ #include <linux/completion.h>
+@@ -353,6 +354,11 @@ static void *usbpd_ipc_log;
+ 
+ #define PD_MIN_SINK_CURRENT	900
+ 
++#define PD_VBUS_MAX_VOLTAGE_LIMIT 9000000
++
++/* add for limit APDO voltage to maxium 5800mV for better efficiency */
++#define MAX_ALLOWED_APDO_UV	5800000
++
+ static const u32 default_src_caps[] = { 0x36019096 };	/* VSafe5V @ 1.5A */
+ static const u32 default_snk_caps[] = { 0x2601912C };	/* VSafe5V @ 3A */
+ 
+@@ -382,6 +388,7 @@ struct usbpd {
+ 	struct work_struct	sm_work;
+ 	struct work_struct	start_periph_work;
+ 	struct work_struct	restart_host_work;
++	struct delayed_work	vbus_work;
+ 	struct hrtimer		timer;
+ 	bool			sm_queued;
+ 
+@@ -449,6 +456,8 @@ struct usbpd {
+ 	struct regulator	*vconn;
+ 	bool			vbus_enabled;
+ 	bool			vconn_enabled;
++	u32			limit_pd_vbus;
++	u32			pd_vbus_max_limit;
+ 
+ 	u8			tx_msgid[SOPII_MSG + 1];
+ 	u8			rx_msgid[SOPII_MSG + 1];
+@@ -865,6 +874,11 @@ static int pd_select_pdo(struct usbpd *pd, int pdo_pos, int uv, int ua)
+ 
+ 		pd->requested_voltage =
+ 			PD_SRC_PDO_FIXED_VOLTAGE(pdo) * 50 * 1000;
++
++		/*if limit_pd_vbus is enabled, pd request uv will less than pd vbus max*/
++		if (pd->limit_pd_vbus && pd->requested_voltage > pd->pd_vbus_max_limit)
++			return -ENOTSUPP;
++
+ 		pd->rdo = PD_RDO_FIXED(pdo_pos, 0, mismatch, 1, 1, curr / 10,
+ 				max_current / 10);
+ 	} else if (type == PD_SRC_PDO_TYPE_AUGMENTED) {
+@@ -877,6 +891,18 @@ static int pd_select_pdo(struct usbpd *pd, int pdo_pos, int uv, int ua)
+ 		}
+ 
+ 		curr = ua / 1000;
++
++		/*if limit_pd_vbus is enabled, pd request uv will less than pd vbus max*/
++		if (pd->limit_pd_vbus && uv > pd->pd_vbus_max_limit)
++			uv = pd->pd_vbus_max_limit;
++
++		/*
++		 * set maxium allowed request voltage for apdo to 5.8V
++		 * for bettery charging efficiency
++		 */
++		if (uv >= MAX_ALLOWED_APDO_UV)
++			uv = MAX_ALLOWED_APDO_UV;
++
+ 		pd->requested_voltage = uv;
+ 		pd->rdo = PD_RDO_AUGMENTED(pdo_pos, mismatch, 1, 1,
+ 				uv / 20000, ua / 50000);
+@@ -4588,6 +4614,90 @@ static ssize_t get_battery_status_show(struct device *dev,
+ 	return scnprintf(buf, PAGE_SIZE, "0x%08x\n", pd->battery_sts_dobj);
+ }
+ static DEVICE_ATTR_RW(get_battery_status);
++struct usbpd *pd_lobal;
++unsigned int pd_vbus_ctrl;
++
++module_param(pd_vbus_ctrl, uint, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(pd_vbus_ctrl, "PD VBUS CONTROL");
++
++
++void pd_vbus_reset(struct usbpd *pd)
++{
++	if (!pd)
++	{
++		pr_err("pd_vbus_reset, pd is null\n");
++		return;
++	}
++	if (pd->vbus_enabled) {
++		pr_err("pd_vbus_reset execute\n");
++		regulator_disable(pd->vbus);
++		pd->vbus_enabled = false;
++		stop_usb_host(pd);
++		pd_vbus_ctrl = 500;
++		msleep(pd_vbus_ctrl);
++		start_usb_host(pd, true);
++		enable_vbus(pd);
++	}
++	else
++	{
++		pr_err("pd_vbus is not enabled yet\n");
++	}
++}
++
++/* Handles VBUS off on */
++void usbpd_vbus_sm(struct work_struct *w)
++{
++	struct usbpd *pd = pd_lobal;
++	/* container_of(w, struct usbpd, vbus_work) */
++
++	pr_err("usbpd_vbus_sm handle state %s, vbus %d\n",
++			usbpd_state_strings[pd->current_state],pd->vbus_enabled);
++
++	/* to be done, pd->sm_queued = false; */
++	pd_vbus_reset(pd);
++}
++
++void kick_usbpd_vbus_sm(void)
++{
++	pm_stay_awake(&pd_lobal->dev);
++
++	/* to be done pd_lobal->sm_queued = true;*/
++	pr_err("kick_usbpd_vbus_sm handle state %s, vbus %d\n",
++			usbpd_state_strings[pd_lobal->current_state],pd_lobal->vbus_enabled);
++
++	queue_delayed_work(pd_lobal->wq, &(pd_lobal->vbus_work), msecs_to_jiffies(200));
++}
++
++static ssize_t pd_vbus_show(struct device *dev, struct device_attribute *attr,
++		char *buf)
++{
++	struct usbpd *pd = dev_get_drvdata(dev);
++	pr_err("pd_vbus_show handle state %s, vbus %d\n",
++			usbpd_state_strings[pd_lobal->current_state],pd_lobal->vbus_enabled);
++
++	pd_vbus_reset(pd);
++
++	return 0;
++}
++
++
++static ssize_t pd_vbus_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t size)
++{
++	int val = 0;
++
++	if (sscanf(buf, "%d\n", &val) != 0)
++	{
++		pr_err("pd_vbus_store input err\n");
++	}
++	pr_err("pd_vbus_store handle state %s, vbus %d,val %d\n",
++			usbpd_state_strings[pd_lobal->current_state],pd_lobal->vbus_enabled,val);
++	kick_usbpd_vbus_sm();
++
++	return size;
++}
++
++static DEVICE_ATTR_RW(pd_vbus);
+ 
+ static struct attribute *usbpd_attrs[] = {
+ 	&dev_attr_contract.attr,
+@@ -4613,6 +4723,7 @@ static struct attribute *usbpd_attrs[] = {
+ 	&dev_attr_get_pps_status.attr,
+ 	&dev_attr_get_battery_cap.attr,
+ 	&dev_attr_get_battery_status.attr,
++	&dev_attr_pd_vbus.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(usbpd);
+@@ -4624,6 +4735,16 @@ static struct class usbpd_class = {
+ 	.dev_groups = usbpd_groups,
+ };
+ 
++void notify_typec_mode_changed_for_pd(void)
++{
++        /* force update as usb present is changed to absent */
++        if (pd_lobal) {
++                pr_info("notify_typec_mode_changed_for_pd\n");
++                psy_changed(&pd_lobal->psy_nb, PSY_EVENT_PROP_CHANGED, pd_lobal->usb_psy);
++        }
++}
++EXPORT_SYMBOL_GPL(notify_typec_mode_changed_for_pd);
++
+ static int match_usbpd_device(struct device *dev, const void *data)
+ {
+ 	return dev->parent == data;
+@@ -4738,6 +4859,7 @@ struct usbpd *usbpd_create(struct device *parent)
+ 	INIT_WORK(&pd->sm_work, usbpd_sm);
+ 	INIT_WORK(&pd->start_periph_work, start_usb_peripheral_work);
+ 	INIT_WORK(&pd->restart_host_work, restart_usb_host_work);
++	INIT_DELAYED_WORK(&pd->vbus_work,usbpd_vbus_sm);
+ 	hrtimer_init(&pd->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 	pd->timer.function = pd_timeout;
+ 	mutex_init(&pd->swap_lock);
+@@ -4796,6 +4918,22 @@ struct usbpd *usbpd_create(struct device *parent)
+ 	if (device_property_read_bool(parent, "qcom,no-usb3-dp-concurrency"))
+ 		pd->no_usb3dp_concurrency = true;
+ 
++	ret = of_property_read_u32(parent->of_node, "mi,limit_pd_vbus",
++			&pd->limit_pd_vbus);
++	if (ret) {
++		usbpd_err(&pd->dev, "failed to read pd vbus limit\n");
++		pd->limit_pd_vbus = false;
++	}
++
++	if (pd->limit_pd_vbus) {
++		ret = of_property_read_u32(parent->of_node, "mi,pd_vbus_max_limit",
++				&pd->pd_vbus_max_limit);
++		if (ret) {
++			usbpd_err(&pd->dev, "failed to read pd vbus max limit\n");
++			pd->pd_vbus_max_limit = PD_VBUS_MAX_VOLTAGE_LIMIT;
++		}
++	}
++
+ 	pd->num_sink_caps = device_property_read_u32_array(parent,
+ 			"qcom,default-sink-caps", NULL, 0);
+ 	if (pd->num_sink_caps > 0) {
+@@ -4883,6 +5021,8 @@ struct usbpd *usbpd_create(struct device *parent)
+ 	/* force read initial power_supply values */
+ 	psy_changed(&pd->psy_nb, PSY_EVENT_PROP_CHANGED, pd->usb_psy);
+ 
++	pd_lobal = pd;
++
+ 	return pd;
+ 
+ del_inst:
+diff --git a/drivers/usb/phy/phy-msm-qusb-v2.c b/drivers/usb/phy/phy-msm-qusb-v2.c
+index dd21f2a64c7f..6dd8ecf7920e 100644
+--- a/drivers/usb/phy/phy-msm-qusb-v2.c
++++ b/drivers/usb/phy/phy-msm-qusb-v2.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ #include <linux/module.h>
+@@ -123,12 +124,20 @@ struct qusb_phy {
+ 	int			qusb_phy_reg_offset_cnt;
+ 
+ 	u32			tune_val;
++	u32			tune_pll_bias;
++	u32			bias_ctrl_val;
++	u32			override_tune1_val;
++	int			tune_efuse_correction;
+ 	int			efuse_bit_pos;
+ 	int			efuse_num_of_bits;
+ 
+ 	bool			cable_connected;
+ 	bool			suspended;
+ 	bool			dpdm_enable;
++	bool			efuse_pll_bias;
++	bool			efuse_pll_bias_host;
++	bool			need_override_tune1;
++	bool			need_override_host_tune1;
+ 
+ 	struct regulator_desc	dpdm_rdesc;
+ 	struct regulator_dev	*dpdm_rdev;
+@@ -146,12 +155,23 @@ struct qusb_phy {
+ 	int			phy_pll_reset_seq_len;
+ 	int			*emu_dcm_reset_seq;
+ 	int			emu_dcm_reset_seq_len;
++	int			*efuse_pll_bias_seq;
++	int			efuse_pll_bias_seq_len;
++	int			*override_tune1_seq;
++	int			override_tune1_seq_len;
++
++	int			*efuse_pll_bias_seq_host;
++	int			efuse_pll_bias_seq_host_len;
++	int			*override_tune1_seq_host;
++	int			override_tune1_seq_host_len;
+ 
+ 	/* override TUNEX registers value */
+ 	struct dentry		*root;
+ 	u8			tune[5];
+ 	u8                      bias_ctrl2;
+ 
++	u8                      imp_ctrl;
++	u8                      pll_bias;
+ 	bool			override_bias_ctrl2;
+ 
+ 	struct hrtimer		timer;
+@@ -429,6 +449,7 @@ static void qusb_phy_get_tune1_param(struct qusb_phy *qphy)
+ {
+ 	u8 reg;
+ 	u32 bit_mask = 1;
++	int i;
+ 
+ 	pr_debug("%s(): num_of_bits:%d bit_pos:%d\n", __func__,
+ 				qphy->efuse_num_of_bits,
+@@ -447,6 +468,50 @@ static void qusb_phy_get_tune1_param(struct qusb_phy *qphy)
+ 
+ 	qphy->tune_val = TUNE_VAL_MASK(qphy->tune_val,
+ 				qphy->efuse_bit_pos, bit_mask);
++
++	if (qphy->tune_efuse_correction) {
++		int corrected_val = qphy->tune_val + qphy->tune_efuse_correction;
++		if (corrected_val < 0)
++			qphy->tune_val = 0;
++		else
++			qphy->tune_val = min_t(unsigned, corrected_val, 0x7);
++		pr_info("%s(): adjust tune1 value to:%d, correction value = %d\n",
++							__func__, qphy->tune_val, qphy->tune_efuse_correction);
++	}
++
++	qphy->tune_pll_bias = 0;
++	if (qphy->phy.flags & PHY_HOST_MODE) {
++		if (qphy->efuse_pll_bias_host) {
++			for (i = 0; i < qphy->efuse_pll_bias_seq_host_len; i += 2) {
++				if (qphy->efuse_pll_bias_seq_host[i] == qphy->tune_val)
++					qphy->tune_pll_bias = qphy->efuse_pll_bias_seq_host[i+1];
++			}
++		}
++
++		if (qphy->need_override_host_tune1) {
++			for (i = 0; i < qphy->override_tune1_seq_host_len; i += 2) {
++				if (qphy->override_tune1_seq_host[i] == qphy->tune_val)
++					qphy->override_tune1_val = qphy->override_tune1_seq_host[i+1];
++			}
++		}
++
++	} else {
++		if (qphy->efuse_pll_bias) {
++			for (i = 0; i < qphy->efuse_pll_bias_seq_len; i += 2) {
++				if (qphy->efuse_pll_bias_seq[i] == qphy->tune_val)
++					qphy->tune_pll_bias = qphy->efuse_pll_bias_seq[i+1];
++			}
++
++		}
++
++		if (qphy->need_override_tune1) {
++			for (i = 0; i < qphy->override_tune1_seq_len; i += 2) {
++				if (qphy->override_tune1_seq[i] == qphy->tune_val)
++					qphy->override_tune1_val = qphy->override_tune1_seq[i+1];
++			}
++		}
++	}
++
+ 	reg = readb_relaxed(qphy->base + qphy->phy_reg[PORT_TUNE1]);
+ 	reg = reg & 0x0f;
+ 	reg |= (qphy->tune_val << 4);
+@@ -630,10 +695,17 @@ static int qusb_phy_init(struct usb_phy *phy)
+ 	if (qphy->efuse_reg) {
+ 		qusb_phy_get_tune1_param(qphy);
+ 
+-		pr_debug("%s(): Programming TUNE1 parameter as:%x\n", __func__,
++		pr_info("%s(): Programming TUNE1 parameter as:%x\n", __func__,
+ 				qphy->tune_val);
+ 		writel_relaxed(qphy->tune_val,
+ 				qphy->base + qphy->phy_reg[PORT_TUNE1]);
++		pr_info("%s(): Override TUNE1 parameter as:%x\n", __func__,
++				qphy->override_tune1_val);
++		pr_info("%s(): Programming pll_bias parameter as:%x\n", __func__,
++				qphy->tune_pll_bias);
++		if (qphy->override_tune1_val)
++			writel_relaxed(qphy->override_tune1_val,
++						qphy->base + qphy->phy_reg[PORT_TUNE1]);
+ 	}
+ 
+ 	/* if debugfs based tunex params are set, use that value. */
+@@ -644,10 +716,14 @@ static int qusb_phy_init(struct usb_phy *phy)
+ 							(4 * p_index));
+ 	}
+ 
+-	if (qphy->refgen_north_bg_reg && qphy->override_bias_ctrl2)
+-		if (readl_relaxed(qphy->refgen_north_bg_reg) & BANDGAP_BYPASS)
+-			writel_relaxed(BIAS_CTRL_2_OVERRIDE_VAL,
+-				qphy->base + qphy->phy_reg[BIAS_CTRL_2]);
++	if (qphy->imp_ctrl)
++		writel_relaxed(qphy->imp_ctrl, qphy->base + 0x220);
++
++	if (qphy->tune_pll_bias)
++		writel_relaxed(qphy->tune_pll_bias, qphy->base + 0x198);
++	if (qphy->pll_bias)
++		writel_relaxed(qphy->pll_bias, qphy->base + 0x198);
++
+ 
+ 	if (qphy->bias_ctrl2)
+ 		writel_relaxed(qphy->bias_ctrl2,
+@@ -673,6 +749,7 @@ static int qusb_phy_init(struct usb_phy *phy)
+ 		dev_err(phy->dev, "QUSB PHY PLL LOCK fails:%x\n", reg);
+ 		WARN_ON(1);
+ 	}
++	qphy->tune_val = 0;
+ 	return 0;
+ }
+ 
+@@ -1047,6 +1124,24 @@ static int qusb_phy_create_debugfs(struct qusb_phy *qphy)
+ 		}
+ 	}
+ 
++	file = debugfs_create_x8("imp_ctrl", 0644, qphy->root,
++						&qphy->imp_ctrl);
++		if (IS_ERR_OR_NULL(file)) {
++			dev_err(qphy->phy.dev,
++				"can't create debugfs entry for %s\n", name);
++			debugfs_remove_recursive(qphy->root);
++			ret = ENOMEM;
++			goto create_err;
++		}
++	file = debugfs_create_x8("pll_bias", 0644, qphy->root,
++						&qphy->pll_bias);
++		if (IS_ERR_OR_NULL(file)) {
++			dev_err(qphy->phy.dev,
++				"can't create debugfs entry for %s\n", name);
++			debugfs_remove_recursive(qphy->root);
++			ret = ENOMEM;
++			goto create_err;
++		}
+ 	file = debugfs_create_x8("bias_ctrl2", 0644, qphy->root,
+ 						&qphy->bias_ctrl2);
+ 	if (IS_ERR_OR_NULL(file)) {
+@@ -1134,12 +1229,109 @@ static int qusb_phy_probe(struct platform_device *pdev)
+ 						"qcom,efuse-num-bits",
+ 						&qphy->efuse_num_of_bits);
+ 			}
++			of_property_read_u32(dev->of_node,
++						"qcom,tune-efuse-correction",
++						&qphy->tune_efuse_correction);
+ 
+ 			if (ret) {
+ 				dev_err(dev,
+ 				"DT Value for efuse is invalid.\n");
+ 				return -EINVAL;
+ 			}
++			qphy->efuse_pll_bias = of_property_read_bool(dev->of_node, "mi,efuse-pll-bias");
++			qphy->need_override_tune1 = of_property_read_bool(dev->of_node,
++						"mi,need-override_tune1");
++			size = 0;
++			of_get_property(dev->of_node, "mi,efuse-pll-bias-seq", &size);
++			if (size) {
++				qphy->efuse_pll_bias_seq = devm_kzalloc(dev,
++						size, GFP_KERNEL);
++				if (qphy->efuse_pll_bias_seq) {
++					qphy->efuse_pll_bias_seq_len =
++						(size / sizeof(*qphy->efuse_pll_bias_seq));
++					if (qphy->efuse_pll_bias_seq_len % 2) {
++						dev_err(dev, "invalid efuse_pll_bias_seq len\n");
++						return -EINVAL;
++					}
++
++					of_property_read_u32_array(dev->of_node,
++							"mi,efuse-pll-bias-seq",
++							qphy->efuse_pll_bias_seq,
++							qphy->efuse_pll_bias_seq_len);
++				} else {
++					dev_dbg(dev,
++							"error allocating memory for efuse_pll_bias_seq\n");
++				}
++			}
++			size = 0;
++			of_get_property(dev->of_node, "mi,override_tune1", &size);
++			if (size) {
++				qphy->override_tune1_seq = devm_kzalloc(dev,
++						size, GFP_KERNEL);
++				if (qphy->override_tune1_seq) {
++					qphy->override_tune1_seq_len =
++						(size / sizeof(*qphy->override_tune1_seq));
++					if (qphy->override_tune1_seq_len % 2) {
++						dev_err(dev, "invalid override_tune1_seq len\n");
++						return -EINVAL;
++					}
++
++					of_property_read_u32_array(dev->of_node,
++							"mi,override_tune1",
++							qphy->override_tune1_seq,
++							qphy->override_tune1_seq_len);
++				} else {
++					dev_dbg(dev,
++							"error allocating memory for override_tune1_seq\n");
++				}
++			}
++
++			qphy->efuse_pll_bias_host = of_property_read_bool(dev->of_node, "mi,efuse-pll-bias-host");
++			qphy->need_override_host_tune1 = of_property_read_bool(dev->of_node,
++						"mi,need-override_host_tune1");
++			size = 0;
++			of_get_property(dev->of_node, "mi,efuse-pll-bias-seq-host", &size);
++			if (size) {
++				qphy->efuse_pll_bias_seq_host = devm_kzalloc(dev,
++						size, GFP_KERNEL);
++				if (qphy->efuse_pll_bias_seq_host) {
++					qphy->efuse_pll_bias_seq_host_len =
++						(size / sizeof(*qphy->efuse_pll_bias_seq_host));
++					if (qphy->efuse_pll_bias_seq_host_len % 2) {
++						dev_err(dev, "invalid efuse_pll_bias_seq len\n");
++						return -EINVAL;
++					}
++					of_property_read_u32_array(dev->of_node,
++							"mi,efuse-pll-bias-seq-host",
++							qphy->efuse_pll_bias_seq_host,
++							qphy->efuse_pll_bias_seq_host_len);
++				} else {
++					dev_dbg(dev,
++							"error allocating memory for efuse_pll_bias_seq\n");
++				}
++			}
++			size = 0;
++			of_get_property(dev->of_node, "mi,override_tune1_host", &size);
++			if (size) {
++				qphy->override_tune1_seq_host = devm_kzalloc(dev,
++						size, GFP_KERNEL);
++				if (qphy->override_tune1_seq_host) {
++					qphy->override_tune1_seq_host_len =
++						(size / sizeof(*qphy->override_tune1_seq_host));
++					if (qphy->override_tune1_seq_host_len % 2) {
++						dev_err(dev, "invalid override_tune1_seq len\n");
++						return -EINVAL;
++					}
++					of_property_read_u32_array(dev->of_node,
++							"mi,override_tune1_host",
++							qphy->override_tune1_seq_host,
++							qphy->override_tune1_seq_host_len);
++				} else {
++					dev_dbg(dev,
++							"error allocating memory for override_tune1_seq\n");
++				}
++			}
++
+ 		}
+ 	}
+ 
+-- 
+2.48.1
+

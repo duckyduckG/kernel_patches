@@ -1,0 +1,48 @@
+From edb59999c62ca05f807047b705f8be4003aa7ea0 Mon Sep 17 00:00:00 2001
+From: Sayali Lokhande <sayalil@codeaurora.org>
+Date: Thu, 31 Jan 2019 15:03:34 +0530
+Subject: [PATCH 129/175] scsi: ufs: Update condition for setting
+ PA_TXHSADAPTTYPE
+
+Attribute PA_TXHSADAPTTYPE(0x15d4) is added in
+unipro version 1.8 onwards for UFS HS G4 support.
+On older version's (which do not support G4),
+ufshcd_dme_set for attr 0x15d4 always fails with
+INVALID_MIB_ATTRIBUTE and fails QMVS validation.
+This change uses correct condition check before
+setting UFS adapt type attribute.
+
+Change-Id: I3c8ff1b3b2aff2aba86cf0d812e50d90466ccd18
+Signed-off-by: Sayali Lokhande <sayalil@codeaurora.org>
+---
+ drivers/scsi/ufs/ufshcd.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index a1c7b1d05a6d..c7ac560c1cde 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -5026,9 +5026,9 @@ int ufshcd_dme_set_attr(struct ufs_hba *hba, u32 attr_sel,
+ 	} while (ret && peer && --retries);
+ 
+ 	if (ret)
+-		dev_err(hba->dev, "%s: attr-id 0x%x val 0x%x failed %d retries\n",
++		dev_err(hba->dev, "%s: attr-id 0x%x val 0x%x failed %d retries, err %d\n",
+ 			set, UIC_GET_ATTR_ID(attr_sel), mib_val,
+-			UFS_UIC_COMMAND_RETRIES - retries);
++			UFS_UIC_COMMAND_RETRIES - retries, ret);
+ 
+ 	return ret;
+ }
+@@ -5601,7 +5601,7 @@ int ufshcd_change_power_mode(struct ufs_hba *hba,
+ 		/* INITIAL ADAPT */
+ 		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_TXHSADAPTTYPE),
+ 			PA_INITIAL_ADAPT);
+-	} else {
++	} else if (hba->ufs_version >= UFSHCI_VERSION_30) {
+ 		/* NO ADAPT */
+ 		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_TXHSADAPTTYPE), PA_NO_ADAPT);
+ 	}
+-- 
+2.48.1
+

@@ -1,0 +1,63 @@
+From cfdc59c00df408992cc8658526f0a5312aabc0c7 Mon Sep 17 00:00:00 2001
+From: Veera Vegivada <vvegivad@codeaurora.org>
+Date: Thu, 28 May 2020 15:56:36 +0530
+Subject: [PATCH 068/175] clk: Add prepare lock in clk_populate_clock_opp_table
+
+After enabling CONFIG_PROVE_LOCKING, observed dumpstacks in the
+boot time.
+Call trace:
+    clk_core_round_rate_nolock+0xd4/0xe0
+    clk_hw_round_rate+0x4c/0x80
+    clk_populate_clock_opp_table+0x168/0x318
+    devm_clk_hw_register+0x88/0x9c
+    devm_clk_register_regmap+0x54/0x60
+    qcom_cc_really_probe+0x114/0x208
+
+clk_hw_round_rate() required to be called with prepare lock held.
+So acquire prepare lock before invoking clk_hw_round_rate().
+
+Change-Id: I608e9e7cfe7a5a43fa0e0543b909cefe59030067
+Signed-off-by: Veera Vegivada <vvegivad@codeaurora.org>
+---
+ drivers/clk/clk.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index a48b47155368..c525eb0ad735 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -4685,6 +4685,7 @@ static int clk_add_and_print_opp(struct clk_hw *hw,
+ 				unsigned long rate, int uv, int n)
+ {
+ 	struct clk_core *core = hw->core;
++	unsigned long rrate;
+ 	int j, ret = 0;
+ 
+ 	for (j = 0; j < count; j++) {
+@@ -4695,8 +4696,11 @@ static int clk_add_and_print_opp(struct clk_hw *hw,
+ 			return ret;
+ 		}
+ 
+-		if (n == 0 || n == core->num_rate_max - 1 ||
+-					rate == clk_hw_round_rate(hw, INT_MAX))
++		clk_prepare_lock();
++		rrate = clk_hw_round_rate(hw, INT_MAX);
++		clk_prepare_unlock();
++
++		if (n == 0 || n == core->num_rate_max - 1 || rate == rrate)
+ 			pr_info("%s: set OPP pair(%lu Hz: %u uV) on %s\n",
+ 						core->name, rate, uv,
+ 						dev_name(device_list[j]));
+@@ -4751,7 +4755,9 @@ static void clk_populate_clock_opp_table(struct device_node *np,
+ 	}
+ 
+ 	for (n = 0; ; n++) {
++		clk_prepare_lock();
+ 		rrate = clk_hw_round_rate(hw, rate + 1);
++		clk_prepare_unlock();
+ 		if (!rrate) {
+ 			pr_err("clk_round_rate failed for %s\n",
+ 							core->name);
+-- 
+2.48.1
+

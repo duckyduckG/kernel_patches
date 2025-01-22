@@ -1,0 +1,36 @@
+From 27ef62bdf020c3ce5e2a5ff15966e22286956976 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Sun, 7 Nov 2021 00:21:20 +0200
+Subject: [PATCH 080/175] clk: qcom: dispcc-sdm845: Update dp phy pll clock
+ names
+
+Clock names have been changed as of
+https://source.codeaurora.org/quic/la/platform/vendor/opensource/display-drivers
+commit cbe6ebb ("disp: pll: update clk names for lagoon target").
+
+dp_link_clk_divsel_ten -> dp_phy_pll_link_clk
+dp_vco_divided_clk_src_mux -> dp_phy_pll_vco_div_clk
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/dispcc-sdm845.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/qcom/dispcc-sdm845.c b/drivers/clk/qcom/dispcc-sdm845.c
+index 717c3f9c8e8c..d37113e8246a 100644
+--- a/drivers/clk/qcom/dispcc-sdm845.c
++++ b/drivers/clk/qcom/dispcc-sdm845.c
+@@ -72,8 +72,8 @@ static const struct parent_map disp_cc_parent_map_1[] = {
+ 
+ static const char * const disp_cc_parent_names_1[] = {
+ 	"bi_tcxo",
+-	"dp_link_clk_divsel_ten",
+-	"dp_vco_divided_clk_src_mux",
++	"dp_phy_pll_link_clk",
++	"dp_phy_pll_vco_div_clk",
+ 	"core_bi_pll_test_se",
+ };
+ 
+-- 
+2.48.1
+

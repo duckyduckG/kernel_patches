@@ -1,0 +1,24 @@
+From 6cb86d348dd35592144696b9ddd527ac1a7b87ad Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Thu, 9 Nov 2023 01:27:34 +0400
+Subject: [PATCH 061/175] defconfig: sdm845-perf: Enable camera support
+
+---
+ arch/arm64/configs/vendor/sdm845-perf_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/vendor/sdm845-perf_defconfig b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+index cd980016d5ac..05c6c1ed2f77 100644
+--- a/arch/arm64/configs/vendor/sdm845-perf_defconfig
++++ b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+@@ -690,6 +690,7 @@ CONFIG_CORESIGHT_HWEVENT=y
+ CONFIG_CORESIGHT_DUMMY=y
+ CONFIG_CORESIGHT_REMOTE_ETM=y
+ CONFIG_CORESIGHT_TGU=y
++CONFIG_SPECTRA_CAMERA=y
+ 
+ # zRAM (LZ4)
+ CONFIG_ZRAM_DEFAULT_COMP_ALGORITHM="lz4"
+-- 
+2.48.1
+

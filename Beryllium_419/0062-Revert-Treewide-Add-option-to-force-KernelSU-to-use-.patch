@@ -1,0 +1,181 @@
+From c2b43f6923f388d8e84736c71ce28e1832b3c584 Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Mon, 20 Jan 2025 23:57:06 +0500
+Subject: [PATCH 062/175] Revert "Treewide: Add option to force KernelSU to use
+ static hooks"
+
+This reverts commit ff59559b45e6869ad36b44981b40902b328cd525.
+---
+ Kconfig                                            | 10 ----------
+ .../configs/vendor/feature/ksu_static_hooks.config |  1 -
+ drivers/input/input.c                              | 10 ----------
+ fs/exec.c                                          | 14 --------------
+ fs/open.c                                          |  9 ---------
+ fs/read_write.c                                    | 11 -----------
+ fs/stat.c                                          |  8 --------
+ 7 files changed, 63 deletions(-)
+ delete mode 100644 arch/arm64/configs/vendor/feature/ksu_static_hooks.config
+
+diff --git a/Kconfig b/Kconfig
+index e8a9d139ea6e..20e12ae23775 100644
+--- a/Kconfig
++++ b/Kconfig
+@@ -30,13 +30,3 @@ source "lib/Kconfig"
+ source "lib/Kconfig.debug"
+ 
+ source "techpack/Kconfig"
+-
+-config KSU_STATIC_HOOKS
+-	bool "KernelSU: Force to use static hooks"
+-	default n
+-	help
+-	  Say Y here to force KernelSU to use static hooks.
+-	  This can avoid bootloop if the kernel has broken Kprobes support.
+-
+-	  To use this whenever CONFIG_KPROBES=y, you'll need to execute the following command in KernelSU/kernel directory:
+-	  `sed -i 's|#ifdef CONFIG_KPROBES|#if defined(CONFIG_KPROBES) \&\& !defined(CONFIG_KSU_STATIC_HOOKS)|g;s|#ifndef CONFIG_KPROBES|#if !defined(CONFIG_KPROBES) \|\| defined(CONFIG_KSU_STATIC_HOOKS)|g' *.*`
+diff --git a/arch/arm64/configs/vendor/feature/ksu_static_hooks.config b/arch/arm64/configs/vendor/feature/ksu_static_hooks.config
+deleted file mode 100644
+index 77531d65764f..000000000000
+--- a/arch/arm64/configs/vendor/feature/ksu_static_hooks.config
++++ /dev/null
+@@ -1 +0,0 @@
+-CONFIG_KSU_STATIC_HOOKS=y
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index d6627bd4e40a..70ffffea3e58 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -378,21 +378,11 @@ static int input_get_disposition(struct input_dev *dev,
+ 	return disposition;
+ }
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-extern bool ksu_input_hook __read_mostly;
+-extern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);
+-#endif
+-
+ static void input_handle_event(struct input_dev *dev,
+ 			       unsigned int type, unsigned int code, int value)
+ {
+ 	int disposition = input_get_disposition(dev, type, code, &value);
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-	if (unlikely(ksu_input_hook))
+-		ksu_handle_input_handle_event(&type, &code, &value);
+-#endif
+-
+ 	if (disposition != INPUT_IGNORE_EVENT && type != EV_SYN)
+ 		add_input_randomness(type, code, value);
+ 
+diff --git a/fs/exec.c b/fs/exec.c
+index 7e6835e300d4..b91811b0f3f9 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1895,25 +1895,11 @@ static int __do_execve_file(int fd, struct filename *filename,
+ 	return retval;
+ }
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-extern bool ksu_execveat_hook __read_mostly;
+-extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+-			void *envp, int *flags);
+-extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
+-				 void *argv, void *envp, int *flags);
+-#endif
+-
+ static int do_execveat_common(int fd, struct filename *filename,
+ 			      struct user_arg_ptr argv,
+ 			      struct user_arg_ptr envp,
+ 			      int flags)
+ {
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-	if (unlikely(ksu_execveat_hook))
+-		ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+-	else
+-		ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
+-#endif
+ 	return __do_execve_file(fd, filename, argv, envp, flags, NULL);
+ }
+ 
+diff --git a/fs/open.c b/fs/open.c
+index a6530f0271d4..155731594c8e 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -348,11 +348,6 @@ SYSCALL_DEFINE4(fallocate, int, fd, int, mode, loff_t, offset, loff_t, len)
+ 	return ksys_fallocate(fd, mode, offset, len);
+ }
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
+-			 int *flags);
+-#endif
+-
+ /*
+  * access() needs to use the real uid/gid, not the effective uid/gid.
+  * We do this by temporarily clearing all FS-related capabilities and
+@@ -368,10 +363,6 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
+ 	int res;
+ 	unsigned int lookup_flags = LOOKUP_FOLLOW;
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-	ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
+-#endif
+-
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+ 		return -EINVAL;
+ 
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 869f58628a07..650fc7e0f3a6 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -434,21 +434,10 @@ ssize_t kernel_read(struct file *file, void *buf, size_t count, loff_t *pos)
+ }
+ EXPORT_SYMBOL(kernel_read);
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-extern bool ksu_vfs_read_hook __read_mostly;
+-extern int ksu_handle_vfs_read(struct file **file_ptr, char __user **buf_ptr,
+-			size_t *count_ptr, loff_t **pos);
+-#endif
+-
+ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+ {
+ 	ssize_t ret;
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-	if (unlikely(ksu_vfs_read_hook))
+-		ksu_handle_vfs_read(&file, &buf, &count, &pos);
+-#endif
+-
+ 	if (!(file->f_mode & FMODE_READ))
+ 		return -EBADF;
+ 	if (!(file->f_mode & FMODE_CAN_READ))
+diff --git a/fs/stat.c b/fs/stat.c
+index 9f92d22b0a06..376543199b5a 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -148,10 +148,6 @@ int vfs_statx_fd(unsigned int fd, struct kstat *stat,
+ }
+ EXPORT_SYMBOL(vfs_statx_fd);
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-extern int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags);
+-#endif
+-
+ /**
+  * vfs_statx - Get basic and extra attributes by filename
+  * @dfd: A file descriptor representing the base dir for a relative filename
+@@ -174,10 +170,6 @@ int vfs_statx(int dfd, const char __user *filename, int flags,
+ 	int error = -EINVAL;
+ 	unsigned int lookup_flags = LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
+ 
+-#if IS_ENABLED(CONFIG_KSU_STATIC_HOOKS)
+-	ksu_handle_stat(&dfd, &filename, &flags);
+-#endif
+-
+ 	if ((flags & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
+ 		       AT_EMPTY_PATH | KSTAT_QUERY_FLAGS)) != 0)
+ 		return -EINVAL;
+-- 
+2.48.1
+

@@ -1,0 +1,93 @@
+From 1e545b757c30330d5a4ff708970646121e05ed86 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Wed, 8 Dec 2021 17:05:01 +0200
+Subject: [PATCH 005/175] msm: sde: Fix intf_sel for SDM845/SDM660 targets
+
+In 4.14 kernel the definition of the active interface for cont splash
+was changed[1], which is invalid for older SoCs (SDM845/660), for them a
+different bit[2] must be used to check the active interface. Hence add a
+proper check for these legacy SoCs to the get_ctl_intf function and
+protect it by checking the SDE HW revision.
+
+[1] https://source.codeaurora.org/quic/la/kernel/msm-4.14/commit/?h=LA.UM.9.1.r1-11400-SMxxx0.0&id=75cc47bfa5f8ffb8ee43d6597ac2e8c74093cd91
+[2] https://source.codeaurora.org/quic/la/kernel/msm-4.9/tree/drivers/gpu/drm/msm/sde/sde_rm.c?h=LA.UM.10.3.r1-00500-sdm845.0#n1433
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ techpack/display/msm/sde/sde_hw_ctl.c | 13 +++++++++----
+ techpack/display/msm/sde/sde_hw_ctl.h |  3 ++-
+ techpack/display/msm/sde/sde_rm.c     |  2 +-
+ 3 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/techpack/display/msm/sde/sde_hw_ctl.c b/techpack/display/msm/sde/sde_hw_ctl.c
+index a06b52b24f17..d0c2f523c22e 100644
+--- a/techpack/display/msm/sde/sde_hw_ctl.c
++++ b/techpack/display/msm/sde/sde_hw_ctl.c
+@@ -619,7 +619,7 @@ static inline int sde_hw_ctl_trigger_flush_v1(struct sde_hw_ctl *ctx)
+ 	return 0;
+ }
+ 
+-static inline u32 sde_hw_ctl_get_intf_v1(struct sde_hw_ctl *ctx)
++static inline u32 sde_hw_ctl_get_intf_v1(struct sde_hw_ctl *ctx, u32 hwversion)
+ {
+ 	struct sde_hw_blk_reg_map *c;
+ 	u32 intf_active;
+@@ -635,7 +635,7 @@ static inline u32 sde_hw_ctl_get_intf_v1(struct sde_hw_ctl *ctx)
+ 	return intf_active;
+ }
+ 
+-static inline u32 sde_hw_ctl_get_intf(struct sde_hw_ctl *ctx)
++static inline u32 sde_hw_ctl_get_intf(struct sde_hw_ctl *ctx, u32 hwversion)
+ {
+ 	struct sde_hw_blk_reg_map *c;
+ 	u32 ctl_top;
+@@ -648,10 +648,15 @@ static inline u32 sde_hw_ctl_get_intf(struct sde_hw_ctl *ctx)
+ 
+ 	c = &ctx->hw;
+ 	ctl_top = SDE_REG_READ(c, CTL_TOP);
++	if (!ctl_top)
++		goto end;
+ 
+-	intf_active = (ctl_top > 0) ?
+-		BIT(ctl_top - 1) : 0;
++	if (IS_SDM845_TARGET(hwversion))
++		intf_active = (ctl_top >> 4) & 0xf;
++	else
++		intf_active = BIT(ctl_top - 1);
+ 
++end:
+ 	return intf_active;
+ }
+ 
+diff --git a/techpack/display/msm/sde/sde_hw_ctl.h b/techpack/display/msm/sde/sde_hw_ctl.h
+index 0c90f1156232..f95aa451cd98 100644
+--- a/techpack/display/msm/sde/sde_hw_ctl.h
++++ b/techpack/display/msm/sde/sde_hw_ctl.h
+@@ -422,9 +422,10 @@ struct sde_hw_ctl_ops {
+ 	/**
+ 	 * get interfaces for the active CTL .
+ 	 * @ctx		: ctl path ctx pointer
++	 * @hwversion : mdss hw version number
+ 	 * @return	: bit mask with the active interfaces for the CTL
+ 	 */
+-	u32 (*get_ctl_intf)(struct sde_hw_ctl *ctx);
++	u32 (*get_ctl_intf)(struct sde_hw_ctl *ctx, u32 hwversion);
+ 
+ 	/**
+ 	 * read CTL layers register value and return
+diff --git a/techpack/display/msm/sde/sde_rm.c b/techpack/display/msm/sde/sde_rm.c
+index e77f9905ce3c..9e8a02f9eee9 100644
+--- a/techpack/display/msm/sde/sde_rm.c
++++ b/techpack/display/msm/sde/sde_rm.c
+@@ -1778,7 +1778,7 @@ int sde_rm_cont_splash_res_init(struct msm_drm_private *priv,
+ 			return -EINVAL;
+ 		}
+ 
+-		intf_sel = ctl->ops.get_ctl_intf(ctl);
++		intf_sel = ctl->ops.get_ctl_intf(ctl, cat->hwversion);
+ 		if (intf_sel) {
+ 			splash_display =  &splash_data->splash_display[index];
+ 			SDE_DEBUG("finding resources for display=%d ctl=%d\n",
+-- 
+2.48.1
+

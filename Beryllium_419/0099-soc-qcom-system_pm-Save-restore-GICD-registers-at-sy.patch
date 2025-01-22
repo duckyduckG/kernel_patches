@@ -1,0 +1,57 @@
+From 3c58c0ee4f7415dad1e4ea5f9666bc0768b83c71 Mon Sep 17 00:00:00 2001
+From: Mahesh Sivasubramanian <msivasub@codeaurora.org>
+Date: Tue, 20 Mar 2018 08:43:19 -0600
+Subject: [PATCH 099/175] soc: qcom: system_pm: Save/restore GICD registers at
+ system sleep
+
+Some of the GICD registers could be read in and stored as zeros if an
+intterupt is triggered around the same time as the system sleep. The
+pending state of the interrupt would be latched but the configuration
+registers for the interrupt is reset. To ensure that the interrupt
+triggers, restore the interrupts configuration around System sleep
+notification.
+
+Change-Id: Ib04720241e8fa4382383bd08897c4e19aaaded8c
+Signed-off-by: Mahesh Sivasubramanian <msivasub@codeaurora.org>
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/soc/qcom/system_pm.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/soc/qcom/system_pm.c b/drivers/soc/qcom/system_pm.c
+index 198f0e9f146e..4ad97d7ca6e7 100644
+--- a/drivers/soc/qcom/system_pm.c
++++ b/drivers/soc/qcom/system_pm.c
+@@ -16,6 +16,13 @@
+ #define PDC_TIME_VALID_SHIFT	31
+ #define PDC_TIME_UPPER_MASK	0xFFFFFF
+ 
++#if defined(CONFIG_ARM_GIC_V3) && defined(CONFIG_ARCH_SDM845)
++#include <linux/irqchip/arm-gic-v3.h>
++#else
++static inline void gic_v3_dist_restore(void) {}
++static inline void gic_v3_dist_save(void) {}
++#endif
++
+ static struct device *dev;
+ 
+ static int setup_wakeup(uint32_t lo, uint32_t hi)
+@@ -55,6 +62,7 @@ static bool system_sleep_allowed(void)
+  */
+ static int system_sleep_enter(struct cpumask *mask)
+ {
++	gic_v3_dist_save();
+ 	return rpmh_flush(dev);
+ }
+ 
+@@ -65,6 +73,7 @@ static void system_sleep_exit(bool success)
+ {
+ 	if (success)
+ 		msm_rpmh_master_stats_update();
++	gic_v3_dist_restore();
+ }
+ 
+ static struct system_pm_ops pm_ops = {
+-- 
+2.48.1
+

@@ -1,0 +1,43 @@
+From 15875dbedf74606d400e6e7d2c845506f77d9fe0 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Tue, 9 Nov 2021 17:03:59 +0200
+Subject: [PATCH 073/175] clk: qcom: sdm845: Update definition of the OFF
+ voltage level
+
+RPMH_REGULATOR_LEVEL_OFF constant is not defined anymore.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/gpucc-sdm845.c     | 2 +-
+ drivers/clk/qcom/vdd-level-sdm845.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/qcom/gpucc-sdm845.c b/drivers/clk/qcom/gpucc-sdm845.c
+index 9eec85ecbf5a..f94a20dc4359 100644
+--- a/drivers/clk/qcom/gpucc-sdm845.c
++++ b/drivers/clk/qcom/gpucc-sdm845.c
+@@ -36,7 +36,7 @@
+ #define F(f, s, h, m, n) { (f), (s), (2 * (h) - 1), (m), (n) }
+ 
+ static int vdd_gx_corner[] = {
+-	RPMH_REGULATOR_LEVEL_OFF,		/* VDD_GX_NONE */
++	0,					/* VDD_GX_NONE */
+ 	RPMH_REGULATOR_LEVEL_MIN_SVS,		/* VDD_GX_MIN */
+ 	RPMH_REGULATOR_LEVEL_LOW_SVS,		/* VDD_GX_LOWER */
+ 	RPMH_REGULATOR_LEVEL_SVS,		/* VDD_GX_LOW */
+diff --git a/drivers/clk/qcom/vdd-level-sdm845.h b/drivers/clk/qcom/vdd-level-sdm845.h
+index b2edfb705598..3eec510f4d8e 100644
+--- a/drivers/clk/qcom/vdd-level-sdm845.h
++++ b/drivers/clk/qcom/vdd-level-sdm845.h
+@@ -133,7 +133,7 @@ enum vdd_gx_levels {
+ 
+ /* Need to use the correct VI/VL mappings */
+ static int vdd_corner[] = {
+-	RPMH_REGULATOR_LEVEL_OFF,		/* VDD_CX_NONE */
++	0,					/* VDD_CX_NONE */
+ 	RPMH_REGULATOR_LEVEL_MIN_SVS,		/* VDD_CX_MIN */
+ 	RPMH_REGULATOR_LEVEL_LOW_SVS,		/* VDD_CX_LOWER */
+ 	RPMH_REGULATOR_LEVEL_SVS,		/* VDD_CX_LOW */
+-- 
+2.48.1
+

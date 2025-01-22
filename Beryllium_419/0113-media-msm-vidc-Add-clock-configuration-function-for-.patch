@@ -1,0 +1,49 @@
+From f7c9a080cba238e4cce1dab96f0be3212e1cfc5e Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Tue, 4 Jun 2019 10:35:23 +0200
+Subject: [PATCH 113/175] media: msm: vidc: Add clock configuration function
+ for VPU4
+
+These register writes were missing on the VPU4 clock-on config,
+but they are needed for some SoCs to correctly initialize the Venus.
+---
+ drivers/media/platform/msm/vidc/venus_hfi.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index a9e70ea37edd..96b3e1c97bd9 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -113,6 +113,7 @@ static int __power_collapse(struct venus_hfi_device *device, bool force);
+ static int venus_hfi_noc_error_info(void *dev);
+ 
+ static void interrupt_init_vpu4(struct venus_hfi_device *device);
++static void clock_config_on_enable_vpu4(struct venus_hfi_device *device);
+ static void interrupt_init_vpu5(struct venus_hfi_device *device);
+ static void setup_dsp_uc_memmap_vpu5(struct venus_hfi_device *device);
+ static void clock_config_on_enable_vpu5(struct venus_hfi_device *device);
+@@ -120,7 +121,7 @@ static void clock_config_on_enable_vpu5(struct venus_hfi_device *device);
+ struct venus_hfi_vpu_ops vpu4_ops = {
+ 	.interrupt_init = interrupt_init_vpu4,
+ 	.setup_dsp_uc_memmap = NULL,
+-	.clock_config_on_enable = NULL,
++	.clock_config_on_enable = clock_config_on_enable_vpu4,
+ };
+ 
+ struct venus_hfi_vpu_ops vpu5_ops = {
+@@ -4560,6 +4561,12 @@ static void interrupt_init_vpu4(struct venus_hfi_device *device)
+ 			VIDC_WRAPPER_INTR_MASK_A2HVCODEC_BMSK);
+ }
+ 
++static void clock_config_on_enable_vpu4(struct venus_hfi_device *device)
++{
++	__write_register(device, VIDC_WRAPPER_CLOCK_CONFIG, 0);
++	__write_register(device, VIDC_WRAPPER_CPU_CLOCK_CONFIG, 0);
++}
++
+ static void setup_dsp_uc_memmap_vpu5(struct venus_hfi_device *device)
+ {
+ 	/* initialize DSP QTBL & UCREGION with CPU queues */
+-- 
+2.48.1
+

@@ -1,0 +1,24 @@
+From e09c5d790a36e55647f645900e2682516cc5645d Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Sun, 31 Oct 2021 23:45:40 +0400
+Subject: [PATCH 043/175] defconfig: sdm845-perf: Enable CONFIG_ION_LEGACY
+
+---
+ arch/arm64/configs/vendor/sdm845-perf_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/vendor/sdm845-perf_defconfig b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+index 75d4e321d449..167d6e801e99 100644
+--- a/arch/arm64/configs/vendor/sdm845-perf_defconfig
++++ b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+@@ -498,6 +498,7 @@ CONFIG_STAGING=y
+ CONFIG_ASHMEM=y
+ CONFIG_ION=y
+ CONFIG_ION_POOL_AUTO_REFILL=y
++CONFIG_ION_LEGACY=y
+ CONFIG_QPNP_REVID=y
+ CONFIG_SPS=y
+ CONFIG_SPS_SUPPORT_NDP_BAM=y
+-- 
+2.48.1
+

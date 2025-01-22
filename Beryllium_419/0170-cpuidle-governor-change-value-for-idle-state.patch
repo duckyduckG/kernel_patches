@@ -1,0 +1,25 @@
+From 00fc645d7d7cc582cfebd457d34a62b57d3d577d Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Wed, 15 Jan 2025 16:50:37 +0500
+Subject: [PATCH 170/175] cpuidle: governor: change value for idle state
+
+---
+ drivers/cpuidle/governors/menu.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index f21fcaddf1f4..cb269b9c56ac 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -183,7 +183,7 @@ static inline int performance_multiplier(unsigned long nr_iowaiters, unsigned lo
+ 	/* mult += 2 * get_loadavg(); */
+ 
+ 	/* for IO wait tasks (per cpu!) we add 5x each */
+-	mult += 10 * nr_iowaiters;
++	mult += 2 * nr_iowaiters;
+ 
+ 	return mult;
+ }
+-- 
+2.48.1
+

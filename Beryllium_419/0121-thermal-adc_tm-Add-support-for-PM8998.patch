@@ -1,0 +1,26 @@
+From e29e9a162bd31977f3a0cdf7a37e6163c42d65f8 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Sun, 4 Jun 2023 13:32:22 +0000
+Subject: [PATCH 121/175] thermal: adc_tm: Add support for PM8998
+
+---
+ drivers/thermal/qcom/adc-tm5.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/thermal/qcom/adc-tm5.c b/drivers/thermal/qcom/adc-tm5.c
+index c66f6c087db7..59fd74f35be5 100644
+--- a/drivers/thermal/qcom/adc-tm5.c
++++ b/drivers/thermal/qcom/adc-tm5.c
+@@ -1043,7 +1043,8 @@ static int adc_tm5_init(struct adc_tm_chip *chip, uint32_t dt_chans)
+ 	unsigned int offset_btm_idx = 0, i;
+ 
+ 	if ((chip->pmic_rev_id) &&
+-		(chip->pmic_rev_id->pmic_subtype == PM660_SUBTYPE)) {
++		(chip->pmic_rev_id->pmic_subtype == PM660_SUBTYPE ||
++		chip->pmic_rev_id->pmic_subtype == PM8998_SUBTYPE)) {
+ 		dig_param_len = 2;
+ 		pmic_subtype_660 = true;
+ 	} else {
+-- 
+2.48.1
+

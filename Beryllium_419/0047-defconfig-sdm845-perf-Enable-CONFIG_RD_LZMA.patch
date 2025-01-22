@@ -1,0 +1,24 @@
+From 48b868c6780c996d1cf5ea712e7711b97d459be4 Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Sun, 31 Oct 2021 23:36:00 +0400
+Subject: [PATCH 047/175] defconfig: sdm845-perf: Enable CONFIG_RD_LZMA
+
+---
+ arch/arm64/configs/vendor/sdm845-perf_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/vendor/sdm845-perf_defconfig b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+index 1c911008c7d6..441383f1c795 100644
+--- a/arch/arm64/configs/vendor/sdm845-perf_defconfig
++++ b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+@@ -32,6 +32,7 @@ CONFIG_BLK_DEV_INITRD=y
+ # CONFIG_RD_XZ is not set
+ # CONFIG_RD_LZO is not set
+ # CONFIG_RD_LZ4 is not set
++CONFIG_RD_LZMA=y
+ # CONFIG_FHANDLE is not set
+ CONFIG_KALLSYMS_ALL=y
+ CONFIG_BPF_SYSCALL=y
+-- 
+2.48.1
+

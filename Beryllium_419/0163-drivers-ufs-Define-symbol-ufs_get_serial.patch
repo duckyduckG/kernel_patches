@@ -1,0 +1,51 @@
+From e9d0150d0cb5e66c24f431742cc67676b5be7a7f Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Mon, 13 Jan 2025 13:46:16 +0500
+Subject: [PATCH 163/175] drivers: ufs, Define symbol "ufs_get_serial"
+
+---
+ drivers/scsi/ufs/ufshcd.c | 6 ++++++
+ drivers/scsi/ufs/ufshcd.h | 3 +++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index 65091ff9bea4..8b2c0591e229 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -8857,6 +8857,12 @@ void ufshcd_apply_pm_quirks(struct ufs_hba *hba)
+ }
+ EXPORT_SYMBOL(ufshcd_apply_pm_quirks);
+ 
++static char serial[QUERY_DESC_MAX_SIZE] = {0};
++char *ufs_get_serial(void)
++{
++	return serial;
++}
++
+ /**
+  * ufshcd_set_dev_ref_clk - set the device bRefClkFreq
+  * @hba: per-adapter instance
+diff --git a/drivers/scsi/ufs/ufshcd.h b/drivers/scsi/ufs/ufshcd.h
+index 92b09b1d7823..8abfbc765e99 100644
+--- a/drivers/scsi/ufs/ufshcd.h
++++ b/drivers/scsi/ufs/ufshcd.h
+@@ -585,6 +585,8 @@ struct debugfs_files {
+ 	struct dentry *show_hba;
+ 	struct dentry *host_regs;
+ 	struct dentry *dump_dev_desc;
++	struct dentry *dump_string_desc_serial;
++	struct dentry *dump_heatlth_desc;
+ 	struct dentry *power_mode;
+ 	struct dentry *dme_local_read;
+ 	struct dentry *dme_peer_read;
+@@ -1350,6 +1352,7 @@ static inline int ufshcd_dme_rmw(struct ufs_hba *hba, u32 mask,
+ }
+ 
+ int ufshcd_read_device_desc(struct ufs_hba *hba, u8 *buf, u32 size);
++char *ufs_get_serial(void);
+ int ufshcd_read_health_desc(struct ufs_hba *hba, u8 *buf, u32 size);
+ 
+ static inline bool ufshcd_is_hs_mode(struct ufs_pa_layer_attr *pwr_info)
+-- 
+2.48.1
+

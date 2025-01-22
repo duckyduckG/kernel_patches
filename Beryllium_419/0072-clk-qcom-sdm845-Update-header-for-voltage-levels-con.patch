@@ -1,0 +1,30 @@
+From 80114974401bfc0c792ac8a5defcb7980dd0d7ab Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Fri, 5 Nov 2021 17:25:20 +0200
+Subject: [PATCH 072/175] clk: qcom: sdm845: Update header for voltage levels
+ constants
+
+RPMh regulator voltage level constans are now located in
+qcom,rpmh-regulator-levels.h header.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/vdd-level-sdm845.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/qcom/vdd-level-sdm845.h b/drivers/clk/qcom/vdd-level-sdm845.h
+index b710b00bc0c7..b2edfb705598 100644
+--- a/drivers/clk/qcom/vdd-level-sdm845.h
++++ b/drivers/clk/qcom/vdd-level-sdm845.h
+@@ -7,7 +7,7 @@
+ #define __DRIVERS_CLK_QCOM_VDD_LEVEL_COBALT_H
+ 
+ #include <linux/regulator/consumer.h>
+-#include <dt-bindings/regulator/qcom,rpmh-regulator.h>
++#include <dt-bindings/regulator/qcom,rpmh-regulator-levels.h>
+ 
+ #define VDD_CX_FMAX_MAP1(l1, f1) \
+ 	.vdd_class = &vdd_cx,			\
+-- 
+2.48.1
+

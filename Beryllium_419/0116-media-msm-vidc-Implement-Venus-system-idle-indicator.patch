@@ -1,0 +1,81 @@
+From 3618529c0f3cd7ee13a1281eb507a2ec56dcbd43 Mon Sep 17 00:00:00 2001
+From: AngeloGioacchino Del Regno <kholk11@gmail.com>
+Date: Mon, 25 Nov 2019 13:34:08 +0100
+Subject: [PATCH 116/175] media: msm: vidc: Implement Venus system idle
+ indicator exclusion
+
+Some SoCs do feature a Venus firmware that has no system idle
+indicator, meaning that the IDLE_STATUS (bit 30 of the register
+VIDC_CPU_CS_SCIACMDARG0_HFI_CTRL_PC_READY in SCIACMDARG0 space,
+also called HFI_CTRL_STATUS) is never set by the RTOS that is
+running on the core: in this case, if we check this register,
+we will (obviously) always fail power collapse, as the RTOS
+will never set it (hence never declare itself "ready for power
+collapse").
+
+To address this firmware bug, rely only on the BIT 0 of this
+register (WFI_STATUS), to decide if power collapse is doable.
+---
+ drivers/media/platform/msm/vidc/msm_vidc_platform.c  | 4 ++++
+ drivers/media/platform/msm/vidc/msm_vidc_res_parse.c | 2 ++
+ drivers/media/platform/msm/vidc/msm_vidc_resources.h | 1 +
+ drivers/media/platform/msm/vidc/venus_hfi.c          | 3 ++-
+ 4 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_platform.c b/drivers/media/platform/msm/vidc/msm_vidc_platform.c
+index 7a55718ad9f7..1fc9850ec0c7 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_platform.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_platform.c
+@@ -690,6 +690,10 @@ static struct msm_vidc_common_data sdm845_common_data[] = {
+ 		.key = "qcom,dcvs",
+ 		.value = 1,
+ 	},
++	{
++		.key = "qcom,no-idle-indicator",
++		.value = 1,
++	},
+ 	{
+ 		.key = "qcom,fw-cycles",
+ 		.value = 733003,
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+index c60ead7eb47f..2343eecb3d3e 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+@@ -828,6 +828,8 @@ int read_platform_resources_from_drv_data(
+ 			"qcom,decode-batching");
+ 	res->dcvs = find_key_value(platform_data,
+ 			"qcom,dcvs");
++	res->no_sys_idle_indicator = find_key_value(platform_data,
++			"qcom,no-idle-indicator");
+ 	res->fw_cycles = find_key_value(platform_data,
+ 			"qcom,fw-cycles");
+ 	res->fw_vpp_cycles = find_key_value(platform_data,
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_resources.h b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+index b85131e1c527..5af67f813ca1 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_resources.h
++++ b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+@@ -201,6 +201,7 @@ struct msm_vidc_platform_resources {
+ 	bool cache_pagetables;
+ 	bool decode_batching;
+ 	bool dcvs;
++	bool no_sys_idle_indicator;
+ 	struct msm_vidc_codec_data *codec_data;
+ 	int codec_data_count;
+ 	struct msm_vidc_csc_coeff *csc_coeff_data;
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index 96b3e1c97bd9..04edeced6eb9 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -3253,7 +3253,8 @@ static int __power_collapse(struct venus_hfi_device *device, bool force)
+ 				wfi_status);
+ 			goto skip_power_off;
+ 		}
+-		if (!(idle_status & BIT(30))) {
++		if (!device->res->no_sys_idle_indicator &&
++			!(idle_status & BIT(30))) {
+ 			dprintk(VIDC_WARN,
+ 				"Skipping PC as idle_status (%#x) bit not set\n",
+ 				idle_status);
+-- 
+2.48.1
+

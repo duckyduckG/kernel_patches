@@ -1,0 +1,73 @@
+From df82343fe6ac078e95038a086a39c5ba35635fca Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Sun, 5 Sep 2021 16:40:05 +0300
+Subject: [PATCH 003/175] msm: sde: Do not fail if SID register is not found
+
+SID register may not be declared on the legacy SoCs (SDM660, SDM845,
+etc.), which will lead to the SDE driver fail, prevent this by adding
+the appropriate checks.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ techpack/display/msm/sde/sde_hw_top.c |  5 +++++
+ techpack/display/msm/sde/sde_kms.c    | 18 +++++++++---------
+ 2 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/techpack/display/msm/sde/sde_hw_top.c b/techpack/display/msm/sde/sde_hw_top.c
+index b02cd17cbb28..d275224e61a2 100644
+--- a/techpack/display/msm/sde/sde_hw_top.c
++++ b/techpack/display/msm/sde/sde_hw_top.c
+@@ -457,6 +457,11 @@ struct sde_hw_sid *sde_hw_sid_init(void __iomem *addr,
+ {
+ 	struct sde_hw_sid *c;
+ 
++	if (!addr) {
++		SDE_DEBUG("Invalid addr\n");
++		return NULL;
++	}
++
+ 	c = kzalloc(sizeof(*c), GFP_KERNEL);
+ 	if (!c)
+ 		return ERR_PTR(-ENOMEM);
+diff --git a/techpack/display/msm/sde/sde_kms.c b/techpack/display/msm/sde/sde_kms.c
+index 2b8e9e6ff190..6ac6735b0de5 100644
+--- a/techpack/display/msm/sde/sde_kms.c
++++ b/techpack/display/msm/sde/sde_kms.c
+@@ -3225,7 +3225,8 @@ static void sde_kms_init_shared_hw(struct sde_kms *sde_kms)
+ 		sde_kms->hw_mdp->ops.reset_ubwc(sde_kms->hw_mdp,
+ 						sde_kms->catalog);
+ 
+-	sde_hw_sid_rotator_set(sde_kms->hw_sid);
++	if (sde_kms->hw_sid)
++		sde_hw_sid_rotator_set(sde_kms->hw_sid);
+ }
+ 
+ static void _sde_kms_set_lutdma_vbif_remap(struct sde_kms *sde_kms)
+@@ -3541,17 +3542,16 @@ static int _sde_kms_hw_init_ioremap(struct sde_kms *sde_kms,
+ 	sde_kms->sid = msm_ioremap(platformdev, "sid_phys",
+ 							"sid_phys");
+ 	if (IS_ERR(sde_kms->sid)) {
+-		rc = PTR_ERR(sde_kms->sid);
+-		SDE_ERROR("sid register memory map failed: %d\n", rc);
+ 		sde_kms->sid = NULL;
+-		goto error;
++		SDE_DEBUG("SID_PHYS is not defined\n");
++	} else  {
++		sde_kms->sid_len = msm_iomap_size(platformdev, "sid_phys");
++		rc =  sde_dbg_reg_register_base("sid", sde_kms->sid,
++				sde_kms->sid_len);
++		if (rc)
++			SDE_ERROR("dbg base register sid failed: %d\n", rc);
+ 	}
+ 
+-	sde_kms->sid_len = msm_iomap_size(platformdev, "sid_phys");
+-	rc =  sde_dbg_reg_register_base("sid", sde_kms->sid, sde_kms->sid_len);
+-	if (rc)
+-		SDE_ERROR("dbg base register sid failed: %d\n", rc);
+-
+ error:
+ 	return rc;
+ }
+-- 
+2.48.1
+

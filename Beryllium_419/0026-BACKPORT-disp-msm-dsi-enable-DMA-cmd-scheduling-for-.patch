@@ -1,0 +1,63 @@
+From f9f46b78226ad10e4367e5f95a54e990967b0ac8 Mon Sep 17 00:00:00 2001
+From: Rajeev Nandan <rajeevny@codeaurora.org>
+Date: Thu, 26 Nov 2020 19:39:39 +0530
+Subject: [PATCH 026/175] BACKPORT: disp: msm: dsi: enable DMA cmd scheduling
+ for video mode panels
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This change enables the DMA CMD scheduling as default for
+video mode panels.
+
+In video mode panel, if the DMA is triggered very close to
+the beginning of the active window and the DMA transfer
+happens in the last line of VBP, then the HW state will
+stay in ‘wait’ and return to ‘idle’ in the first line of VFP.
+But somewhere in the middle of the active window, if SW
+disables DSI command mode engine while the HW is still
+waiting and re-enable after timing engine is OFF. So the
+HW never ‘sees’ another vblank line and hence it gets
+stuck in the ‘wait’ state.
+Scheduling the DMA cmd to the first line in VFP fixes
+this issue.
+
+Change-Id: If9e5bd1923c012f10dee50c791a2b2b001d97553
+Signed-off-by: Rajeev Nandan <rajeevny@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_ctrl.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 22ec49c01097..581d8f4bf3b1 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -1397,8 +1397,21 @@ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 		dsi_hw_ops.reset_trig_ctrl(&dsi_ctrl->hw,
+ 				&dsi_ctrl->host_config.common_config);
+ 
+-	/* check if custom dma scheduling line needed */
+-	if (flags & DSI_CTRL_CMD_CUSTOM_DMA_SCHED)
++	/*
++	 * Always enable DMA scheduling for video mode panel.
++	 *
++	 * In video mode panel, if the DMA is triggered very close to
++	 * the beginning of the active window and the DMA transfer
++	 * happens in the last line of VBP, then the HW state will
++	 * stay in ‘wait’ and return to ‘idle’ in the first line of VFP.
++	 * But somewhere in the middle of the active window, if SW
++	 * disables DSI command mode engine while the HW is still
++	 * waiting and re-enable after timing engine is OFF. So the
++	 * HW never ‘sees’ another vblank line and hence it gets
++	 * stuck in the ‘wait’ state.
++	 */
++	if ((flags & DSI_CTRL_CMD_CUSTOM_DMA_SCHED) ||
++		(dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE))
+ 		dsi_configure_command_scheduling(dsi_ctrl, cmd_mem);
+ 
+ 	dsi_ctrl->cmd_mode = (dsi_ctrl->host_config.panel_mode ==
+-- 
+2.48.1
+

@@ -1,0 +1,48 @@
+From 5727391bae64c62bc275fc78814b2c48bd81fa09 Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Thu, 13 Jun 2019 11:25:31 +0200
+Subject: [PATCH 128/175] iio: adc: qcom-spmi-vadc: Use right ratiometric range
+ for SDM845
+
+The ratiometric range for SDM845 is 1875mV instead of the standard
+1800mV: address this as fast as possible by adding a of_machine_is_compatible
+conditional codepath to vary theratiometric range value for this machine.
+---
+ drivers/iio/adc/qcom-spmi-vadc.c   | 6 +++++-
+ drivers/iio/adc/qcom-vadc-common.h | 1 +
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/iio/adc/qcom-spmi-vadc.c b/drivers/iio/adc/qcom-spmi-vadc.c
+index d27246cb3cb6..e3b832139fe9 100644
+--- a/drivers/iio/adc/qcom-spmi-vadc.c
++++ b/drivers/iio/adc/qcom-spmi-vadc.c
+@@ -353,9 +353,13 @@ static int vadc_measure_ref_points(struct vadc_priv *vadc)
+ {
+ 	struct vadc_channel_prop *prop;
+ 	u16 read_1, read_2;
++	int ratiometric_range = VADC_RATIOMETRIC_RANGE;
+ 	int ret;
+ 
+-	vadc->graph[VADC_CALIB_RATIOMETRIC].dx = VADC_RATIOMETRIC_RANGE;
++	if (of_machine_is_compatible("qcom,sdm845"))
++		ratiometric_range = VADC_RATIOMETRIC_RANGE_8998;
++
++	vadc->graph[VADC_CALIB_RATIOMETRIC].dx = ratiometric_range;
+ 	vadc->graph[VADC_CALIB_ABSOLUTE].dx = VADC_ABSOLUTE_RANGE_UV;
+ 
+ 	prop = vadc_get_channel(vadc, VADC_REF_1250MV);
+diff --git a/drivers/iio/adc/qcom-vadc-common.h b/drivers/iio/adc/qcom-vadc-common.h
+index e0ff98bf5f15..d313b9b53b0b 100644
+--- a/drivers/iio/adc/qcom-vadc-common.h
++++ b/drivers/iio/adc/qcom-vadc-common.h
+@@ -16,6 +16,7 @@
+ 
+ #define VADC_ABSOLUTE_RANGE_UV			625000
+ #define VADC_RATIOMETRIC_RANGE			1800
++#define VADC_RATIOMETRIC_RANGE_8998		1875
+ 
+ #define VADC_DEF_PRESCALING			0 /* 1:1 */
+ #define VADC_DEF_DECIMATION			0 /* 512 */
+-- 
+2.48.1
+

@@ -1,0 +1,278 @@
+From fde00658053f2a974feffda2f5c3d2b98e5bae3f Mon Sep 17 00:00:00 2001
+From: Chinmay Sawarkar <chinmays@codeaurora.org>
+Date: Wed, 28 Nov 2018 13:21:14 -0800
+Subject: [PATCH 105/175] msm: vidc: Remove deprecated iommu initialization
+ apis
+
+IOMMU initialization APIs have been deprecated and replaced by
+device tree properties. IOMMU driver will map/unmap and
+attach/detach device at bootup, based on the dtsi entries.
+
+CRs-Fixed: 2358497
+Change-Id: I2be820ed406c46209e927e5f7f861e75d67e966a
+Signed-off-by: Chinmay Sawarkar <chinmays@codeaurora.org>
+---
+ drivers/media/platform/msm/vidc/msm_smem.c    |  4 +-
+ drivers/media/platform/msm/vidc/msm_vidc.h    |  2 +-
+ .../platform/msm/vidc/msm_vidc_res_parse.c    | 80 +------------------
+ .../platform/msm/vidc/msm_vidc_resources.h    |  2 +-
+ drivers/media/platform/msm/vidc/venus_hfi.c   | 35 ++------
+ 5 files changed, 15 insertions(+), 108 deletions(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_smem.c b/drivers/media/platform/msm/vidc/msm_smem.c
+index 5395ca407c29..efee3b3091e1 100644
+--- a/drivers/media/platform/msm/vidc/msm_smem.c
++++ b/drivers/media/platform/msm/vidc/msm_smem.c
+@@ -110,7 +110,7 @@ static int msm_dma_get_device_address(struct dma_buf *dbuf, unsigned long align,
+ 		}
+ 
+ 		mapping_info->dev = cb->dev;
+-		mapping_info->mapping = cb->mapping;
++		mapping_info->domain = cb->domain;
+ 		mapping_info->table = table;
+ 		mapping_info->attach = attach;
+ 		mapping_info->buf = dbuf;
+@@ -158,7 +158,7 @@ static int msm_dma_put_device_address(u32 flags,
+ 	trace_msm_smem_buffer_iommu_op_end("UNMAP", 0, 0, 0, 0, 0);
+ 
+ 	mapping_info->dev = NULL;
+-	mapping_info->mapping = NULL;
++	mapping_info->domain = NULL;
+ 	mapping_info->table = NULL;
+ 	mapping_info->attach = NULL;
+ 	mapping_info->buf = NULL;
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc.h b/drivers/media/platform/msm/vidc/msm_vidc.h
+index c22970833f83..bc0c03bd2c3e 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc.h
++++ b/drivers/media/platform/msm/vidc/msm_vidc.h
+@@ -57,7 +57,7 @@ enum hal_buffer {
+ 
+ struct dma_mapping_info {
+ 	struct device *dev;
+-	struct dma_iommu_mapping *mapping;
++	struct iommu_domain *domain;
+ 	struct sg_table *table;
+ 	struct dma_buf_attachment *attach;
+ 	struct dma_buf *buf;
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+index 46e05840c27c..31cc5c4ebf4b 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+@@ -1004,25 +1004,10 @@ return rc;
+ 	return rc;
+ }
+ 
+-static int get_secure_vmid(struct context_bank_info *cb)
+-{
+-	if (!strcasecmp(cb->name, "venus_sec_bitstream"))
+-		return VMID_CP_BITSTREAM;
+-	else if (!strcasecmp(cb->name, "venus_sec_pixel"))
+-		return VMID_CP_PIXEL;
+-	else if (!strcasecmp(cb->name, "venus_sec_non_pixel"))
+-		return VMID_CP_NON_PIXEL;
+-
+-	WARN(1, "No matching secure vmid for cb name: %s\n",
+-		cb->name);
+-	return VMID_INVAL;
+-}
+-
+ static int msm_vidc_setup_context_bank(struct msm_vidc_platform_resources *res,
+ 		struct context_bank_info *cb, struct device *dev)
+ {
+ 	int rc = 0;
+-	int secure_vmid = VMID_INVAL;
+ 	struct bus_type *bus;
+ 
+ 	if (!dev || !cb || !res) {
+@@ -1039,45 +1024,7 @@ static int msm_vidc_setup_context_bank(struct msm_vidc_platform_resources *res,
+ 		goto remove_cb;
+ 	}
+ 
+-	cb->mapping = arm_iommu_create_mapping(bus, cb->addr_range.start,
+-					cb->addr_range.size);
+-	if (IS_ERR_OR_NULL(cb->mapping)) {
+-		dprintk(VIDC_ERR, "%s - failed to create mapping\n", __func__);
+-		rc = PTR_ERR(cb->mapping) ?: -ENODEV;
+-		goto remove_cb;
+-	}
+-
+-	if (cb->is_secure) {
+-		secure_vmid = get_secure_vmid(cb);
+-		rc = iommu_domain_set_attr(cb->mapping->domain,
+-				DOMAIN_ATTR_SECURE_VMID, &secure_vmid);
+-		if (rc) {
+-			dprintk(VIDC_ERR,
+-					"%s - programming secure vmid failed: %s %d\n",
+-					__func__, dev_name(dev), rc);
+-			goto release_mapping;
+-		}
+-	}
+-
+-	if (res->cache_pagetables) {
+-		int cache_pagetables = 1;
+-
+-		rc = iommu_domain_set_attr(cb->mapping->domain,
+-			DOMAIN_ATTR_USE_UPSTREAM_HINT, &cache_pagetables);
+-		if (rc) {
+-			WARN_ONCE(rc,
+-				"%s: failed to set cache pagetables attribute, %d\n",
+-				__func__, rc);
+-			rc = 0;
+-		}
+-	}
+-
+-	rc = arm_iommu_attach_device(cb->dev, cb->mapping);
+-	if (rc) {
+-		dprintk(VIDC_ERR, "%s - Couldn't arm_iommu_attach_device\n",
+-			__func__);
+-		goto release_mapping;
+-	}
++	cb->domain = iommu_get_domain_for_dev(cb->dev);
+ 
+ 	/*
+ 	 * configure device segment size and segment boundary to ensure
+@@ -1092,14 +1039,10 @@ static int msm_vidc_setup_context_bank(struct msm_vidc_platform_resources *res,
+ 
+ 	dprintk(VIDC_DBG, "Attached %s and created mapping\n", dev_name(dev));
+ 	dprintk(VIDC_DBG,
+-		"Context bank name:%s, buffer_type: %#x, is_secure: %d, address range start: %#x, size: %#x, dev: %pK, mapping: %pK",
++		"Context bank name:%s, buffer_type: %#x, is_secure: %d, address range start: %#x, size: %#x, dev: %pK, domain: %pK",
+ 		cb->name, cb->buffer_type, cb->is_secure, cb->addr_range.start,
+-		cb->addr_range.size, cb->dev, cb->mapping);
++		cb->addr_range.size, cb->dev, cb->domain);
+ 
+-	return rc;
+-
+-release_mapping:
+-	arm_iommu_release_mapping(cb->mapping);
+ remove_cb:
+ 	return rc;
+ }
+@@ -1203,22 +1146,7 @@ static int msm_vidc_populate_context_bank(struct device *dev,
+ 		goto err_setup_cb;
+ 	}
+ 
+-	if (core->resources.non_fatal_pagefaults) {
+-		int data = 1;
+-
+-		dprintk(VIDC_DBG, "set non-fatal-faults attribute on %s\n",
+-				dev_name(dev));
+-		rc = iommu_domain_set_attr(cb->mapping->domain,
+-					DOMAIN_ATTR_NON_FATAL_FAULTS, &data);
+-		if (rc) {
+-			dprintk(VIDC_WARN,
+-				"%s: set non fatal attribute failed: %s %d\n",
+-				__func__, dev_name(dev), rc);
+-			/* ignore the error */
+-		}
+-	}
+-
+-	iommu_set_fault_handler(cb->mapping->domain,
++	iommu_set_fault_handler(cb->domain,
+ 		msm_vidc_smmu_fault_handler, (void *)core);
+ 
+ 	return 0;
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_resources.h b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+index c24dab8b9561..6475d87d5c4c 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_resources.h
++++ b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+@@ -61,7 +61,7 @@ struct context_bank_info {
+ 	bool is_secure;
+ 	struct addr_range addr_range;
+ 	struct device *dev;
+-	struct dma_iommu_mapping *mapping;
++	struct iommu_domain *domain;
+ };
+ 
+ struct buffer_usage_table {
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index 763c5e25f3a7..0c6de9141891 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -985,23 +985,6 @@ static void __set_threshold_registers(struct venus_hfi_device *device)
+ 		dprintk(VIDC_ERR, "Failed to restore threshold values\n");
+ }
+ 
+-static void __iommu_detach(struct venus_hfi_device *device)
+-{
+-	struct context_bank_info *cb;
+-
+-	if (!device || !device->res) {
+-		dprintk(VIDC_ERR, "Invalid parameter: %pK\n", device);
+-		return;
+-	}
+-
+-	list_for_each_entry(cb, &device->res->context_banks, list) {
+-		if (cb->dev)
+-			arm_iommu_detach_device(cb->dev);
+-		if (cb->mapping)
+-			arm_iommu_release_mapping(cb->mapping);
+-	}
+-}
+-
+ static int __devfreq_target(struct device *devfreq_dev,
+ 		unsigned long *freq, u32 flags)
+ {
+@@ -1793,7 +1776,7 @@ static void __interface_queues_release(struct venus_hfi_device *device)
+ 			false, device->res, HAL_BUFFER_INTERNAL_CMD_QUEUE);
+ 
+ 		for (i = 0; cb && i < num_entries; i++) {
+-			iommu_unmap(cb->mapping->domain,
++			iommu_unmap(cb->domain,
+ 						mem_map[i].virtual_addr,
+ 						mem_map[i].size);
+ 		}
+@@ -1827,7 +1810,7 @@ static void __interface_queues_release(struct venus_hfi_device *device)
+ }
+ 
+ static int __get_qdss_iommu_virtual_addr(struct venus_hfi_device *dev,
+-		struct hfi_mem_map *mem_map, struct dma_iommu_mapping *mapping)
++		struct hfi_mem_map *mem_map, struct iommu_domain *domain)
+ {
+ 	int i;
+ 	int rc = 0;
+@@ -1839,8 +1822,8 @@ static int __get_qdss_iommu_virtual_addr(struct venus_hfi_device *dev,
+ 		return -ENODATA;
+ 
+ 	for (i = 0; i < num_entries; i++) {
+-		if (mapping) {
+-			rc = iommu_map(mapping->domain, iova,
++		if (domain) {
++			rc = iommu_map(domain, iova,
+ 					qdss_addr_tbl[i].start,
+ 					qdss_addr_tbl[i].size,
+ 					IOMMU_READ | IOMMU_WRITE);
+@@ -1868,8 +1851,8 @@ static int __get_qdss_iommu_virtual_addr(struct venus_hfi_device *dev,
+ 		dprintk(VIDC_ERR,
+ 			"QDSS mapping failed, Freeing other entries %d\n", i);
+ 
+-		for (--i; mapping && i >= 0; i--) {
+-			iommu_unmap(mapping->domain,
++		for (--i; domain && i >= 0; i--) {
++			iommu_unmap(domain,
+ 				mem_map[i].virtual_addr,
+ 				mem_map[i].size);
+ 		}
+@@ -2025,7 +2008,7 @@ static int __interface_queues_init(struct venus_hfi_device *dev)
+ 			return -EINVAL;
+ 		}
+ 
+-		rc = __get_qdss_iommu_virtual_addr(dev, mem_map, cb->mapping);
++		rc = __get_qdss_iommu_virtual_addr(dev, mem_map, cb->domain);
+ 		if (rc) {
+ 			dprintk(VIDC_ERR,
+ 				"IOMMU mapping failed, Freeing qdss memdata\n");
+@@ -5260,10 +5243,6 @@ void venus_hfi_delete_device(void *device)
+ 
+ 	dev = (struct venus_hfi_device *) device;
+ 
+-	mutex_lock(&dev->lock);
+-	__iommu_detach(dev);
+-	mutex_unlock(&dev->lock);
+-
+ 	list_for_each_entry_safe(close, tmp, &hal_ctxt.dev_head, list) {
+ 		if (close->hal_data->irq == dev->hal_data->irq) {
+ 			hal_ctxt.dev_count--;
+-- 
+2.48.1
+

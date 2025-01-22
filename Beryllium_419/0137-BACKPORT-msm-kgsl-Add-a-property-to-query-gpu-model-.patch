@@ -1,0 +1,72 @@
+From 7da1fca13e320709df68ec3fa16dc044fee4419e Mon Sep 17 00:00:00 2001
+From: Hareesh Gundu <hareeshg@codeaurora.org>
+Date: Mon, 5 Apr 2021 18:59:57 +0530
+Subject: [PATCH 137/175] BACKPORT: msm: kgsl: Add a property to query gpu
+ model name
+
+Usermode driver can query gpu model name to log it.
+So add support for new gpu model property.
+
+Change-Id: Ifc3a76c3e6856161e76dfbe26be2a950db71aa5e
+Signed-off-by: Hareesh Gundu <hareeshg@codeaurora.org>
+---
+ drivers/gpu/msm/adreno.c      | 12 ++++++++++++
+ include/uapi/linux/msm_kgsl.h |  5 +++++
+ 2 files changed, 17 insertions(+)
+
+diff --git a/drivers/gpu/msm/adreno.c b/drivers/gpu/msm/adreno.c
+index da9205ff4d80..cd0c0fc7c161 100644
+--- a/drivers/gpu/msm/adreno.c
++++ b/drivers/gpu/msm/adreno.c
+@@ -2685,6 +2685,17 @@ static int adreno_prop_device_info(struct kgsl_device *device,
+ 	return copy_prop(param, &devinfo, sizeof(devinfo));
+ }
+ 
++static int adreno_prop_gpu_model(struct kgsl_device *device,
++		struct kgsl_device_getproperty *param)
++{
++	struct kgsl_gpu_model model = {0};
++
++	strlcpy(model.gpu_model, adreno_get_gpu_model(device),
++			sizeof(model.gpu_model));
++
++	return copy_prop(param, &model, sizeof(model));
++}
++
+ static int adreno_prop_device_shadow(struct kgsl_device *device,
+ 		struct kgsl_device_getproperty *param)
+ {
+@@ -2835,6 +2846,7 @@ static const struct {
+ 	{ KGSL_PROP_DEVICE_BITNESS, adreno_prop_u32 },
+ 	{ KGSL_PROP_SPEED_BIN, adreno_prop_u32 },
+ 	{ KGSL_PROP_GAMING_BIN, adreno_prop_gaming_bin },
++	{ KGSL_PROP_GPU_MODEL, adreno_prop_gpu_model},
+ };
+ 
+ static int adreno_getproperty(struct kgsl_device *device,
+diff --git a/include/uapi/linux/msm_kgsl.h b/include/uapi/linux/msm_kgsl.h
+index 5a6edc07e2b3..490762737842 100644
+--- a/include/uapi/linux/msm_kgsl.h
++++ b/include/uapi/linux/msm_kgsl.h
+@@ -340,6 +340,7 @@ enum kgsl_timestamp_type {
+ #define KGSL_PROP_GAMING_BIN		0x26
+ #define KGSL_PROP_QUERY_CAPABILITIES	0x27
+ #define KGSL_PROP_CONTEXT_PROPERTY	0x28
++#define KGSL_PROP_GPU_MODEL		0x29
+ 
+ /*
+  * kgsl_capabilties_properties returns a list of supported properties.
+@@ -422,6 +423,10 @@ struct kgsl_context_property_fault {
+ 	__u32 timestamp;
+ };
+ 
++struct kgsl_gpu_model {
++	char gpu_model[32];
++};
++
+ /* Context property sub types */
+ #define KGSL_CONTEXT_PROP_FAULTS 1
+ 
+-- 
+2.48.1
+

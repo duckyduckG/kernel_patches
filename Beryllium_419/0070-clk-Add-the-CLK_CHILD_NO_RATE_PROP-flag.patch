@@ -1,0 +1,50 @@
+From e7b9b50884e5d7980da6e382e3ac0e32249856ec Mon Sep 17 00:00:00 2001
+From: Deepak Katragadda <dkatraga@codeaurora.org>
+Date: Wed, 7 Feb 2018 10:37:41 -0800
+Subject: [PATCH 070/175] clk: Add the CLK_CHILD_NO_RATE_PROP flag
+
+The voter clock mechanism relies on the rate request
+propagation to the parent clock to be one-way and not
+have the clock framework propagate the rate across all
+its children. Add the CLK_CHILD_NO_RATE_PROP flag for
+these votable clocks to use in order to avoid the top-down
+propagation of any scaling requests.
+
+Change-Id: Ib264068797e44c7f1712aebe45318ea3e9230a1b
+Signed-off-by: Deepak Katragadda <dkatraga@codeaurora.org>
+[ab123321] adapt for msm-4.14
+Signed-off-by: Artem Labazov <123321artyom@gmail.com>
+---
+ drivers/clk/clk.c            | 2 ++
+ include/linux/clk-provider.h | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index c525eb0ad735..a706071f5d55 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2357,6 +2357,8 @@ static int clk_change_rate(struct clk_core *core)
+ 	if (core->flags & CLK_RECALC_NEW_RATES)
+ 		(void)clk_calc_new_rates(core, core->new_rate);
+ 
++	if (core->flags & CLK_CHILD_NO_RATE_PROP)
++		return rc;
+ 	/*
+ 	 * Use safe iteration, as change_rate can actually swap parents
+ 	 * for certain clock types.
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7fd4a16426a8..a55bf65e8500 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -48,6 +48,8 @@
+ 					 * to first consumer that enables clk
+ 					 */
+ #define CLK_IS_MEASURE          BIT(16) /* measure clock */
++/* do not call clk_change_rate on the clock's children */
++#define CLK_CHILD_NO_RATE_PROP	BIT(17)
+ 
+ struct clk;
+ struct clk_hw;
+-- 
+2.48.1
+

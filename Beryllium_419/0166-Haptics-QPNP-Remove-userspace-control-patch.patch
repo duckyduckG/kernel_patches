@@ -1,0 +1,57 @@
+From f32b89bde961a365b6e818c42ae2f9bec5d33166 Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Tue, 14 Jan 2025 00:05:07 +0500
+Subject: [PATCH 166/175] Haptics: QPNP: Remove userspace control patch.
+
+---
+ drivers/leds/leds-qpnp-haptics.c | 27 ---------------------------
+ 1 file changed, 27 deletions(-)
+
+diff --git a/drivers/leds/leds-qpnp-haptics.c b/drivers/leds/leds-qpnp-haptics.c
+index f569181d7831..989cbc53a280 100644
+--- a/drivers/leds/leds-qpnp-haptics.c
++++ b/drivers/leds/leds-qpnp-haptics.c
+@@ -1066,29 +1066,6 @@ static int qpnp_haptics_play_mode_config(struct hap_chip *chip)
+ 	return rc;
+ }
+ 
+-static int haptic_gain = 80;
+-module_param(haptic_gain, int, 0644);
+-int haptic_gain_show = 0;
+-module_param(haptic_gain_show, int, 0444);
+-static int haptic_set_level(int gain)
+-{
+-    int val, max_val = HAP_VMAX_MAX_MV;
+-	// Set gain to use max_val
+-	if (gain < max_val || gain > max_val)
+-		gain = max_val;
+-	// haptic_gain in percent
+-	if (haptic_gain > 100 )
+-		haptic_gain = 100;
+-	if (haptic_gain < 20 )
+-		haptic_gain = 20;
+-	val = haptic_gain * gain / 100;
+-    if (val > max_val)
+-        val = max_val;
+-	// don't change value on min level
+-    if (val < HAP_VMAX_MIN_MV)
+-        val = HAP_VMAX_MIN_MV;
+-    return val;
+-}
+ /* configuration api for max voltage */
+ static int qpnp_haptics_vmax_config(struct hap_chip *chip, int vmax_mv,
+ 				bool overdrive)
+@@ -1107,10 +1084,6 @@ static int qpnp_haptics_vmax_config(struct hap_chip *chip, int vmax_mv,
+ 		vmax_mv = HAP_VMAX_MIN_MV;
+ 	else if (vmax_mv > HAP_VMAX_MAX_MV)
+ 		vmax_mv = HAP_VMAX_MAX_MV;
+-		
+-		if (haptic_set_level(vmax_mv))
+-		vmax_mv = haptic_set_level(vmax_mv);
+-	haptic_gain_show = vmax_mv;
+ 
+ 	val = DIV_ROUND_CLOSEST(vmax_mv, HAP_VMAX_MIN_MV);
+ 	val <<= HAP_VMAX_SHIFT;
+-- 
+2.48.1
+

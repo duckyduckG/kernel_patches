@@ -1,0 +1,30 @@
+From 11162655606b2df93726130db73e63668490f108 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Fri, 5 Nov 2021 21:36:31 +0200
+Subject: [PATCH 077/175] clk: qcom: cpu-osm-sdm845: Update header for voltage
+ levels constants
+
+RPMh regulator voltage level constans are now located in
+qcom,rpmh-regulator-levels.h header.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/clk-cpu-osm-sdm845.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/qcom/clk-cpu-osm-sdm845.c b/drivers/clk/qcom/clk-cpu-osm-sdm845.c
+index 470b9d20e66e..c8cc9008f85f 100644
+--- a/drivers/clk/qcom/clk-cpu-osm-sdm845.c
++++ b/drivers/clk/qcom/clk-cpu-osm-sdm845.c
+@@ -26,7 +26,7 @@
+ #include <linux/delay.h>
+ #include <linux/regulator/consumer.h>
+ #include <dt-bindings/clock/qcom,cpucc-sdm845.h>
+-#include <dt-bindings/regulator/qcom,rpmh-regulator.h>
++#include <dt-bindings/regulator/qcom,rpmh-regulator-levels.h>
+ 
+ #include "common.h"
+ #include "clk-regmap.h"
+-- 
+2.48.1
+

@@ -1,0 +1,35 @@
+From 61d86fbea92ee44544145387f1294e33fdb733a4 Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Thu, 16 Jan 2025 13:16:20 +0500
+Subject: [PATCH 174/175] backlight: wled: fix error: incompatible function
+ pointer
+
+---
+ drivers/video/backlight/qcom-wled.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/backlight/qcom-wled.c b/drivers/video/backlight/qcom-wled.c
+index 59d4a7bc1b4f..0d9c7d33bd51 100644
+--- a/drivers/video/backlight/qcom-wled.c
++++ b/drivers/video/backlight/qcom-wled.c
+@@ -1729,7 +1729,7 @@ static int wled_probe(struct platform_device *pdev)
+ 	return PTR_ERR_OR_ZERO(bl);
+ };
+ 
+-static void wled_remove(struct platform_device *pdev)
++static int wled_remove(struct platform_device *pdev)
+ {
+ 	struct wled *wled = platform_get_drvdata(pdev);
+ 
+@@ -1739,6 +1739,8 @@ static void wled_remove(struct platform_device *pdev)
+ 	disable_irq(wled->ovp_irq);
+ 
+ 	wled->ovp_irq_disabled = true;
++	
++	return 0;
+ }
+ 
+ static const struct of_device_id wled_match_table[] = {
+-- 
+2.48.1
+

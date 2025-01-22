@@ -1,0 +1,27 @@
+From d97894556ea12939c74d0b1a98315e228eff2805 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Sat, 6 Nov 2021 21:17:58 +0200
+Subject: [PATCH 064/175] soc: qcom: qsee_ipc_irq: Add bindings for SDM845
+
+Add compatible string for SDM845.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/soc/qcom/qsee_ipc_irq.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/soc/qcom/qsee_ipc_irq.c b/drivers/soc/qcom/qsee_ipc_irq.c
+index 4db221999139..79b3dcbe5403 100644
+--- a/drivers/soc/qcom/qsee_ipc_irq.c
++++ b/drivers/soc/qcom/qsee_ipc_irq.c
+@@ -331,6 +331,7 @@ static const struct qsee_irq_data qsee_irq_data_init[] = {
+ };
+ 
+ static const struct of_device_id qsee_irq_of_match[] = {
++	{ .compatible = "qcom,sdm845-qsee-irq", .data = &qsee_irq_data_init},
+ 	{ .compatible = "qcom,sm8150-qsee-irq", .data = &qsee_irq_data_init},
+ 	{ .compatible = "qcom,kona-qsee-irq", .data = &qsee_irq_data_init},
+ 	{},
+-- 
+2.48.1
+

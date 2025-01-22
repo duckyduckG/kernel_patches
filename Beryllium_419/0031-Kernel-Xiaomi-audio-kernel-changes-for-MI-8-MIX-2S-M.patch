@@ -1,0 +1,1157 @@
+From 37d63f1845a9d17927f126d22aa0e9652efb8817 Mon Sep 17 00:00:00 2001
+From: hehao <hehao@xiaomi.com>
+Date: Wed, 18 Dec 2019 09:59:22 +0800
+Subject: [PATCH 031/175] Kernel: Xiaomi audio-kernel changes for MI 8, MIX 2S,
+ MI POCO F1, MI 8UD, MIX 3, MI 8 Explorer Edition Android Q
+
+The Patch based on QualComm release TAG: LA.UM.8.3.r1-05800-sdm845.0
+
+Change-Id: I6e63e16fbc4693dc36f73f9be8292f9c5cc56696
+Signed-off-by: hehao <hehao@xiaomi.com>
+
+MrArtemSid: Dropped tas255*, elliptic
+---
+ techpack/audio/asoc/codecs/wcd-mbhc-adc.c     |  10 +-
+ techpack/audio/asoc/codecs/wcd-mbhc-v2.c      |  37 +--
+ .../audio/asoc/codecs/wcd934x/wcd934x-mbhc.c  |  21 ++
+ .../audio/asoc/codecs/wcd934x/wcd934x-mbhc.h  |   7 +
+ .../asoc/codecs/wcd934x/wcd934x-regmap.c      |   3 +-
+ techpack/audio/asoc/codecs/wcd934x/wcd934x.c  |  96 +++++--
+ techpack/audio/asoc/msm-dai-fe.c              |   5 +-
+ techpack/audio/asoc/msm-pcm-routing-v2.c      |  89 +++++-
+ techpack/audio/asoc/sdm845.c                  | 266 ++++++++++++++----
+ techpack/audio/dsp/q6afe.c                    |   2 +
+ techpack/audio/include/asoc/wcd-mbhc-v2.h     |   3 +
+ 11 files changed, 421 insertions(+), 118 deletions(-)
+
+diff --git a/techpack/audio/asoc/codecs/wcd-mbhc-adc.c b/techpack/audio/asoc/codecs/wcd-mbhc-adc.c
+index 5865af3dfc9b..0f9e24a194e6 100644
+--- a/techpack/audio/asoc/codecs/wcd-mbhc-adc.c
++++ b/techpack/audio/asoc/codecs/wcd-mbhc-adc.c
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ #include <linux/module.h>
+ #include <linux/init.h>
+@@ -570,18 +571,15 @@ static bool wcd_is_special_headset(struct wcd_mbhc *mbhc)
+ static void wcd_mbhc_adc_update_fsm_source(struct wcd_mbhc *mbhc,
+ 				       enum wcd_mbhc_plug_type plug_type)
+ {
+-	bool micbias2;
+-
+-	micbias2 = mbhc->mbhc_cb->micbias_enable_status(mbhc,
+-							MIC_BIAS_2);
+ 	switch (plug_type) {
+ 	case MBHC_PLUG_TYPE_HEADPHONE:
+ 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 3);
+ 		break;
+ 	case MBHC_PLUG_TYPE_HEADSET:
+ 	case MBHC_PLUG_TYPE_ANC_HEADPHONE:
+-		if (!mbhc->is_hs_recording && !micbias2)
+-			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 3);
++		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
++		mbhc->mbhc_cb->mbhc_micbias_control(mbhc->codec,
++				MIC_BIAS_2, MICB_PULLUP_ENABLE);
+ 		break;
+ 	default:
+ 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
+diff --git a/techpack/audio/asoc/codecs/wcd-mbhc-v2.c b/techpack/audio/asoc/codecs/wcd-mbhc-v2.c
+index b74ca861c904..dbfa9bbdc9f4 100644
+--- a/techpack/audio/asoc/codecs/wcd-mbhc-v2.c
++++ b/techpack/audio/asoc/codecs/wcd-mbhc-v2.c
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ #include <linux/module.h>
+ #include <linux/init.h>
+@@ -25,6 +26,7 @@
+ #include "wcd-mbhc-legacy.h"
+ #include "wcd-mbhc-adc.h"
+ #include <asoc/wcd-mbhc-v2-api.h>
++#include <soc/qcom/socinfo.h>
+ 
+ void wcd_mbhc_jack_report(struct wcd_mbhc *mbhc,
+ 			  struct snd_soc_jack *jack, int status, int mask)
+@@ -208,7 +210,6 @@ static int wcd_event_notify(struct notifier_block *self, unsigned long val,
+ 	struct snd_soc_component *component = mbhc->component;
+ 	bool micbias2 = false;
+ 	bool micbias1 = false;
+-	u8 fsm_en = 0;
+ 
+ 	pr_debug("%s: event %s (%d)\n", __func__,
+ 		 wcd_mbhc_get_event_string(event), event);
+@@ -249,12 +250,7 @@ static int wcd_event_notify(struct notifier_block *self, unsigned long val,
+ 					false);
+ out_micb_en:
+ 		/* Disable current source if micbias enabled */
+-		if (mbhc->mbhc_cb->mbhc_micbias_control) {
+-			WCD_MBHC_REG_READ(WCD_MBHC_FSM_EN, fsm_en);
+-			if (fsm_en)
+-				WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL,
+-							 0);
+-		} else {
++		if (!mbhc->mbhc_cb->mbhc_micbias_control) {
+ 			mbhc->is_hs_recording = true;
+ 			wcd_enable_curr_micbias(mbhc, WCD_MBHC_EN_MB);
+ 		}
+@@ -263,18 +259,6 @@ static int wcd_event_notify(struct notifier_block *self, unsigned long val,
+ 			mbhc->mbhc_cb->set_cap_mode(component, micbias1, true);
+ 		break;
+ 	case WCD_EVENT_PRE_MICBIAS_2_OFF:
+-		/*
+-		 * Before MICBIAS_2 is turned off, if FSM is enabled,
+-		 * make sure current source is enabled so as to detect
+-		 * button press/release events
+-		 */
+-		if (mbhc->mbhc_cb->mbhc_micbias_control &&
+-		    !mbhc->micbias_enable) {
+-			WCD_MBHC_REG_READ(WCD_MBHC_FSM_EN, fsm_en);
+-			if (fsm_en)
+-				WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL,
+-							 3);
+-		}
+ 		break;
+ 	/* MICBIAS usage change */
+ 	case WCD_EVENT_POST_DAPM_MICBIAS_2_OFF:
+@@ -692,6 +676,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
+ 					&mbhc->zl, &mbhc->zr);
+ 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN,
+ 						 fsm_en);
++#if 0
+ 			if ((mbhc->zl > mbhc->mbhc_cfg->linein_th) &&
+ 				(mbhc->zr > mbhc->mbhc_cfg->linein_th) &&
+ 				(jack_type == SND_JACK_HEADPHONE)) {
+@@ -710,6 +695,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
+ 				pr_debug("%s: Marking jack type as SND_JACK_LINEOUT\n",
+ 				__func__);
+ 			}
++#endif
+ 		}
+ 
+ 		/* Do not calculate impedance again for lineout
+@@ -842,6 +828,8 @@ void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
+ 			/* Disable HW FSM and current source */
+ 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 0);
+ 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
++			mbhc->mbhc_cb->mbhc_micbias_control(mbhc->codec,
++							MIC_BIAS_2, MICB_PULLUP_DISABLE);
+ 			/* Setup for insertion detection */
+ 			WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_ELECT_DETECTION_TYPE,
+ 						 1);
+@@ -925,10 +913,6 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
+ 	else
+ 		pr_info("%s: hs_detect_plug work not cancelled\n", __func__);
+ 
+-	/* Enable micbias ramp */
+-	if (mbhc->mbhc_cb->mbhc_micb_ramp_control)
+-		mbhc->mbhc_cb->mbhc_micb_ramp_control(component, true);
+-
+ 	if (mbhc->mbhc_cb->micbias_enable_status)
+ 		micbias1 = mbhc->mbhc_cb->micbias_enable_status(mbhc,
+ 						MIC_BIAS_1);
+@@ -977,6 +961,8 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
+ 		/* Disable HW FSM */
+ 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_FSM_EN, 0);
+ 		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_BTN_ISRC_CTL, 0);
++		mbhc->mbhc_cb->mbhc_micbias_control(mbhc->codec,
++						MIC_BIAS_2, MICB_PULLUP_DISABLE);
+ 		if (mbhc->mbhc_cb->mbhc_common_micb_ctrl)
+ 			mbhc->mbhc_cb->mbhc_common_micb_ctrl(component,
+ 					MBHC_COMMON_MICB_TAIL_CURR, false);
+@@ -1631,6 +1617,9 @@ static int wcd_mbhc_usb_c_analog_setup_gpios(struct wcd_mbhc *mbhc,
+ 		else
+ 			mbhc->usbc_force_pr_mode = true;
+ 
++		WCD_MBHC_REG_UPDATE_BITS(WCD_MBHC_MIC_CLAMP_CTL, 2);
++		mbhc->mbhc_cfg->enable_dual_adc_gpio(mbhc->mbhc_cfg->dual_adc_gpio_node, 0);
++
+ 		if (config->usbc_en1_gpio_p)
+ 			rc = msm_cdc_pinctrl_select_active_state(
+ 				config->usbc_en1_gpio_p);
+@@ -1647,6 +1636,8 @@ static int wcd_mbhc_usb_c_analog_setup_gpios(struct wcd_mbhc *mbhc,
+ 			msm_cdc_pinctrl_select_sleep_state(
+ 				config->usbc_force_gpio_p);
+ 
++		mbhc->mbhc_cfg->enable_dual_adc_gpio(mbhc->mbhc_cfg->dual_adc_gpio_node, 1);
++
+ 		if (mbhc->usbc_force_pr_mode) {
+ 			pval.intval = POWER_SUPPLY_TYPEC_PR_DUAL;
+ 			if (power_supply_set_property(mbhc->usb_psy,
+diff --git a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c
+index d777d8d56446..986c6390643a 100644
+--- a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c
++++ b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ #include <linux/module.h>
+ #include <linux/init.h>
+@@ -1005,6 +1006,26 @@ int tavil_mbhc_get_impedance(struct wcd934x_mbhc *wcd934x_mbhc,
+ }
+ EXPORT_SYMBOL(tavil_mbhc_get_impedance);
+ 
++int tavil_mb_pull_down(struct snd_soc_codec *codec, bool active,
++		int value)
++{
++	int oldv = 0;
++
++	if (active) {
++		oldv = snd_soc_read(codec, WCD934X_ANA_MICB2);
++		snd_soc_update_bits(codec, WCD934X_ANA_MBHC_ELECT,
++				0x80, 0x00);
++		snd_soc_update_bits(codec, WCD934X_ANA_MICB2, 0xC0, 0xC0);
++	} else {
++		snd_soc_write(codec, WCD934X_ANA_MICB2, value);
++		snd_soc_update_bits(codec, WCD934X_ANA_MBHC_ELECT,
++				0x80, 0x80);
++	}
++
++	return oldv;
++}
++EXPORT_SYMBOL(tavil_mb_pull_down);
++
+ /*
+  * tavil_mbhc_hs_detect: starts mbhc insertion/removal functionality
+  * @component: handle to snd_soc_component *
+diff --git a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h
+index d474f6338b86..20e6278acb2e 100644
+--- a/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h
++++ b/techpack/audio/asoc/codecs/wcd934x/wcd934x-mbhc.h
+@@ -39,6 +39,8 @@ extern int tavil_mbhc_post_ssr_init(struct wcd934x_mbhc *mbhc,
+ 				    struct snd_soc_component *component);
+ extern int tavil_mbhc_get_impedance(struct wcd934x_mbhc *wcd934x_mbhc,
+ 				    uint32_t *zl, uint32_t *zr);
++extern int tavil_mb_pull_down(struct snd_soc_codec *codec, bool active,
++			int value);
+ #else
+ static inline int tavil_mbhc_init(struct wcd934x_mbhc **mbhc,
+ 				  struct snd_soc_component *component,
+@@ -72,6 +74,11 @@ static inline int tavil_mbhc_get_impedance(struct wcd934x_mbhc *wcd934x_mbhc,
+ 		*zr = 0;
+ 	return -EINVAL;
+ }
++static inline int tavil_mb_pull_down(struct snd_soc_codec *codec, bool active,
++			int value)
++{
++	return 0;
++}
+ #endif
+ 
+ #endif /* __WCD934X_MBHC_H__ */
+diff --git a/techpack/audio/asoc/codecs/wcd934x/wcd934x-regmap.c b/techpack/audio/asoc/codecs/wcd934x/wcd934x-regmap.c
+index a9642091a66e..6165c8d1777a 100644
+--- a/techpack/audio/asoc/codecs/wcd934x/wcd934x-regmap.c
++++ b/techpack/audio/asoc/codecs/wcd934x/wcd934x-regmap.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ #include <linux/regmap.h>
+@@ -722,7 +723,7 @@ static const struct reg_default wcd934x_defaults[] = {
+ 	{ WCD934X_EAR_STATUS_REG,                          0x04 },
+ 	{ WCD934X_EAR_EAR_MISC,                            0x28 },
+ 	{ WCD934X_DIFF_LO_MISC,                            0x03 },
+-	{ WCD934X_DIFF_LO_LO2_COMPANDER,                   0x00 },
++	{ WCD934X_DIFF_LO_LO2_COMPANDER,                   0x04 },
+ 	{ WCD934X_DIFF_LO_LO1_COMPANDER,                   0x00 },
+ 	{ WCD934X_DIFF_LO_COMMON,                          0x40 },
+ 	{ WCD934X_DIFF_LO_BYPASS_EN,                       0x00 },
+diff --git a/techpack/audio/asoc/codecs/wcd934x/wcd934x.c b/techpack/audio/asoc/codecs/wcd934x/wcd934x.c
+index 49f164c9d9ff..4f05abd1b147 100644
+--- a/techpack/audio/asoc/codecs/wcd934x/wcd934x.c
++++ b/techpack/audio/asoc/codecs/wcd934x/wcd934x.c
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2015-2019, 2020, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ #include <linux/module.h>
+ #include <linux/init.h>
+@@ -6202,32 +6203,39 @@ static int tavil_mad_input_put(struct snd_kcontrol *kcontrol,
+ 		"%s: tavil input widget = %s, adc_input = %s\n", __func__,
+ 		mad_input_widget, is_adc_input ? "true" : "false");
+ 
+-	for (i = 0; i < card->num_of_dapm_routes; i++) {
+-		if (!strcmp(card->of_dapm_routes[i].sink, mad_input_widget)) {
+-			source_widget = card->of_dapm_routes[i].source;
+-			if (!source_widget) {
+-				dev_err(component->dev,
+-					"%s: invalid source widget\n",
+-					__func__);
+-				return -EINVAL;
+-			}
++	if (!strcmp("AMIC2", mad_input_widget)) {
++		mic_bias_found = 2;
++		dev_info(codec->dev,
++			"%s: tavil input widget = %s, enable MIC BIAS2 directly.\n",
++			__func__, mad_input_widget);
++	} else {
++		for (i = 0; i < card->num_of_dapm_routes; i++) {
++			if (!strcmp(card->of_dapm_routes[i].sink, mad_input_widget)) {
++				source_widget = card->of_dapm_routes[i].source;
++				if (!source_widget) {
++					dev_err(codec->dev,
++						"%s: invalid source widget\n",
++						__func__);
++					return -EINVAL;
++				}
+ 
+-			if (strnstr(source_widget,
+-				"MIC BIAS1", sizeof("MIC BIAS1"))) {
+-				mic_bias_found = 1;
+-				break;
+-			} else if (strnstr(source_widget,
+-				"MIC BIAS2", sizeof("MIC BIAS2"))) {
+-				mic_bias_found = 2;
+-				break;
+-			} else if (strnstr(source_widget,
+-				"MIC BIAS3", sizeof("MIC BIAS3"))) {
+-				mic_bias_found = 3;
+-				break;
+-			} else if (strnstr(source_widget,
+-				"MIC BIAS4", sizeof("MIC BIAS4"))) {
+-				mic_bias_found = 4;
+-				break;
++				if (strnstr(source_widget,
++					"MIC BIAS1", sizeof("MIC BIAS1"))) {
++					mic_bias_found = 1;
++					break;
++				} else if (strnstr(source_widget,
++					"MIC BIAS2", sizeof("MIC BIAS2"))) {
++					mic_bias_found = 2;
++					break;
++				} else if (strnstr(source_widget,
++					"MIC BIAS3", sizeof("MIC BIAS3"))) {
++					mic_bias_found = 3;
++					break;
++				} else if (strnstr(source_widget,
++					"MIC BIAS4", sizeof("MIC BIAS4"))) {
++					mic_bias_found = 4;
++					break;
++				}
+ 			}
+ 		}
+ 	}
+@@ -6419,6 +6427,37 @@ static int tavil_rx_hph_mode_put(struct snd_kcontrol *kcontrol,
+ 	return 0;
+ }
+ 
++static int codec_version_get(struct snd_kcontrol *kcontrol,
++				 struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
++	struct tavil_priv *tavil = snd_soc_codec_get_drvdata(codec);
++
++	struct wcd9xxx *wcd9xxx= tavil->wcd9xxx;
++
++	ucontrol->value.integer.value[0] = 0;
++
++	switch (wcd9xxx->version) {
++	case TAVIL_VERSION_WCD9340_1_0:
++		ucontrol->value.integer.value[0] = 1;
++		break;
++	case TAVIL_VERSION_WCD9341_1_0:
++		ucontrol->value.integer.value[0] = 2;
++		break;
++	case TAVIL_VERSION_WCD9340_1_1:
++		ucontrol->value.integer.value[0] = 3;
++		break;
++	case TAVIL_VERSION_WCD9341_1_1:
++		ucontrol->value.integer.value[0] = 4;
++		break;
++	default:
++		dev_warn(codec->dev, "%s:Invalid codec version %d\n",
++			__func__, wcd9xxx->version);
++	}
++
++    return 0;
++}
++
+ static const char * const rx_hph_mode_mux_text[] = {
+ 	"CLS_H_INVALID", "CLS_H_HIFI", "CLS_H_LP", "CLS_AB", "CLS_H_LOHIFI",
+ 	"CLS_H_ULP", "CLS_AB_HIFI",
+@@ -6467,6 +6506,11 @@ static const char * const tavil_ear_spkr_pa_gain_text[] = {
+ 	"G_4_DB", "G_5_DB", "G_6_DB"
+ };
+ 
++static const char *const codec_version_text[] = {"Unknown", "WCD9340_v1.0", "WCD9341_v1.0", "WCD9340_v1.1", "WCD9341_v1.1"};
++static const struct soc_enum codec_version[] = {
++	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(codec_version_text), codec_version_text),
++};
++
+ static const char * const tavil_speaker_boost_stage_text[] = {
+ 	"NO_MAX_STATE", "MAX_STATE_1", "MAX_STATE_2"
+ };
+@@ -6756,6 +6800,8 @@ static const struct snd_kcontrol_new tavil_snd_controls[] = {
+ 		tavil_amic_pwr_lvl_get, tavil_amic_pwr_lvl_put),
+ 	SOC_ENUM_EXT("AMIC_5_6 PWR MODE", amic_pwr_lvl_enum,
+ 		tavil_amic_pwr_lvl_get, tavil_amic_pwr_lvl_put),
++	SOC_ENUM_EXT("Codec Version", codec_version,
++		codec_version_get, NULL ),
+ };
+ 
+ static int tavil_dec_enum_put(struct snd_kcontrol *kcontrol,
+diff --git a/techpack/audio/asoc/msm-dai-fe.c b/techpack/audio/asoc/msm-dai-fe.c
+index 29e15dda17cb..5be96f47aea5 100644
+--- a/techpack/audio/asoc/msm-dai-fe.c
++++ b/techpack/audio/asoc/msm-dai-fe.c
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ 
+@@ -389,13 +390,13 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
+ 		.capture = {
+ 			.stream_name = "SLIMBUS1_HOSTLESS Capture",
+ 			.aif_name = "SLIM1_UL_HL",
+-			.rates = SNDRV_PCM_RATE_8000_48000,
++			.rates = SNDRV_PCM_RATE_8000_192000,
+ 			.formats = (SNDRV_PCM_FMTBIT_S16_LE |
+ 				    SNDRV_PCM_FMTBIT_S24_LE),
+ 			.channels_min = 1,
+ 			.channels_max = 2,
+ 			.rate_min =     8000,
+-			.rate_max =     48000,
++			.rate_max =     192000,
+ 		},
+ 		.ops = &msm_fe_dai_ops,
+ 		.name = "SLIMBUS1_HOSTLESS",
+diff --git a/techpack/audio/asoc/msm-pcm-routing-v2.c b/techpack/audio/asoc/msm-pcm-routing-v2.c
+index 6eafbd0c3627..7f5d5b18545a 100644
+--- a/techpack/audio/asoc/msm-pcm-routing-v2.c
++++ b/techpack/audio/asoc/msm-pcm-routing-v2.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
+  * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ #include <linux/init.h>
+@@ -80,6 +81,10 @@ static int msm_ec_ref_bit_format = SNDRV_PCM_FORMAT_S16_LE;
+ static int msm_ec_ref_sampling_rate = 48000;
+ static uint32_t voc_session_id = ALL_SESSION_VSID;
+ static int msm_route_ext_ec_ref;
++static int voice_ext_ec_ref;
++static int voip_ext_ec_ref;
++static int wakeup_ext_ec_ref = 0;
++static int voip_ext_ec_common_ref = 0;
+ static bool is_custom_stereo_on;
+ static bool is_ds2_on;
+ static bool ffecns_freeze_event;
+@@ -90,6 +95,7 @@ static int num_app_cfg_types;
+ static int msm_ec_ref_port_id;
+ static int afe_loopback_tx_port_index;
+ static int afe_loopback_tx_port_id = -1;
++bool state_rx;
+ 
+ #define WEIGHT_0_DB 0x4000
+ /* all the FEs which can support channel mixer */
+@@ -5409,6 +5415,7 @@ static int get_ec_ref_port_id(int value, int *index)
+ 	case 0:
+ 		*index = 0;
+ 		port_id = AFE_PORT_INVALID;
++		state_rx = false;
+ 		break;
+ 	case 1:
+ 		*index = 1;
+@@ -5578,6 +5585,7 @@ static int get_ec_ref_port_id(int value, int *index)
+ 		*index = 0; /* NONE */
+ 		pr_err("%s: Invalid value %d\n", __func__, value);
+ 		port_id = AFE_PORT_INVALID;
++		state_rx = false;
+ 		break;
+ 	}
+ 
+@@ -5680,9 +5688,16 @@ static const struct snd_kcontrol_new ec_ref_param_controls[] = {
+ static int msm_routing_ec_ref_rx_get(struct snd_kcontrol *kcontrol,
+ 				struct snd_ctl_elem_value *ucontrol)
+ {
++    struct snd_soc_dapm_widget_list *wlist =
++						dapm_kcontrol_get_wlist(kcontrol);
++	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
++
+ 	pr_debug("%s: ec_ref_rx  = %d", __func__, msm_route_ec_ref_rx);
+ 	mutex_lock(&routing_lock);
+-	ucontrol->value.integer.value[0] = msm_route_ec_ref_rx;
++	if (!strncmp(widget->name, "AUDIO_REF_EC_UL10 MUX", strlen("AUDIO_REF_EC_UL10 MUX")))
++		ucontrol->value.integer.value[0] = voip_ext_ec_common_ref;
++	else
++		ucontrol->value.integer.value[0] = wakeup_ext_ec_ref;
+ 	mutex_unlock(&routing_lock);
+ 
+ 	return 0;
+@@ -5697,15 +5712,27 @@ static int msm_routing_ec_ref_rx_put(struct snd_kcontrol *kcontrol,
+ 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+ 	struct snd_soc_dapm_update *update = NULL;
+ 
++	state_rx = true;
+ 	mutex_lock(&routing_lock);
+ 	msm_ec_ref_port_id = get_ec_ref_port_id(value, &msm_route_ec_ref_rx);
+-	adm_ec_ref_rx_id(msm_ec_ref_port_id);
+ 	pr_debug("%s: msm_route_ec_ref_rx = %d\n",
+ 	    __func__, msm_route_ec_ref_rx);
+-	mutex_unlock(&routing_lock);
+ 
+-	snd_soc_dapm_mux_update_power(widget->dapm, kcontrol,
++	if (!strncmp(widget->name, "AUDIO_REF_EC_UL10 MUX", strlen("AUDIO_REF_EC_UL10 MUX")))
++		voip_ext_ec_common_ref = msm_route_ec_ref_rx;
++	else
++		wakeup_ext_ec_ref = msm_route_ec_ref_rx;
++
++	if (state_rx || (!state_rx && wakeup_ext_ec_ref == 0 && voip_ext_ec_common_ref == 0)) {
++		pr_info("%s: update state!\n", __func__);
++		adm_ec_ref_rx_id(ec_ref_port_id);
++		mutex_unlock(&routing_lock);
++		snd_soc_dapm_mux_update_power(widget->dapm, kcontrol,
+ 					msm_route_ec_ref_rx, e, update);
++	} else {
++		mutex_unlock(&routing_lock);
++	}
++
+ 	return 0;
+ }
+ 
+@@ -5787,10 +5814,17 @@ static const struct snd_kcontrol_new ext_ec_ref_mux_ul29 =
+ static int msm_routing_ext_ec_get(struct snd_kcontrol *kcontrol,
+ 				  struct snd_ctl_elem_value *ucontrol)
+ {
+-	pr_debug("%s: ext_ec_ref_rx  = %x\n", __func__, msm_route_ext_ec_ref);
++	struct snd_soc_dapm_widget_list *wlist =
++						dapm_kcontrol_get_wlist(kcontrol);
++	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
++
++	pr_info("%s: ext_ec_ref_rx  = %x\n", __func__, msm_route_ext_ec_ref);
+ 
+ 	mutex_lock(&routing_lock);
+-	ucontrol->value.integer.value[0] = msm_route_ext_ec_ref;
++	if (!strncmp(widget->name, "VOC_EXT_EC MUX", strlen("VOC_EXT_EC MUX")))
++		ucontrol->value.integer.value[0] = voice_ext_ec_ref;
++	else
++		ucontrol->value.integer.value[0] = voip_ext_ec_ref;
+ 	mutex_unlock(&routing_lock);
+ 	return 0;
+ }
+@@ -5814,6 +5848,7 @@ static int msm_routing_ext_ec_put(struct snd_kcontrol *kcontrol,
+ 
+ 	mutex_lock(&routing_lock);
+ 	msm_route_ext_ec_ref = ucontrol->value.integer.value[0];
++	pr_info("%s: %s, value %d\n", __func__, widget->name, msm_route_ext_ec_ref);
+ 
+ 	switch (msm_route_ext_ec_ref) {
+ 	case EXT_EC_REF_PRI_MI2S_TX:
+@@ -5850,12 +5885,23 @@ static int msm_routing_ext_ec_put(struct snd_kcontrol *kcontrol,
+ 	pr_debug("%s: val = %d ext_ec_ref_port_id = 0x%0x state = %d\n",
+ 		 __func__, msm_route_ext_ec_ref, ext_ec_ref_port_id, state);
+ 
+-	if (!voc_set_ext_ec_ref_port_id(ext_ec_ref_port_id, state)) {
+-		mutex_unlock(&routing_lock);
+-		snd_soc_dapm_mux_update_power(widget->dapm, kcontrol, mux, e,
+-						update);
++	if (!strncmp(widget->name, "VOC_EXT_EC MUX", strlen("VOC_EXT_EC MUX")))
++		voice_ext_ec_ref = msm_route_ext_ec_ref;
++	else
++		voip_ext_ec_ref = msm_route_ext_ec_ref;
++
++	pr_info("%s: state %d, voice ec ref %d, voip ec ref %d\n", __func__,
++			state, voice_ext_ec_ref, voip_ext_ec_ref);
++	if (state || (!state && voice_ext_ec_ref == 0 && voip_ext_ec_ref == 0)) {
++		pr_info("%s: update state!\n", __func__);
++		if (!voc_set_ext_ec_ref_port_id(ext_ec_ref_port_id, state)) {
++			mutex_unlock(&routing_lock);
++			snd_soc_dapm_mux_update_power(widget->dapm, kcontrol, mux, e, update);
++		} else {
++			ret = -EINVAL;
++			mutex_unlock(&routing_lock);
++		}
+ 	} else {
+-		ret = -EINVAL;
+ 		mutex_unlock(&routing_lock);
+ 	}
+ 	return ret;
+@@ -6326,6 +6372,10 @@ static const struct snd_kcontrol_new slimbus_rx_mixer_controls[] = {
+ 	msm_routing_put_audio_mixer),
+ };
+ 
++static const struct snd_kcontrol_new voip_ext_ec_mux =
++	SOC_DAPM_ENUM_EXT("VOIP_EXT_EC MUX Mux", msm_route_ext_ec_ref_rx_enum[0],
++			msm_routing_ext_ec_get, msm_routing_ext_ec_put);
++
+ #ifndef CONFIG_MI2S_DISABLE
+ static const struct snd_kcontrol_new pri_i2s_rx_mixer_controls[] = {
+ 	SOC_DOUBLE_EXT("MultiMedia1", SND_SOC_NOPM,
+@@ -24852,6 +24902,8 @@ static const struct snd_soc_dapm_widget msm_qdsp6_widgets[] = {
+ 				&wsa_rx_0_vi_fb_rch_mux),
+ 	SND_SOC_DAPM_MUX("VOC_EXT_EC MUX", SND_SOC_NOPM, 0, 0,
+ 			 &voc_ext_ec_mux),
++	SND_SOC_DAPM_MUX("VOIP_EXT_EC MUX", SND_SOC_NOPM, 0, 0,
++			 &voip_ext_ec_mux),
+ 	SND_SOC_DAPM_MUX("AUDIO_REF_EC_UL1 MUX", SND_SOC_NOPM, 0, 0,
+ 		&ext_ec_ref_mux_ul1),
+ 	SND_SOC_DAPM_MUX("AUDIO_REF_EC_UL2 MUX", SND_SOC_NOPM, 0, 0,
+@@ -27065,10 +27117,25 @@ static const struct snd_soc_dapm_route intercon[] = {
+ #endif
+ 
+ 	{"VOC_EXT_EC MUX", "SLIM_1_TX",    "SLIMBUS_1_TX"},
++
++	{"VOIP_EXT_EC MUX", "PRI_MI2S_TX" , "PRI_MI2S_TX"},
++	{"VOIP_EXT_EC MUX", "SEC_MI2S_TX" , "SEC_MI2S_TX"},
++	{"VOIP_EXT_EC MUX", "TERT_MI2S_TX" , "TERT_MI2S_TX"},
++	{"VOIP_EXT_EC MUX", "QUAT_MI2S_TX" , "QUAT_MI2S_TX"},
++	{"VOIP_EXT_EC MUX", "SLIM_1_TX" , "SLIMBUS_1_TX"},
++
+ 	{"VOIP_UL", NULL, "VOC_EXT_EC MUX"},
+ 	{"VOICEMMODE1_UL", NULL, "VOC_EXT_EC MUX"},
+ 	{"VOICEMMODE2_UL", NULL, "VOC_EXT_EC MUX"},
+ 
++	{"CS-VOICE_UL1", NULL, "VOIP_EXT_EC MUX"},
++	{"VOIP_UL", NULL, "VOIP_EXT_EC MUX"},
++	{"VoLTE_UL", NULL, "VOIP_EXT_EC MUX"},
++	{"VOICE2_UL", NULL, "VOIP_EXT_EC MUX"},
++	{"VoWLAN_UL", NULL, "VOIP_EXT_EC MUX"},
++	{"VOICEMMODE1_UL", NULL, "VOIP_EXT_EC MUX"},
++	{"VOICEMMODE2_UL", NULL, "VOIP_EXT_EC MUX"},
++
+ 	{"AUDIO_REF_EC_UL1 MUX", "SLIM_1_TX", "SLIMBUS_1_TX"},
+ 	{"AUDIO_REF_EC_UL10 MUX", "SLIM_1_TX", "SLIMBUS_1_TX"},
+ 
+diff --git a/techpack/audio/asoc/sdm845.c b/techpack/audio/asoc/sdm845.c
+index 883c06509ea5..7294ae9ddf28 100644
+--- a/techpack/audio/asoc/sdm845.c
++++ b/techpack/audio/asoc/sdm845.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2016-2019, 2021, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ 
+ #include <linux/clk.h>
+@@ -30,6 +31,7 @@
+ #include "codecs/wcd934x/wcd934x.h"
+ #include "codecs/wcd934x/wcd934x-mbhc.h"
+ #include "codecs/wsa881x.h"
++#include <linux/regulator/consumer.h>
+ 
+ #define DRV_NAME "sdm845-asoc-snd"
+ 
+@@ -169,6 +171,7 @@ struct msm_asoc_mach_data {
+ 	struct pinctrl *usbc_en2_gpio_p; /* used by pinctrl API */
+ 	struct device_node *hph_en1_gpio_p; /* used by pinctrl API */
+ 	struct device_node *hph_en0_gpio_p; /* used by pinctrl API */
++	struct device_node *adc2_sel_gpio_p; /* used by pinctrl API */
+ 	struct snd_info_entry *codec_root;
+ 	struct msm_pinctrl_info pinctrl_info;
+ 	struct snd_soc_component *component;
+@@ -384,7 +387,7 @@ static struct tdm_dev_config tdm_cfg[TDM_INTERFACE_MAX * 2]
+ /* Default configuration of slimbus channels */
+ static struct dev_config slim_rx_cfg[] = {
+ 	[SLIM_RX_0] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+-	[SLIM_RX_1] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
++	[SLIM_RX_1] = {SAMPLING_RATE_96KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+ 	[SLIM_RX_2] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+ 	[SLIM_RX_3] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+ 	[SLIM_RX_4] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+@@ -395,7 +398,7 @@ static struct dev_config slim_rx_cfg[] = {
+ 
+ static struct dev_config slim_tx_cfg[] = {
+ 	[SLIM_TX_0] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+-	[SLIM_TX_1] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
++	[SLIM_TX_1] = {SAMPLING_RATE_96KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+ 	[SLIM_TX_2] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+ 	[SLIM_TX_3] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+ 	[SLIM_TX_4] = {SAMPLING_RATE_48KHZ, SNDRV_PCM_FORMAT_S16_LE, 1},
+@@ -514,6 +517,7 @@ static SOC_ENUM_SINGLE_EXT_DECL(slim_0_rx_chs, slim_rx_ch_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_2_rx_chs, slim_rx_ch_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_0_tx_chs, slim_tx_ch_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_1_tx_chs, slim_tx_ch_text);
++static SOC_ENUM_SINGLE_EXT_DECL(slim_3_tx_chs, slim_tx_ch_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_5_rx_chs, slim_rx_ch_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_6_rx_chs, slim_rx_ch_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(usb_rx_chs, usb_ch_text);
+@@ -524,6 +528,7 @@ static SOC_ENUM_SINGLE_EXT_DECL(proxy_rx_chs, ch_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_0_rx_format, bit_format_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_5_rx_format, bit_format_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_6_rx_format, bit_format_text);
++static SOC_ENUM_SINGLE_EXT_DECL(slim_3_tx_format, bit_format_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_0_tx_format, bit_format_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(usb_rx_format, bit_format_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(usb_tx_format, bit_format_text);
+@@ -531,6 +536,7 @@ static SOC_ENUM_SINGLE_EXT_DECL(ext_disp_rx_format, ext_disp_bit_format_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_0_rx_sample_rate, slim_sample_rate_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_2_rx_sample_rate, slim_sample_rate_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_0_tx_sample_rate, slim_sample_rate_text);
++static SOC_ENUM_SINGLE_EXT_DECL(slim_3_tx_sample_rate, slim_sample_rate_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_5_rx_sample_rate, slim_sample_rate_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(slim_6_rx_sample_rate, slim_sample_rate_text);
+ static SOC_ENUM_SINGLE_EXT_DECL(bt_sample_rate, bt_sample_rate_text);
+@@ -604,9 +610,9 @@ static struct wcd_mbhc_config wcd_mbhc_cfg = {
+ 	.swap_gnd_mic = NULL,
+ 	.hs_ext_micbias = true,
+ 	.key_code[0] = KEY_MEDIA,
+-	.key_code[1] = KEY_VOICECOMMAND,
+-	.key_code[2] = KEY_VOLUMEUP,
+-	.key_code[3] = KEY_VOLUMEDOWN,
++	.key_code[1] = BTN_1,
++	.key_code[2] = BTN_2,
++	.key_code[3] = 0,
+ 	.key_code[4] = 0,
+ 	.key_code[5] = 0,
+ 	.key_code[6] = 0,
+@@ -814,6 +820,8 @@ static int slim_get_port_idx(struct snd_kcontrol *kcontrol)
+ 		port_id = SLIM_TX_0;
+ 	else if (strnstr(kcontrol->id.name, "SLIM_1_TX", sizeof("SLIM_1_TX")))
+ 		port_id = SLIM_TX_1;
++	else if (strnstr(kcontrol->id.name, "SLIM_3_TX", sizeof("SLIM_3_TX")))
++		port_id = SLIM_TX_3;
+ 	else {
+ 		pr_err("%s: unsupported channel: %s",
+ 			__func__, kcontrol->id.name);
+@@ -2940,6 +2948,32 @@ static int msm_qos_ctl_put(struct snd_kcontrol *kcontrol,
+ 	return 0;
+ }
+ 
++static int usbhs_direction_get(struct snd_kcontrol *kcontrol,
++				struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_codec *codec = NULL;
++	struct snd_soc_card *card = NULL;
++	struct msm_asoc_mach_data *pdata = NULL;
++
++	ucontrol->value.integer.value[0] = 0;
++
++	codec = snd_soc_kcontrol_codec(kcontrol);
++	if (codec) {
++		card = codec->component.card;
++		if (card) {
++			pdata = snd_soc_card_get_drvdata(card);
++			if (pdata){
++				if (pdata->usbc_en2_gpio_p) {
++					ucontrol->value.integer.value[0] = gpio_get_value_cansleep(pdata->usbc_en2_gpio);
++				} else if (pdata->usbc_en2_gpio > 0) {
++					ucontrol->value.integer.value[0] = gpio_get_value_cansleep(pdata->usbc_en2_gpio);
++				}
++			}
++		}
++	}
++	return 0;
++}
++
+ static const struct snd_kcontrol_new msm_snd_controls[] = {
+ 	SOC_ENUM_EXT("SLIM_0_RX Channels", slim_0_rx_chs,
+ 			msm_slim_rx_ch_get, msm_slim_rx_ch_put),
+@@ -3186,8 +3220,16 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
+ 			msm_hifi_put),
+ 	SOC_ENUM_EXT("MultiMedia5_RX QOS Vote", qos_vote, msm_qos_ctl_get,
+ 			msm_qos_ctl_put),
++	SOC_SINGLE_EXT("USB Headset Direction", 0, 0, UINT_MAX, 0,
++					usbhs_direction_get, NULL),
+ 	SOC_SINGLE_MULTI_EXT("TDM Slot Map", SND_SOC_NOPM, 0, 255, 0, 4,
+ 	NULL, tdm_slot_map_put),
++	SOC_ENUM_EXT("SLIM_3_TX Channels", slim_3_tx_chs,
++			msm_slim_tx_ch_get, msm_slim_tx_ch_put),
++	SOC_ENUM_EXT("SLIM_3_TX Format", slim_3_tx_format,
++			slim_tx_bit_format_get, slim_tx_bit_format_put),
++	SOC_ENUM_EXT("SLIM_3_TX SampleRate", slim_3_tx_sample_rate,
++			slim_tx_sample_rate_get, slim_tx_sample_rate_put),
+ };
+ 
+ static int msm_snd_enable_codec_ext_clk(struct snd_soc_component *component,
+@@ -3289,6 +3331,58 @@ static int msm_hifi_ctrl_event(struct snd_soc_dapm_widget *w,
+ 	return 0;
+ }
+ 
++/*
++static int external_amic2_sel_get(struct snd_kcontrol *kcontrol,
++                               struct snd_ctl_elem_value *ucontrol)
++{
++	ucontrol->value.integer.value[0] = amic2_sel_state;
++	return 0;
++}
++*/
++
++static void external_enable_dual_adc_gpio(struct device_node *np, bool val)
++{
++	if (!np)
++		return;
++
++	if (val == 1) {
++		msm_cdc_pinctrl_select_active_state(np);
++		pr_info("%s: enable Dual ADC \n", __func__);
++	} else {
++		msm_cdc_pinctrl_select_sleep_state(np);
++		pr_info("%s: disable Dual ADC \n", __func__);
++	}
++}
++
++static int external_amic2_sel_put(struct snd_kcontrol *kcontrol,
++                               struct snd_ctl_elem_value *ucontrol)
++{
++	struct snd_soc_dapm_context *dapm = snd_soc_dapm_kcontrol_dapm(kcontrol);
++	struct snd_soc_card *card = dapm->card;
++	struct msm_asoc_mach_data *pdata = snd_soc_card_get_drvdata(card);
++	unsigned int val;
++
++	val = ucontrol->value.enumerated.item[0];
++
++	if (!pdata || !pdata->adc2_sel_gpio_p) {
++		pr_err("%s: adc2_sel_gpio is invalid\n", __func__);
++		return -EINVAL;
++	}
++
++	//external_enable_dual_adc_gpio(pdata->adc2_sel_gpio_p, !!(val));
++	pr_info("external_amic2_sel_put %u \n", val);
++
++	return snd_soc_dapm_put_enum_double(kcontrol, ucontrol);
++}
++
++static const char *const external_AMIC2_enum_text[] = {"default", "Dual_ADC"};
++
++static SOC_ENUM_SINGLE_VIRT_DECL(external_AMIC2_enum, external_AMIC2_enum_text);
++
++static const struct snd_kcontrol_new ext_amc2_mux =
++	SOC_DAPM_ENUM_EXT("External AMIC2 sel", external_AMIC2_enum,
++			snd_soc_dapm_get_enum_double, external_amic2_sel_put);
++
+ static const struct snd_soc_dapm_widget msm_dapm_widgets[] = {
+ 
+ 	SND_SOC_DAPM_SUPPLY("MCLK",  SND_SOC_NOPM, 0, 0,
+@@ -3313,6 +3407,7 @@ static const struct snd_soc_dapm_widget msm_dapm_widgets[] = {
+ 	SND_SOC_DAPM_MIC("Digital Mic3", NULL),
+ 	SND_SOC_DAPM_MIC("Digital Mic4", NULL),
+ 	SND_SOC_DAPM_MIC("Digital Mic5", NULL),
++	SND_SOC_DAPM_MIC("Headset Mic2", NULL),
+ };
+ 
+ static inline int param_is_mask(int p)
+@@ -3746,6 +3841,7 @@ static bool msm_usbc_swap_gnd_mic(struct snd_soc_component *component, bool acti
+ 	struct msm_asoc_mach_data *pdata = snd_soc_card_get_drvdata(card);
+ 	struct pinctrl_state *en2_pinctrl_active;
+ 	struct pinctrl_state *en2_pinctrl_sleep;
++	int oldv;
+ 
+ 	if (!pdata->usbc_en2_gpio_p) {
+ 		if (active) {
+@@ -3796,6 +3892,7 @@ static bool msm_usbc_swap_gnd_mic(struct snd_soc_component *component, bool acti
+ 	/* if active and usbc_en2_gpio_p defined, swap using usbc_en2_gpio_p */
+ 	if (active) {
+ 		dev_dbg(component->dev, "%s: enter\n", __func__);
++		oldv = tavil_mb_pull_down(codec, true, 0);
+ 		if (pdata->usbc_en2_gpio_p) {
+ 			value = gpio_get_value_cansleep(pdata->usbc_en2_gpio);
+ 			if (value)
+@@ -3808,7 +3905,8 @@ static bool msm_usbc_swap_gnd_mic(struct snd_soc_component *component, bool acti
+ 			value = gpio_get_value_cansleep(pdata->usbc_en2_gpio);
+ 			gpio_set_value_cansleep(pdata->usbc_en2_gpio, !value);
+ 		}
+-		pr_debug("%s: swap select switch %d to %d\n", __func__,
++		tavil_mb_pull_down(codec, false, oldv);
++		pr_info("%s: swap select switch %d to %d\n", __func__,
+ 			value, !value);
+ 		ret = true;
+ 	} else {
+@@ -4094,6 +4192,10 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
+ 				ARRAY_SIZE(wcd_audio_paths));
+ 
+ 	snd_soc_dapm_ignore_suspend(dapm, "Handset Mic");
++	snd_soc_dapm_ignore_suspend(dapm, "AMIC2");
++	snd_soc_dapm_ignore_suspend(dapm, "AMIC2_EXT_0");
++	snd_soc_dapm_ignore_suspend(dapm, "AMIC2_EXT_1");
++	snd_soc_dapm_ignore_suspend(dapm, "Headset Mic2");
+ 	snd_soc_dapm_ignore_suspend(dapm, "Headset Mic");
+ 	snd_soc_dapm_ignore_suspend(dapm, "ANCRight Headset Mic");
+ 	snd_soc_dapm_ignore_suspend(dapm, "ANCLeft Headset Mic");
+@@ -4217,13 +4319,13 @@ static void *def_tavil_mbhc_cal(void)
+ 		(sizeof(btn_cfg->_v_btn_low[0]) * btn_cfg->num_btn);
+ 
+ 	btn_high[0] = 75;
+-	btn_high[1] = 150;
+-	btn_high[2] = 237;
+-	btn_high[3] = 500;
+-	btn_high[4] = 500;
+-	btn_high[5] = 500;
+-	btn_high[6] = 500;
+-	btn_high[7] = 500;
++	btn_high[1] = 260;
++	btn_high[2] = 750;
++	btn_high[3] = 750;
++	btn_high[4] = 750;
++	btn_high[5] = 750;
++	btn_high[6] = 750;
++	btn_high[7] = 750;
+ 
+ 	return tavil_wcd_cal;
+ }
+@@ -4291,6 +4393,8 @@ static int msm_snd_hw_params(struct snd_pcm_substream *substream,
+ 		/* For <codec>_tx3 case */
+ 		else if (dai_link->id == MSM_BACKEND_DAI_SLIMBUS_1_TX)
+ 			user_set_tx_ch = slim_tx_cfg[1].channels;
++		else if (dai_link->id == MSM_BACKEND_DAI_SLIMBUS_3_TX)
++			user_set_tx_ch = slim_tx_cfg[3].channels;
+ 		else if (dai_link->id == MSM_BACKEND_DAI_SLIMBUS_4_TX)
+ 			user_set_tx_ch = msm_vi_feed_tx_ch;
+ 		else
+@@ -5594,6 +5698,36 @@ static struct snd_soc_dai_link msm_common_dai_links[] = {
+ 		.codec_dai_name = "snd-soc-dummy-dai",
+ 		.codec_name = "snd-soc-dummy",
+ 	},
++    {
++		.name = "Quaternary MI2S_RX Hostless Playback",
++		.stream_name = "Quaternary MI2S_RX Hostless Playback",
++		.cpu_dai_name = "QUAT_MI2S_RX_HOSTLESS",
++		.platform_name = "msm-pcm-hostless",
++		.dynamic = 1,
++		.dpcm_playback = 1,
++		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
++			SND_SOC_DPCM_TRIGGER_POST},
++		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
++		.ignore_suspend = 1,
++		.ignore_pmdown_time = 1,
++		.codec_dai_name = "snd-soc-dummy-dai",
++		.codec_name = "snd-soc-dummy",
++	},
++	{
++		.name = "Quaternary MI2S_TX Hostless Capture",
++		.stream_name = "Quaternary MI2S_TX Hostless Capture",
++		.cpu_dai_name = "QUAT_MI2S_TX_HOSTLESS",
++		.platform_name = "msm-pcm-hostless",
++		.dynamic = 1,
++		.dpcm_capture = 1,
++		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
++			SND_SOC_DPCM_TRIGGER_POST},
++		.no_host_mode = SND_SOC_DAI_LINK_NO_HOST,
++		.ignore_suspend = 1,
++		.ignore_pmdown_time = 1,
++		.codec_dai_name = "snd-soc-dummy-dai",
++		.codec_name = "snd-soc-dummy",
++	},
+ };
+ 
+ static struct snd_soc_dai_link msm_tavil_fe_dai_links[] = {
+@@ -6025,7 +6159,7 @@ static struct snd_soc_dai_link msm_tavil_be_dai_links[] = {
+ 		.cpu_dai_name = "msm-dai-q6-dev.16386",
+ 		.platform_name = "msm-pcm-routing",
+ 		.codec_name = "tavil_codec",
+-		.codec_dai_name = "tavil_rx1",
++		.codec_dai_name = "tavil_rx2",
+ 		.no_pcm = 1,
+ 		.dpcm_playback = 1,
+ 		.id = MSM_BACKEND_DAI_SLIMBUS_1_RX,
+@@ -6041,7 +6175,7 @@ static struct snd_soc_dai_link msm_tavil_be_dai_links[] = {
+ 		.cpu_dai_name = "msm-dai-q6-dev.16387",
+ 		.platform_name = "msm-pcm-routing",
+ 		.codec_name = "tavil_codec",
+-		.codec_dai_name = "tavil_tx3",
++		.codec_dai_name = "tavil_tx2",
+ 		.no_pcm = 1,
+ 		.dpcm_capture = 1,
+ 		.id = MSM_BACKEND_DAI_SLIMBUS_1_TX,
+@@ -6086,7 +6220,7 @@ static struct snd_soc_dai_link msm_tavil_be_dai_links[] = {
+ 		.cpu_dai_name = "msm-dai-q6-dev.16391",
+ 		.platform_name = "msm-pcm-routing",
+ 		.codec_name = "tavil_codec",
+-		.codec_dai_name = "tavil_tx1",
++		.codec_dai_name = "tavil_tx3",
+ 		.no_pcm = 1,
+ 		.dpcm_capture = 1,
+ 		.id = MSM_BACKEND_DAI_SLIMBUS_3_TX,
+@@ -6333,21 +6467,6 @@ static struct snd_soc_dai_link msm_mi2s_be_dai_links[] = {
+ 		.ops = &msm_mi2s_be_ops,
+ 		.ignore_suspend = 1,
+ 	},
+-	{
+-		.name = LPASS_BE_QUAT_MI2S_RX,
+-		.stream_name = "Quaternary MI2S Playback",
+-		.cpu_dai_name = "msm-dai-q6-mi2s.3",
+-		.platform_name = "msm-pcm-routing",
+-		.codec_name = "msm-stub-codec.1",
+-		.codec_dai_name = "msm-stub-rx",
+-		.no_pcm = 1,
+-		.dpcm_playback = 1,
+-		.id = MSM_BACKEND_DAI_QUATERNARY_MI2S_RX,
+-		.be_hw_params_fixup = msm_be_hw_params_fixup,
+-		.ops = &msm_mi2s_be_ops,
+-		.ignore_suspend = 1,
+-		.ignore_pmdown_time = 1,
+-	},
+ 	{
+ 		.name = LPASS_BE_QUAT_MI2S_TX,
+ 		.stream_name = "Quaternary MI2S Capture",
+@@ -6483,6 +6602,25 @@ static struct snd_soc_dai_link msm_auxpcm_be_dai_links[] = {
+ 	},
+ };
+ 
++static struct snd_soc_dai_link msm_quat_mi2s_tas2559_dai_links[] = {
++	{
++		.name = LPASS_BE_QUAT_MI2S_RX,
++		.stream_name = "Quaternary MI2S Playback",
++		.cpu_dai_name = "msm-dai-q6-mi2s.3",
++		.platform_name = "msm-pcm-routing",
++		.codec_name = "tas2559.2-004c",
++		.codec_dai_name = "tas2559 ASI1",
++		.no_pcm = 1,
++		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBS_CFS,
++		.dpcm_playback = 1,
++		.id = MSM_BACKEND_DAI_QUATERNARY_MI2S_RX,
++		.be_hw_params_fixup = msm_be_hw_params_fixup,
++		.ops = &msm_mi2s_be_ops,
++		.ignore_suspend = 1,
++		.ignore_pmdown_time = 1,
++	},
++};
++
+ static struct snd_soc_dai_link msm_tavil_snd_card_dai_links[
+ 			 ARRAY_SIZE(msm_common_dai_links) +
+ 			 ARRAY_SIZE(msm_tavil_fe_dai_links) +
+@@ -6492,7 +6630,8 @@ static struct snd_soc_dai_link msm_tavil_snd_card_dai_links[
+ 			 ARRAY_SIZE(msm_wcn_be_dai_links) +
+ 			 ARRAY_SIZE(ext_disp_be_dai_link) +
+ 			 ARRAY_SIZE(msm_mi2s_be_dai_links) +
+-			 ARRAY_SIZE(msm_auxpcm_be_dai_links)];
++			 ARRAY_SIZE(msm_auxpcm_be_dai_links) +
++			 ARRAY_SIZE(msm_quat_mi2s_tas2559_dai_links)];
+ 
+ static int msm_snd_card_tavil_late_probe(struct snd_soc_card *card)
+ {
+@@ -6850,6 +6989,11 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev)
+ 			       msm_mi2s_be_dai_links,
+ 			       sizeof(msm_mi2s_be_dai_links));
+ 			total_links += ARRAY_SIZE(msm_mi2s_be_dai_links);
++
++			memcpy(msm_tavil_snd_card_dai_links + total_links,
++			       msm_quat_mi2s_tas2559_dai_links,
++			       sizeof(msm_quat_mi2s_tas2559_dai_links));
++			total_links += ARRAY_SIZE(msm_quat_mi2s_tas2559_dai_links);
+ 		}
+ 		if (of_property_read_bool(dev->of_node,
+ 					  "qcom,auxpcm-audio-intf")) {
+@@ -7188,6 +7332,25 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, card);
+ 	snd_soc_card_set_drvdata(card, pdata);
+ 
++	pdata->adc2_sel_gpio_p = of_parse_phandle(pdev->dev.of_node,
++			"qcom,adc2-switch-gpio", 0);
++	if (!pdata->adc2_sel_gpio_p) {
++		dev_err(&pdev->dev, "property %s not detected in node %s",
++				"qcom,adc2-switch-gpio",
++				pdev->dev.of_node->full_name);
++	}
++	wcd_mbhc_cfg.dual_adc_gpio_node = pdata->adc2_sel_gpio_p;
++	wcd_mbhc_cfg.enable_dual_adc_gpio = external_enable_dual_adc_gpio;
++	pr_info("pdata->adc2_sel_gpio_p = %lx\n", (unsigned long)pdata->adc2_sel_gpio_p);
++
++	pdata->usbc_en2_gpio = of_get_named_gpio(card->dev->of_node,
++				    "qcom,usbc-analog-en2-gpio", 0);
++	if (!gpio_is_valid(pdata->usbc_en2_gpio)) {
++		dev_err(card->dev, "%s, property %s not in node %s",
++			__func__, "qcom,usbc-analog-en2-gpio",
++			card->dev->of_node->full_name);
++	}
++
+ 	ret = snd_soc_of_parse_card_name(card, "qcom,model");
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "parse card name failed, err:%d\n",
+@@ -7302,27 +7465,30 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
+ 	 * entry is not found in DT file as some targets do not support
+ 	 * US-Euro detection
+ 	 */
+-	pdata->us_euro_gpio = of_get_named_gpio(pdev->dev.of_node,
+-				"qcom,us-euro-gpios", 0);
+-	if (!gpio_is_valid(pdata->us_euro_gpio))
+-		pdata->us_euro_gpio_p = of_parse_phandle(pdev->dev.of_node,
++	if (!of_property_read_bool(pdev->dev.of_node, "qcom,euro-us-hw-auto-switch")) {
++		pdata->us_euro_gpio = of_get_named_gpio(pdev->dev.of_node,
+ 					"qcom,us-euro-gpios", 0);
+-	if (!gpio_is_valid(pdata->us_euro_gpio) && (!pdata->us_euro_gpio_p)) {
+-		dev_dbg(&pdev->dev, "property %s not detected in node %s",
+-			"qcom,us-euro-gpios", pdev->dev.of_node->full_name);
+-	} else {
+-		dev_dbg(&pdev->dev, "%s detected",
+-			"qcom,us-euro-gpios");
+-		wcd_mbhc_cfg.swap_gnd_mic = msm_swap_gnd_mic;
+-	}
++		if (!gpio_is_valid(pdata->us_euro_gpio))
++			pdata->us_euro_gpio_p = of_parse_phandle(pdev->dev.of_node,
++						"qcom,us-euro-gpios", 0);
++		if (!gpio_is_valid(pdata->us_euro_gpio) && (!pdata->us_euro_gpio_p)) {
++			dev_dbg(&pdev->dev, "property %s not detected in node %s",
++				"qcom,us-euro-gpios", pdev->dev.of_node->full_name);
++		} else {
++			dev_dbg(&pdev->dev, "%s detected",
++				"qcom,us-euro-gpios");
++			wcd_mbhc_cfg.swap_gnd_mic = msm_swap_gnd_mic;
++		}
+ 
+-	if (of_find_property(pdev->dev.of_node, usb_c_dt, NULL))
+-		wcd_mbhc_cfg.swap_gnd_mic = msm_swap_gnd_mic;
++		if (of_find_property(pdev->dev.of_node, usb_c_dt, NULL))
++			wcd_mbhc_cfg.swap_gnd_mic = msm_swap_gnd_mic;
+ 
+-	ret = msm_prepare_us_euro(card);
+-	if (ret)
+-		dev_dbg(&pdev->dev, "msm_prepare_us_euro failed (%d)\n",
+-			ret);
++		ret = msm_prepare_us_euro(card);
++		if (ret)
++			dev_err(&pdev->dev, "msm_prepare_us_euro failed (%d)\n",
++				ret);
++
++	}
+ 
+ 	/* Parse pinctrl info from devicetree */
+ 	ret = msm_get_pinctrl(pdev);
+diff --git a/techpack/audio/dsp/q6afe.c b/techpack/audio/dsp/q6afe.c
+index 0fdeaae0e905..e38eede16cfd 100644
+--- a/techpack/audio/dsp/q6afe.c
++++ b/techpack/audio/dsp/q6afe.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
+  * Copyright (c) 2023, Qualcomm Innovation Center, Inc. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ #include <linux/slab.h>
+ #include <linux/debugfs.h>
+@@ -8389,6 +8390,7 @@ int afe_validate_port(u16 port_id)
+ 	case SLIMBUS_2_RX:
+ 	case SLIMBUS_2_TX:
+ 	case SLIMBUS_3_RX:
++	case SLIMBUS_3_TX:
+ 	case INT_BT_SCO_RX:
+ 	case INT_BT_SCO_TX:
+ 	case INT_BT_A2DP_RX:
+diff --git a/techpack/audio/include/asoc/wcd-mbhc-v2.h b/techpack/audio/include/asoc/wcd-mbhc-v2.h
+index da972eb7ffed..12941e02edc4 100644
+--- a/techpack/audio/include/asoc/wcd-mbhc-v2.h
++++ b/techpack/audio/include/asoc/wcd-mbhc-v2.h
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /* Copyright (c) 2014-2020, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2019 XiaoMi, Inc.
+  */
+ #ifndef __WCD_MBHC_V2_H__
+ #define __WCD_MBHC_V2_H__
+@@ -443,6 +444,8 @@ struct wcd_mbhc_config {
+ 	bool usbc_analog_legacy;
+ 	bool moisture_duty_cycle_en;
+ 	struct usbc_ana_audio_config usbc_analog_cfg;
++	void (*enable_dual_adc_gpio)(struct device_node *node, bool en);
++	struct device_node *dual_adc_gpio_node;
+ };
+ 
+ struct wcd_mbhc_intr {
+-- 
+2.48.1
+

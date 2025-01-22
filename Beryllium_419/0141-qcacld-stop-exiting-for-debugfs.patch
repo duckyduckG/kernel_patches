@@ -1,0 +1,30 @@
+From f81ab3de8ea18247ed264715494b3d1512970e0a Mon Sep 17 00:00:00 2001
+From: Sandeep Sethi <adeveloper79@gmail.com>
+Date: Wed, 8 Nov 2023 12:20:06 +0530
+Subject: [PATCH 141/175] qcacld: stop exiting for debugfs
+
+Signed-off-by: Sandeep Sethi <adeveloper79@gmail.com>
+---
+ drivers/staging/qcacld-3.0/core/hdd/src/wlan_hdd_main.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/staging/qcacld-3.0/core/hdd/src/wlan_hdd_main.c b/drivers/staging/qcacld-3.0/core/hdd/src/wlan_hdd_main.c
+index 627ea453d326..740224be2fb3 100644
+--- a/drivers/staging/qcacld-3.0/core/hdd/src/wlan_hdd_main.c
++++ b/drivers/staging/qcacld-3.0/core/hdd/src/wlan_hdd_main.c
+@@ -16065,12 +16065,10 @@ static QDF_STATUS hdd_qdf_init(void)
+ 
+ 	status = hdd_qdf_print_init();
+ 	if (QDF_IS_STATUS_ERROR(status))
+-		goto exit;
+ 
+ 	status = qdf_debugfs_init();
+ 	if (QDF_IS_STATUS_ERROR(status)) {
+ 		hdd_err("Failed to init debugfs; status:%u", status);
+-		goto print_deinit;
+ 	}
+ 
+ 	qdf_lock_stats_init();
+-- 
+2.48.1
+

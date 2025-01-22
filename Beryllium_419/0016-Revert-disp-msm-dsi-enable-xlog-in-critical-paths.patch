@@ -1,0 +1,312 @@
+From 12a0939654e04e28fabc3de23abfaec1b0b76e40 Mon Sep 17 00:00:00 2001
+From: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Date: Fri, 28 Oct 2022 11:01:48 +0530
+Subject: [PATCH 016/175] Revert "disp: msm: dsi: enable xlog in critical
+ paths"
+
+This reverts commit 0ac6059413d4f0eee87cdde7655756fa87d6e7d2.
+
+Change-Id: I53362cba2cb7e2e5b7574e8faf42be3d6c76cd28
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_ctrl.c    | 16 ++++-----------
+ techpack/display/msm/dsi/dsi_display.c | 28 +++++++-------------------
+ techpack/display/msm/dsi/dsi_drm.c     | 21 ++-----------------
+ techpack/display/msm/dsi/dsi_panel.c   |  4 ----
+ 4 files changed, 13 insertions(+), 56 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 3cbf58bf29d6..b79c8b0ed9d9 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -302,7 +302,6 @@ static void dsi_ctrl_flush_cmd_dma_queue(struct dsi_ctrl *dsi_ctrl)
+ 		cancel_work_sync(&dsi_ctrl->dma_cmd_wait);
+ 	} else {
+ 		flush_workqueue(dsi_ctrl->dma_cmd_workq);
+-		SDE_EVT32(SDE_EVTLOG_FUNC_CASE2);
+ 	}
+ }
+ 
+@@ -355,7 +354,7 @@ static int dsi_ctrl_check_state(struct dsi_ctrl *dsi_ctrl,
+ 	int rc = 0;
+ 	struct dsi_ctrl_state_info *state = &dsi_ctrl->current_state;
+ 
+-	SDE_EVT32(dsi_ctrl->cell_index, op, op_state);
++	SDE_EVT32(dsi_ctrl->cell_index, op);
+ 
+ 	switch (op) {
+ 	case DSI_CTRL_OP_POWER_STATE_CHANGE:
+@@ -979,7 +978,6 @@ static int dsi_ctrl_update_link_freqs(struct dsi_ctrl *dsi_ctrl,
+ 	DSI_CTRL_DEBUG(dsi_ctrl, "byte_clk_rate = %llu, byte_intf_clk = %llu\n",
+ 		  byte_clk_rate, byte_intf_clk_rate);
+ 	DSI_CTRL_DEBUG(dsi_ctrl, "pclk_rate = %llu\n", pclk_rate);
+-	SDE_EVT32(dsi_ctrl->cell_index, bit_rate, byte_clk_rate, pclk_rate);
+ 
+ 	dsi_ctrl->clk_freq.byte_clk_rate = byte_clk_rate;
+ 	dsi_ctrl->clk_freq.byte_intf_clk_rate = byte_intf_clk_rate;
+@@ -1167,7 +1165,6 @@ void dsi_message_setup_tx_mode(struct dsi_ctrl *dsi_ctrl,
+ 	 * override cmd fetch mode during secure session
+ 	 */
+ 	if (dsi_ctrl->secure_mode) {
+-		SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_CASE1);
+ 		*flags &= ~DSI_CTRL_CMD_FETCH_MEMORY;
+ 		*flags |= DSI_CTRL_CMD_FIFO_STORE;
+ 		DSI_CTRL_DEBUG(dsi_ctrl,
+@@ -1238,8 +1235,7 @@ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 	struct dsi_mode_info *timing;
+ 	struct dsi_ctrl_hw_ops dsi_hw_ops = dsi_ctrl->hw.ops;
+ 
+-	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY, flags,
+-		msg->flags);
++	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY, flags);
+ 	/* check if custom dma scheduling line needed */
+ 	if ((dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) &&
+ 		(flags & DSI_CTRL_CMD_CUSTOM_DMA_SCHED))
+@@ -2520,7 +2516,6 @@ static bool dsi_ctrl_check_for_spurious_error_interrupts(
+ 	if ((jiffies_now - dsi_ctrl->jiffies_start) < intr_check_interval) {
+ 		if (dsi_ctrl->error_interrupt_count > interrupt_threshold) {
+ 			DSI_CTRL_WARN(dsi_ctrl, "Detected spurious interrupts on dsi ctrl\n");
+-			SDE_EVT32_IRQ(dsi_ctrl->error_interrupt_count);
+ 			return true;
+ 		}
+ 	} else {
+@@ -2780,7 +2775,7 @@ void dsi_ctrl_enable_status_interrupt(struct dsi_ctrl *dsi_ctrl,
+ 			intr_idx >= DSI_STATUS_INTERRUPT_COUNT)
+ 		return;
+ 
+-	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY, intr_idx);
++	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY);
+ 	spin_lock_irqsave(&dsi_ctrl->irq_info.irq_lock, flags);
+ 
+ 	if (dsi_ctrl->irq_info.irq_stat_refcount[intr_idx] == 0) {
+@@ -2813,7 +2808,7 @@ void dsi_ctrl_disable_status_interrupt(struct dsi_ctrl *dsi_ctrl,
+ 	if (!dsi_ctrl || intr_idx >= DSI_STATUS_INTERRUPT_COUNT)
+ 		return;
+ 
+-	SDE_EVT32_IRQ(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY, intr_idx);
++	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY);
+ 	spin_lock_irqsave(&dsi_ctrl->irq_info.irq_lock, flags);
+ 
+ 	if (dsi_ctrl->irq_info.irq_stat_refcount[intr_idx])
+@@ -3590,7 +3585,6 @@ int dsi_ctrl_set_host_engine_state(struct dsi_ctrl *dsi_ctrl,
+ 	else
+ 		dsi_ctrl->hw.ops.ctrl_en(&dsi_ctrl->hw, false);
+ 
+-	SDE_EVT32(dsi_ctrl->cell_index, state);
+ 	DSI_CTRL_DEBUG(dsi_ctrl, "Set host engine state = %d\n", state);
+ 	dsi_ctrl_update_state(dsi_ctrl, DSI_CTRL_OP_HOST_ENGINE, state);
+ error:
+@@ -3630,7 +3624,6 @@ int dsi_ctrl_set_cmd_engine_state(struct dsi_ctrl *dsi_ctrl,
+ 	else
+ 		dsi_ctrl->hw.ops.cmd_engine_en(&dsi_ctrl->hw, false);
+ 
+-	SDE_EVT32(dsi_ctrl->cell_index, state);
+ 	DSI_CTRL_DEBUG(dsi_ctrl, "Set cmd engine state = %d\n", state);
+ 	dsi_ctrl_update_state(dsi_ctrl, DSI_CTRL_OP_CMD_ENGINE, state);
+ error:
+@@ -3674,7 +3667,6 @@ int dsi_ctrl_set_vid_engine_state(struct dsi_ctrl *dsi_ctrl,
+ 	if (!on && dsi_ctrl->version < DSI_CTRL_VERSION_1_3)
+ 		dsi_ctrl->hw.ops.soft_reset(&dsi_ctrl->hw);
+ 
+-	SDE_EVT32(dsi_ctrl->cell_index, state);
+ 	DSI_CTRL_DEBUG(dsi_ctrl, "Set video engine state = %d\n", state);
+ 	dsi_ctrl_update_state(dsi_ctrl, DSI_CTRL_OP_VID_ENGINE, state);
+ error:
+diff --git a/techpack/display/msm/dsi/dsi_display.c b/techpack/display/msm/dsi/dsi_display.c
+index acb1f7db43e1..3f59006d1add 100644
+--- a/techpack/display/msm/dsi/dsi_display.c
++++ b/techpack/display/msm/dsi/dsi_display.c
+@@ -811,7 +811,7 @@ int dsi_display_check_status(struct drm_connector *connector, void *display,
+ 		rc = -EINVAL;
+ 		goto release_panel_lock;
+ 	}
+-	SDE_EVT32(SDE_EVTLOG_FUNC_ENTRY, status_mode, te_check_override);
++	SDE_EVT32(SDE_EVTLOG_FUNC_ENTRY);
+ 
+ 	if (te_check_override && gpio_is_valid(dsi_display->disp_te_gpio))
+ 		status_mode = ESD_MODE_PANEL_TE;
+@@ -859,7 +859,7 @@ int dsi_display_check_status(struct drm_connector *connector, void *display,
+ 
+ release_panel_lock:
+ 	dsi_panel_release_panel_lock(panel);
+-	SDE_EVT32(SDE_EVTLOG_FUNC_EXIT, rc);
++	SDE_EVT32(SDE_EVTLOG_FUNC_EXIT);
+ 
+ 	return rc;
+ }
+@@ -1069,7 +1069,6 @@ int dsi_display_set_power(struct drm_connector *connector,
+ 		return rc;
+ 	}
+ 
+-	SDE_EVT32(display->panel->power_mode, power_mode, rc);
+ 	DSI_DEBUG("Power mode transition from %d to %d %s",
+ 			display->panel->power_mode, power_mode,
+ 			rc ? "failed" : "successful");
+@@ -4077,7 +4076,6 @@ static int dsi_display_update_dsi_bitrate(struct dsi_display *display,
+ 		DSI_DEBUG("byte_clk_rate = %llu, byte_intf_clk_rate = %llu\n",
+ 			  byte_clk_rate, byte_intf_clk_rate);
+ 		DSI_DEBUG("pclk_rate = %llu\n", pclk_rate);
+-		SDE_EVT32(i, bit_rate, byte_clk_rate, pclk_rate);
+ 
+ 		ctrl->clk_freq.byte_clk_rate = byte_clk_rate;
+ 		ctrl->clk_freq.byte_intf_clk_rate = byte_intf_clk_rate;
+@@ -4568,9 +4566,6 @@ static int dsi_display_get_dfps_timing(struct dsi_display *display,
+ 				DSI_V_TOTAL(timing),
+ 				timing->v_front_porch,
+ 				&adj_mode->timing.v_front_porch);
+-		SDE_EVT32(SDE_EVTLOG_FUNC_CASE1, DSI_DFPS_IMMEDIATE_VFP,
+-			curr_refresh_rate, timing->refresh_rate,
+-			timing->v_front_porch, adj_mode->timing.v_front_porch);
+ 		break;
+ 
+ 	case DSI_DFPS_IMMEDIATE_HFP:
+@@ -4581,9 +4576,6 @@ static int dsi_display_get_dfps_timing(struct dsi_display *display,
+ 				DSI_H_TOTAL_DSC(timing),
+ 				timing->h_front_porch,
+ 				&adj_mode->timing.h_front_porch);
+-		SDE_EVT32(SDE_EVTLOG_FUNC_CASE2, DSI_DFPS_IMMEDIATE_HFP,
+-			curr_refresh_rate, timing->refresh_rate,
+-			timing->h_front_porch, adj_mode->timing.h_front_porch);
+ 		if (!rc)
+ 			adj_mode->timing.h_front_porch *= display->ctrl_count;
+ 		break;
+@@ -4660,7 +4652,7 @@ static int dsi_display_set_mode_sub(struct dsi_display *display,
+ 		return -EINVAL;
+ 	}
+ 
+-	SDE_EVT32(mode->dsi_mode_flags, mode->panel_mode);
++	SDE_EVT32(mode->dsi_mode_flags);
+ 	if (mode->dsi_mode_flags & DSI_MODE_FLAG_POMS) {
+ 		display->config.panel_mode = mode->panel_mode;
+ 		display->panel->panel_mode = mode->panel_mode;
+@@ -4873,7 +4865,6 @@ int dsi_display_cont_splash_config(void *dsi_display)
+ 	/* Update splash status for clock manager */
+ 	dsi_display_clk_mngr_update_splash_status(display->clk_mngr,
+ 				display->is_cont_splash_enabled);
+-	SDE_EVT32(SDE_EVTLOG_FUNC_ENTRY, display->is_cont_splash_enabled);
+ 
+ 	/* Set up ctrl isr before enabling core clk */
+ 	dsi_display_ctrl_isr_configure(display, true);
+@@ -4945,7 +4936,6 @@ int dsi_display_splash_res_cleanup(struct  dsi_display *display)
+ 	dsi_display_clk_mngr_update_splash_status(display->clk_mngr,
+ 				display->is_cont_splash_enabled);
+ 
+-	SDE_EVT32(SDE_EVTLOG_FUNC_EXIT, display->is_cont_splash_enabled);
+ 	return rc;
+ }
+ 
+@@ -6638,13 +6628,10 @@ int dsi_display_validate_mode_change(struct dsi_display *display,
+ 				dyn_clk_caps->maintain_const_fps) {
+ 				DSI_DEBUG("Mode switch is seamless variable refresh\n");
+ 				adj_mode->dsi_mode_flags |= DSI_MODE_FLAG_VRR;
+-				SDE_EVT32(SDE_EVTLOG_FUNC_CASE1,
+-					cur_mode->timing.refresh_rate,
++				SDE_EVT32(cur_mode->timing.refresh_rate,
+ 					adj_mode->timing.refresh_rate,
+ 					cur_mode->timing.h_front_porch,
+-					adj_mode->timing.h_front_porch,
+-					cur_mode->timing.v_front_porch,
+-					adj_mode->timing.v_front_porch);
++					adj_mode->timing.h_front_porch);
+ 			}
+ 		}
+ 
+@@ -6662,9 +6649,8 @@ int dsi_display_validate_mode_change(struct dsi_display *display,
+ 
+ 				adj_mode->dsi_mode_flags |=
+ 						DSI_MODE_FLAG_DYN_CLK;
+-				SDE_EVT32(SDE_EVTLOG_FUNC_CASE2,
+-					cur_mode->pixel_clk_khz,
+-					adj_mode->pixel_clk_khz);
++				SDE_EVT32(cur_mode->pixel_clk_khz,
++						adj_mode->pixel_clk_khz);
+ 			}
+ 		}
+ 	}
+diff --git a/techpack/display/msm/dsi/dsi_drm.c b/techpack/display/msm/dsi/dsi_drm.c
+index 0457c57b6d6e..934115244761 100644
+--- a/techpack/display/msm/dsi/dsi_drm.c
++++ b/techpack/display/msm/dsi/dsi_drm.c
+@@ -11,7 +11,6 @@
+ #include "sde_connector.h"
+ #include "dsi_drm.h"
+ #include "sde_trace.h"
+-#include "sde_dbg.h"
+ 
+ #define to_dsi_bridge(x)     container_of((x), struct dsi_bridge, base)
+ #define to_dsi_state(x)      container_of((x), struct dsi_connector_state, base)
+@@ -410,32 +409,16 @@ static bool dsi_bridge_mode_fixup(struct drm_bridge *bridge,
+ 		if ((dsi_mode.panel_mode != cur_dsi_mode.panel_mode) &&
+ 			(!(dsi_mode.dsi_mode_flags & DSI_MODE_FLAG_VRR)) &&
+ 			(crtc_state->enable ==
+-				crtc_state->crtc->state->enable)) {
++				crtc_state->crtc->state->enable))
+ 			dsi_mode.dsi_mode_flags |= DSI_MODE_FLAG_POMS;
+-
+-			SDE_EVT32(SDE_EVTLOG_FUNC_CASE1,
+-				dsi_mode.timing.h_active,
+-				dsi_mode.timing.v_active,
+-				dsi_mode.timing.refresh_rate,
+-				dsi_mode.pixel_clk_khz,
+-				dsi_mode.panel_mode);
+-		}
+ 		/* No DMS/VRR when drm pipeline is changing */
+ 		if (!drm_mode_equal(cur_mode, adjusted_mode) &&
+ 			(!(dsi_mode.dsi_mode_flags & DSI_MODE_FLAG_VRR)) &&
+ 			(!(dsi_mode.dsi_mode_flags & DSI_MODE_FLAG_POMS)) &&
+ 			(!(dsi_mode.dsi_mode_flags & DSI_MODE_FLAG_DYN_CLK)) &&
+ 			(!crtc_state->active_changed ||
+-			 display->is_cont_splash_enabled)) {
++			 display->is_cont_splash_enabled))
+ 			dsi_mode.dsi_mode_flags |= DSI_MODE_FLAG_DMS;
+-
+-			SDE_EVT32(SDE_EVTLOG_FUNC_CASE2,
+-				dsi_mode.timing.h_active,
+-				dsi_mode.timing.v_active,
+-				dsi_mode.timing.refresh_rate,
+-				dsi_mode.pixel_clk_khz,
+-				dsi_mode.panel_mode);
+-		}
+ 	}
+ 
+ 	/* Reject seamless transition when active changed */
+diff --git a/techpack/display/msm/dsi/dsi_panel.c b/techpack/display/msm/dsi/dsi_panel.c
+index e1f231f13c00..2a9c7e56fa62 100644
+--- a/techpack/display/msm/dsi/dsi_panel.c
++++ b/techpack/display/msm/dsi/dsi_panel.c
+@@ -14,7 +14,6 @@
+ #include "dsi_panel.h"
+ #include "dsi_ctrl_hw.h"
+ #include "dsi_parser.h"
+-#include "sde_dbg.h"
+ 
+ /**
+  * topology is currently defined by a set of following 3 values:
+@@ -349,7 +348,6 @@ int dsi_panel_trigger_esd_attack(struct dsi_panel *panel)
+ 
+ 	if (gpio_is_valid(r_config->reset_gpio)) {
+ 		gpio_set_value(r_config->reset_gpio, 0);
+-		SDE_EVT32(SDE_EVTLOG_FUNC_CASE1);
+ 		DSI_INFO("GPIO pulled low to simulate ESD\n");
+ 		return 0;
+ 	}
+@@ -542,7 +540,6 @@ static int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
+ 	cmds = mode->priv_info->cmd_sets[type].cmds;
+ 	count = mode->priv_info->cmd_sets[type].count;
+ 	state = mode->priv_info->cmd_sets[type].state;
+-	SDE_EVT32(type, state, count);
+ 
+ 	if (count == 0) {
+ 		DSI_DEBUG("[%s] No commands to be sent for state(%d)\n",
+@@ -4316,7 +4313,6 @@ int dsi_panel_send_roi_dcs(struct dsi_panel *panel, int ctrl_idx,
+ 	}
+ 	DSI_DEBUG("[%s] send roi x %d y %d w %d h %d\n", panel->name,
+ 			roi->x, roi->y, roi->w, roi->h);
+-	SDE_EVT32(roi->x, roi->y, roi->w, roi->h);
+ 
+ 	mutex_lock(&panel->panel_lock);
+ 
+-- 
+2.48.1
+

@@ -1,0 +1,42 @@
+From 79eb6374f19d91eef2ac8bfb8fecc786656446b6 Mon Sep 17 00:00:00 2001
+From: Neeraj Upadhyay <neeraju@codeaurora.org>
+Date: Thu, 2 Aug 2018 11:13:46 +0530
+Subject: [PATCH 098/175] irqchip: gic-v3: Skip save/restore when gic is
+ uninitialized
+
+Skip save and restore of GIC SPI configuration, if the GICV3
+drivers hasn't been initialized.
+
+Change-Id: I1bc32f58eef349487b2096ea2c26d491ee45a433
+Signed-off-by: Neeraj Upadhyay <neeraju@codeaurora.org>
+---
+ drivers/irqchip/irq-gic-v3.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 3c7790e92aef..51a40218545a 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -232,6 +232,9 @@ void gic_v3_dist_save(void)
+ 	void __iomem *base = gic_data.dist_base;
+ 	int reg, i;
+ 
++	if (!base)
++		return;
++
+ 	bitmap_zero(irqs_restore, MAX_IRQ);
+ 
+ 	for (reg = SAVED_ICFGR; reg < NUM_SAVED_GICD_REGS; reg++) {
+@@ -428,6 +431,9 @@ static void _gic_v3_dist_clear_reg(u32 offset)
+  */
+ void gic_v3_dist_restore(void)
+ {
++	if (!gic_data.dist_base)
++		return;
++
+ 	_gic_v3_dist_check_icfgr();
+ 	_gic_v3_dist_check_ipriorityr();
+ 	_gic_v3_dist_check_isenabler();
+-- 
+2.48.1
+

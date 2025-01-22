@@ -1,0 +1,24 @@
+From c64ed1ef78d12201dd01156cb7526995b5066c76 Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Tue, 26 Dec 2023 03:14:07 +0400
+Subject: [PATCH 055/175] ARM64: dts: Build qcom-sdm845 device trees
+
+---
+ arch/arm64/boot/dts/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+index 95f5f58da33b..b7c33e31cd23 100644
+--- a/arch/arm64/boot/dts/Makefile
++++ b/arch/arm64/boot/dts/Makefile
+@@ -21,6 +21,7 @@ subdir-y += marvell
+ subdir-y += mediatek
+ subdir-y += nvidia
+ #subdir-y += qcom
++subdir-y += qcom-sdm845
+ subdir-y += realtek
+ subdir-y += renesas
+ subdir-y += rockchip
+-- 
+2.48.1
+

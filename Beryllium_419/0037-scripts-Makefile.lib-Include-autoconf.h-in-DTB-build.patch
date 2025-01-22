@@ -1,0 +1,26 @@
+From a959a4461f953f074e9c93ca344fb577d802d4b4 Mon Sep 17 00:00:00 2001
+From: me-cafebabe <me.cafebabe@gmail.com>
+Date: Mon, 22 May 2023 04:51:10 +0800
+Subject: [PATCH 037/175] scripts/Makefile.lib: Include autoconf.h in DTB
+ building
+
+* Allows to conditionally enable or disable portions on DTS depending on kernel configuration.
+---
+ scripts/Makefile.lib | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index a7356314a5e9..ad3857448428 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -179,6 +179,7 @@ DTC_INCLUDE    := $(srctree)/scripts/dtc/include-prefixes
+ 
+ dtc_cpp_flags  = -Wp,-MD,$(depfile).pre.tmp -nostdinc                    \
+ 		 $(addprefix -I,$(DTC_INCLUDE))                          \
++		 -include $(objtree)/include/generated/autoconf.h        \
+ 		 -undef -D__DTS__
+ 
+ # Useful for describing the dependency of composite objects
+-- 
+2.48.1
+

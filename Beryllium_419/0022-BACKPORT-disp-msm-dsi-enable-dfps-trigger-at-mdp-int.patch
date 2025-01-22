@@ -1,0 +1,325 @@
+From 47f164e18ad846e0822885d9af57d25da29ce383 Mon Sep 17 00:00:00 2001
+From: Vara Reddy <varar@codeaurora.org>
+Date: Tue, 18 Aug 2020 08:45:42 -0700
+Subject: [PATCH 022/175] BACKPORT: disp: msm: dsi: enable dfps trigger at mdp
+ intf flush
+
+This change allows dynamic refresh trigger to sw trigger
+and mdp intf flush. With this we can make sure that DSI
+timing/clock update and mdp intf timings are updated in
+one vsync.
+
+Change-Id: Ic807f498e2e47be6dd0f1e11ff1fc0896a8ec758
+Signed-off-by: Vara Reddy <varar@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_catalog.c     |  4 +++
+ techpack/display/msm/dsi/dsi_catalog.h     |  2 ++
+ techpack/display/msm/dsi/dsi_display.c     | 34 ++++++++++++++++++++++
+ techpack/display/msm/dsi/dsi_drm.c         | 16 +++++++++-
+ techpack/display/msm/dsi/dsi_phy.c         | 26 +++++++++++++++++
+ techpack/display/msm/dsi/dsi_phy.h         | 10 +++++++
+ techpack/display/msm/dsi/dsi_phy_hw.h      |  8 +++++
+ techpack/display/msm/dsi/dsi_phy_hw_v4_0.c | 19 +++++++++++-
+ 8 files changed, 117 insertions(+), 2 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_catalog.c b/techpack/display/msm/dsi/dsi_catalog.c
+index 9f3b2192a7f8..04b5bc91ad94 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.c
++++ b/techpack/display/msm/dsi/dsi_catalog.c
+@@ -210,6 +210,7 @@ static void dsi_catalog_phy_2_0_init(struct dsi_phy_hw *phy)
+ 		dsi_phy_hw_v2_0_dyn_refresh_pipe_delay;
+ 	phy->ops.dyn_refresh_ops.dyn_refresh_helper =
+ 		dsi_phy_hw_v2_0_dyn_refresh_helper;
++	phy->ops.dyn_refresh_ops.dyn_refresh_trigger_sel = NULL;
+ 	phy->ops.dyn_refresh_ops.cache_phy_timings =
+ 		dsi_phy_hw_v2_0_cache_phy_timings;
+ }
+@@ -245,6 +246,7 @@ static void dsi_catalog_phy_3_0_init(struct dsi_phy_hw *phy)
+ 		dsi_phy_hw_v3_0_dyn_refresh_pipe_delay;
+ 	phy->ops.dyn_refresh_ops.dyn_refresh_helper =
+ 		dsi_phy_hw_v3_0_dyn_refresh_helper;
++	phy->ops.dyn_refresh_ops.dyn_refresh_trigger_sel = NULL;
+ 	phy->ops.dyn_refresh_ops.cache_phy_timings =
+ 		dsi_phy_hw_v3_0_cache_phy_timings;
+ }
+@@ -281,6 +283,8 @@ static void dsi_catalog_phy_4_0_init(struct dsi_phy_hw *phy)
+ 		dsi_phy_hw_v4_0_dyn_refresh_pipe_delay;
+ 	phy->ops.dyn_refresh_ops.dyn_refresh_helper =
+ 		dsi_phy_hw_v4_0_dyn_refresh_helper;
++	phy->ops.dyn_refresh_ops.dyn_refresh_trigger_sel =
++		dsi_phy_hw_v4_0_dyn_refresh_trigger_sel;
+ 	phy->ops.dyn_refresh_ops.cache_phy_timings =
+ 		dsi_phy_hw_v4_0_cache_phy_timings;
+ 	phy->ops.set_continuous_clk = dsi_phy_hw_v4_0_set_continuous_clk;
+diff --git a/techpack/display/msm/dsi/dsi_catalog.h b/techpack/display/msm/dsi/dsi_catalog.h
+index 9b00441569b9..85ceab08d40c 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.h
++++ b/techpack/display/msm/dsi/dsi_catalog.h
+@@ -262,6 +262,8 @@ int dsi_ctrl_hw_cmn_wait4dynamic_refresh_done(struct dsi_ctrl_hw *ctrl);
+ int dsi_phy_hw_v3_0_cache_phy_timings(struct dsi_phy_per_lane_cfgs *timings,
+ 				      u32 *dst, u32 size);
+ 
++void dsi_phy_hw_v4_0_dyn_refresh_trigger_sel(struct dsi_phy_hw *phy,
++		bool is_master);
+ void dsi_phy_hw_v4_0_dyn_refresh_helper(struct dsi_phy_hw *phy, u32 offset);
+ void dsi_phy_hw_v4_0_dyn_refresh_config(struct dsi_phy_hw *phy,
+ 				struct dsi_phy_cfg *cfg, bool is_master);
+diff --git a/techpack/display/msm/dsi/dsi_display.c b/techpack/display/msm/dsi/dsi_display.c
+index e0c8622d06cb..94cbddb1eceb 100644
+--- a/techpack/display/msm/dsi/dsi_display.c
++++ b/techpack/display/msm/dsi/dsi_display.c
+@@ -4442,10 +4442,14 @@ static int _dsi_display_dyn_update_clks(struct dsi_display *display,
+ 					struct link_clk_freq *bkp_freq)
+ {
+ 	int rc = 0, i;
++	u8 ctrl_version;
+ 	struct dsi_display_ctrl *m_ctrl, *ctrl;
+ 	struct dsi_clk_link_set *parent_clk, *enable_clk;
++	struct dsi_dyn_clk_caps *dyn_clk_caps;
+ 
+ 	m_ctrl = &display->ctrl[display->clk_master_idx];
++	dyn_clk_caps = &(display->panel->dyn_clk_caps);
++	ctrl_version = m_ctrl->ctrl->version;
+ 
+ 	if (dsi_display_is_type_cphy(display)) {
+ 		enable_clk = &display->clock_info.cphy_clks;
+@@ -4491,6 +4495,15 @@ static int _dsi_display_dyn_update_clks(struct dsi_display *display,
+ 	}
+ 	dsi_phy_dynamic_refresh_trigger(m_ctrl->phy, true);
+ 
++	/*
++	 * Don't wait for dynamic refresh done for dsi ctrl greater than 2.5
++	 * and with constant fps, as dynamic refresh will applied with
++	 * next mdp intf ctrl flush.
++	 */
++	if ((ctrl_version >= DSI_CTRL_VERSION_2_4) &&
++			(dyn_clk_caps->maintain_const_fps))
++		goto defer_dfps_wait;
++
+ 	/* wait for dynamic refresh done */
+ 	display_for_each_ctrl(i, display) {
+ 		ctrl = &display->ctrl[i];
+@@ -4509,6 +4522,7 @@ static int _dsi_display_dyn_update_clks(struct dsi_display *display,
+ 		dsi_phy_dynamic_refresh_clear(ctrl->phy);
+ 	}
+ 
++defer_dfps_wait:
+ 	rc = dsi_clk_update_parent(enable_clk,
+ 				&display->clock_info.mux_clks);
+ 
+@@ -4909,8 +4923,10 @@ static int dsi_display_set_mode_sub(struct dsi_display *display,
+ 	int rc = 0, clk_rate = 0;
+ 	int i;
+ 	struct dsi_display_ctrl *ctrl;
++	struct dsi_display_ctrl *mctrl;
+ 	struct dsi_display_mode_priv_info *priv_info;
+ 	bool commit_phy_timing = false;
++	struct dsi_dyn_clk_caps *dyn_clk_caps;
+ 
+ 	priv_info = mode->priv_info;
+ 	if (!priv_info) {
+@@ -4936,8 +4952,26 @@ static int dsi_display_set_mode_sub(struct dsi_display *display,
+ 	memcpy(&display->config.lane_map, &display->lane_map,
+ 	       sizeof(display->lane_map));
+ 
++	mctrl = &display->ctrl[display->clk_master_idx];
++	dyn_clk_caps = &(display->panel->dyn_clk_caps);
++
+ 	if (mode->dsi_mode_flags &
+ 			(DSI_MODE_FLAG_DFPS | DSI_MODE_FLAG_VRR)) {
++		display_for_each_ctrl(i, display) {
++			ctrl = &display->ctrl[i];
++			ctrl->ctrl->hw.ops.set_timing_db(&ctrl->ctrl->hw,
++					true);
++			dsi_phy_dynamic_refresh_clear(ctrl->phy);
++
++			if (!ctrl->ctrl || (ctrl != mctrl))
++				continue;
++
++			if ((ctrl->ctrl->version >= DSI_CTRL_VERSION_2_4) &&
++					(dyn_clk_caps->maintain_const_fps)) {
++				dsi_phy_dynamic_refresh_trigger_sel(ctrl->phy,
++						true);
++			}
++		}
+ 		rc = dsi_display_dfps_update(display, mode);
+ 		if (rc) {
+ 			DSI_ERR("[%s]DSI dfps update failed, rc=%d\n",
+diff --git a/techpack/display/msm/dsi/dsi_drm.c b/techpack/display/msm/dsi/dsi_drm.c
+index 934115244761..8bbeba5f94b4 100644
+--- a/techpack/display/msm/dsi/dsi_drm.c
++++ b/techpack/display/msm/dsi/dsi_drm.c
+@@ -960,8 +960,9 @@ int dsi_conn_post_kickoff(struct drm_connector *connector,
+ 	struct dsi_display_mode adj_mode;
+ 	struct dsi_display *display;
+ 	struct dsi_display_ctrl *m_ctrl, *ctrl;
+-	int i, rc = 0;
++	int i, rc = 0, ctrl_version;
+ 	bool enable;
++	struct dsi_dyn_clk_caps *dyn_clk_caps;
+ 
+ 	if (!connector || !connector->state) {
+ 		DSI_ERR("invalid connector or connector state\n");
+@@ -977,9 +978,11 @@ int dsi_conn_post_kickoff(struct drm_connector *connector,
+ 	c_bridge = to_dsi_bridge(encoder->bridge);
+ 	adj_mode = c_bridge->dsi_mode;
+ 	display = c_bridge->display;
++	dyn_clk_caps = &(display->panel->dyn_clk_caps);
+ 
+ 	if (adj_mode.dsi_mode_flags & DSI_MODE_FLAG_VRR) {
+ 		m_ctrl = &display->ctrl[display->clk_master_idx];
++		ctrl_version = m_ctrl->ctrl->version;
+ 		rc = dsi_ctrl_timing_db_update(m_ctrl->ctrl, false);
+ 		if (rc) {
+ 			DSI_ERR("[%s] failed to dfps update  rc=%d\n",
+@@ -987,6 +990,17 @@ int dsi_conn_post_kickoff(struct drm_connector *connector,
+ 			return -EINVAL;
+ 		}
+ 
++		if ((ctrl_version >= DSI_CTRL_VERSION_2_4) &&
++				(dyn_clk_caps->maintain_const_fps)) {
++			display_for_each_ctrl(i, display) {
++				ctrl = &display->ctrl[i];
++				rc = dsi_ctrl_wait4dynamic_refresh_done(
++						ctrl->ctrl);
++				if (rc)
++					DSI_ERR("wait4dfps refresh failed\n");
++			}
++		}
++
+ 		/* Update the rest of the controllers */
+ 		display_for_each_ctrl(i, display) {
+ 			ctrl = &display->ctrl[i];
+diff --git a/techpack/display/msm/dsi/dsi_phy.c b/techpack/display/msm/dsi/dsi_phy.c
+index 2f116bfb855c..1a826f7f9a3f 100644
+--- a/techpack/display/msm/dsi/dsi_phy.c
++++ b/techpack/display/msm/dsi/dsi_phy.c
+@@ -1179,6 +1179,32 @@ void dsi_phy_config_dynamic_refresh(struct msm_dsi_phy *phy,
+ 	mutex_unlock(&phy->phy_lock);
+ }
+ 
++/**
++ * dsi_phy_dynamic_refresh_trigger_sel() - trigger dynamic refresh and
++ * update the video timings at next frame flush call.
++ * @phy:	DSI PHY handle
++ * @is_master:	Boolean to indicate if for master or slave.
++ */
++void dsi_phy_dynamic_refresh_trigger_sel(struct msm_dsi_phy *phy,
++		bool is_master)
++{
++	if (!phy)
++		return;
++
++	mutex_lock(&phy->phy_lock);
++	/*
++	 * program DYNAMIC_REFRESH_CTRL.TRIGGER_SEL for master.
++	 */
++	if (phy->hw.ops.dyn_refresh_ops.dyn_refresh_trigger_sel)
++		phy->hw.ops.dyn_refresh_ops.dyn_refresh_trigger_sel
++			(&phy->hw, is_master);
++	phy->dfps_trigger_mdpintf_flush = true;
++
++	SDE_EVT32(is_master, phy->index);
++
++	mutex_unlock(&phy->phy_lock);
++}
++
+ /**
+  * dsi_phy_dynamic_refresh_trigger() - trigger dynamic refresh
+  * @phy:	DSI PHY handle
+diff --git a/techpack/display/msm/dsi/dsi_phy.h b/techpack/display/msm/dsi/dsi_phy.h
+index f621a15c7dfd..8ed482a7e67c 100644
+--- a/techpack/display/msm/dsi/dsi_phy.h
++++ b/techpack/display/msm/dsi/dsi_phy.h
+@@ -73,6 +73,7 @@ enum phy_ulps_return_type {
+  * @allow_phy_power_off: True if PHY is allowed to power off when idle
+  * @regulator_min_datarate_bps: Minimum per lane data rate to turn on regulator
+  * @regulator_required: True if phy regulator is required
++ * @dfps_trigger_mdpintf_flush: mdp intf flush controls dfps trigger.
+  */
+ struct msm_dsi_phy {
+ 	struct platform_device *pdev;
+@@ -97,6 +98,7 @@ struct msm_dsi_phy {
+ 	bool allow_phy_power_off;
+ 	u32 regulator_min_datarate_bps;
+ 	bool regulator_required;
++	bool dfps_trigger_mdpintf_flush;
+ };
+ 
+ /**
+@@ -318,6 +320,14 @@ int dsi_phy_update_phy_timings(struct msm_dsi_phy *phy,
+ void dsi_phy_config_dynamic_refresh(struct msm_dsi_phy *phy,
+ 				    struct dsi_dyn_clk_delay *delay,
+ 				    bool is_master);
++/**
++ * dsi_phy_dynamic_refresh_trigger_sel() - dynamic refresh trigger select.
++ * @phy:	DSI PHY handle
++ * @is_master:	Boolean to indicate if for master or slave.
++ */
++void dsi_phy_dynamic_refresh_trigger_sel(struct msm_dsi_phy *phy,
++		bool is_master);
++
+ /**
+  * dsi_phy_dynamic_refresh_trigger() - trigger dynamic refresh
+  * @phy:	DSI PHY handle
+diff --git a/techpack/display/msm/dsi/dsi_phy_hw.h b/techpack/display/msm/dsi/dsi_phy_hw.h
+index ef60301f6b08..d124f2f42c85 100644
+--- a/techpack/display/msm/dsi/dsi_phy_hw.h
++++ b/techpack/display/msm/dsi/dsi_phy_hw.h
+@@ -185,6 +185,14 @@ struct phy_dyn_refresh_ops {
+ 	 */
+ 	void (*dyn_refresh_helper)(struct dsi_phy_hw *phy, u32 offset);
+ 
++	/**
++	 * dyn_refresh_trigger_sel - configure trigger_sel to frame flush
++	 * @phy:           Pointer to DSI PHY hardware instance.
++	 * @is_master:      Boolean to indicate whether master or slave.
++	 */
++	void (*dyn_refresh_trigger_sel)(struct dsi_phy_hw *phy,
++			bool is_master);
++
+ 	/**
+ 	 * dyn_refresh_config - configure dynamic refresh ctrl registers
+ 	 * @phy:           Pointer to DSI PHY hardware instance.
+diff --git a/techpack/display/msm/dsi/dsi_phy_hw_v4_0.c b/techpack/display/msm/dsi/dsi_phy_hw_v4_0.c
+index d33eea206452..764602f17388 100644
+--- a/techpack/display/msm/dsi/dsi_phy_hw_v4_0.c
++++ b/techpack/display/msm/dsi/dsi_phy_hw_v4_0.c
+@@ -776,6 +776,23 @@ void dsi_phy_hw_v4_0_dyn_refresh_pipe_delay(struct dsi_phy_hw *phy,
+ 		    delay->pll_delay);
+ }
+ 
++void dsi_phy_hw_v4_0_dyn_refresh_trigger_sel(struct dsi_phy_hw *phy,
++		bool is_master)
++{
++	u32 reg;
++
++	/*
++	 * Dynamic refresh will take effect at next mdp flush event.
++	 * This makes sure that any update to frame timings together
++	 * with dfps will take effect in one vsync at next mdp flush.
++	 */
++	if (is_master) {
++		reg = DSI_GEN_R32(phy->dyn_pll_base, DSI_DYN_REFRESH_CTRL);
++		reg |= BIT(17);
++		DSI_GEN_W32(phy->dyn_pll_base, DSI_DYN_REFRESH_CTRL, reg);
++	}
++}
++
+ void dsi_phy_hw_v4_0_dyn_refresh_helper(struct dsi_phy_hw *phy, u32 offset)
+ {
+ 	u32 reg;
+@@ -787,7 +804,7 @@ void dsi_phy_hw_v4_0_dyn_refresh_helper(struct dsi_phy_hw *phy, u32 offset)
+ 	 */
+ 	if (!offset) {
+ 		reg = DSI_GEN_R32(phy->dyn_pll_base, DSI_DYN_REFRESH_CTRL);
+-		reg &= ~(BIT(0) | BIT(8));
++		reg &= ~(BIT(0) | BIT(8) | BIT(13) | BIT(16) | BIT(17));
+ 		DSI_GEN_W32(phy->dyn_pll_base, DSI_DYN_REFRESH_CTRL, reg);
+ 		wmb(); /* ensure dynamic fps is cleared */
+ 		return;
+-- 
+2.48.1
+

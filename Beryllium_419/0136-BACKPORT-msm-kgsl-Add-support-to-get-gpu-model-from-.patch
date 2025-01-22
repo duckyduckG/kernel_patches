@@ -1,0 +1,127 @@
+From fa82401ce00b9e4b6d42a7eed43c61c623f36490 Mon Sep 17 00:00:00 2001
+From: Hareesh Gundu <hareeshg@codeaurora.org>
+Date: Wed, 7 Apr 2021 19:56:55 +0530
+Subject: [PATCH 136/175] BACKPORT: msm: kgsl: Add support to get gpu model
+ from device tree
+
+We would have different gpu model name for different hardware
+specification. Add support to get gpu model properties from
+device tree against gpu hardware configuration.
+
+Change-Id: I85c4e1b1354ed63713535d5f01f6633138516de7
+Signed-off-by: Hareesh Gundu <hareeshg@codeaurora.org>
+---
+ drivers/gpu/msm/adreno.c | 90 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 83 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/gpu/msm/adreno.c b/drivers/gpu/msm/adreno.c
+index bde230310e4a..da9205ff4d80 100644
+--- a/drivers/gpu/msm/adreno.c
++++ b/drivers/gpu/msm/adreno.c
+@@ -1437,6 +1437,88 @@ static int adreno_read_speed_bin(struct platform_device *pdev,
+ 	return PTR_ERR_OR_ZERO(buf);
+ }
+ 
++static int adreno_read_gpu_model_fuse(struct platform_device *pdev)
++{
++	struct nvmem_cell *cell = nvmem_cell_get(&pdev->dev, "gpu_model");
++	int ret = PTR_ERR_OR_ZERO(cell);
++	void *buf;
++	int val = 0;
++	size_t len;
++
++	if (ret)
++		return ret;
++
++	buf = nvmem_cell_read(cell, &len);
++	nvmem_cell_put(cell);
++
++	if (IS_ERR(buf))
++		return PTR_ERR(buf);
++
++	memcpy(&val, buf, min(len, sizeof(val)));
++	kfree(buf);
++
++	return val;
++}
++
++static struct device_node *
++adreno_get_gpu_model_node(struct platform_device *pdev)
++{
++	struct device_node *node, *child;
++	int fuse_model = adreno_read_gpu_model_fuse(pdev);
++
++	if (fuse_model < 0)
++		return NULL;
++
++	node = of_find_node_by_name(pdev->dev.of_node, "qcom,gpu-models");
++	if (node == NULL)
++		return NULL;
++
++	for_each_child_of_node(node, child) {
++		u32 model;
++
++		if (of_property_read_u32(child, "qcom,gpu-model-id", &model))
++			continue;
++
++		if (model == fuse_model) {
++			of_node_put(node);
++			return child;
++		}
++	}
++
++	of_node_put(node);
++
++	return NULL;
++}
++
++static const char *adreno_get_gpu_model(struct kgsl_device *device)
++{
++	struct device_node *node;
++	static char gpu_model[32];
++	const char *model;
++	int ret;
++
++	if (strlen(gpu_model))
++		return gpu_model;
++
++	node = adreno_get_gpu_model_node(device->pdev);
++	if (!node)
++		node = of_node_get(device->pdev->dev.of_node);
++
++	ret = of_property_read_string(node, "qcom,gpu-model", &model);
++	of_node_put(node);
++
++	if (!ret)
++		strlcpy(gpu_model, model, sizeof(gpu_model));
++	else
++		scnprintf(gpu_model, sizeof(gpu_model), "Adreno%d%d%dv%d",
++			ADRENO_CHIPID_CORE(ADRENO_DEVICE(device)->chipid),
++			ADRENO_CHIPID_MAJOR(ADRENO_DEVICE(device)->chipid),
++			ADRENO_CHIPID_MINOR(ADRENO_DEVICE(device)->chipid),
++			ADRENO_CHIPID_PATCH(ADRENO_DEVICE(device)->chipid) + 1);
++
++	return gpu_model;
++}
++
+ static int adreno_probe_efuse(struct platform_device *pdev,
+ 					struct adreno_device *adreno_dev)
+ {
+@@ -4070,13 +4152,7 @@ static void adreno_regulator_disable_poll(struct kgsl_device *device)
+ static void adreno_gpu_model(struct kgsl_device *device, char *str,
+ 				size_t bufsz)
+ {
+-	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
+-
+-	snprintf(str, bufsz, "Adreno%d%d%dv%d",
+-			ADRENO_CHIPID_CORE(adreno_dev->chipid),
+-			 ADRENO_CHIPID_MAJOR(adreno_dev->chipid),
+-			 ADRENO_CHIPID_MINOR(adreno_dev->chipid),
+-			 ADRENO_CHIPID_PATCH(adreno_dev->chipid) + 1);
++	scnprintf(str, bufsz, adreno_get_gpu_model(device));
+ }
+ 
+ static bool adreno_is_hwcg_on(struct kgsl_device *device)
+-- 
+2.48.1
+

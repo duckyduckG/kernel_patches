@@ -1,0 +1,34 @@
+From 97e27bb3efb4df0400591a7b28be8fc325932c49 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Tue, 14 Dec 2021 03:35:04 +0200
+Subject: [PATCH 087/175] soc: qcom: shmbridge: Disable shared memory bridge
+ for SDM845
+
+Disable shared memory bridge mechanism and fallback to default
+hypervisor based mechanism due to some issues with secure world
+communication.
+This commit is temporary.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/soc/qcom/qtee_shmbridge.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/soc/qcom/qtee_shmbridge.c b/drivers/soc/qcom/qtee_shmbridge.c
+index d064860c11a8..c34a1cec1086 100644
+--- a/drivers/soc/qcom/qtee_shmbridge.c
++++ b/drivers/soc/qcom/qtee_shmbridge.c
+@@ -123,6 +123,10 @@ static int32_t qtee_shmbridge_enable(bool enable)
+ 		return ret;
+ 	}
+ 
++#ifdef CONFIG_ARCH_SDM845
++	return ret;
++#endif
++
+ 	desc.arginfo = TZ_SHM_BRIDGE_ENABLE_PARAM_ID;
+ 	ret = scm_call2(TZ_SHM_BRIDGE_ENABLE, &desc);
+ 	if (ret || desc.ret[0]) {
+-- 
+2.48.1
+

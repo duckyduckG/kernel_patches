@@ -1,0 +1,65 @@
+From e108bee9034441165b9077a5222862ad21267b1b Mon Sep 17 00:00:00 2001
+From: AngeloGioacchino Del Regno <kholk11@gmail.com>
+Date: Tue, 3 Dec 2019 13:11:11 +0100
+Subject: [PATCH 008/175] dsp: q6voice: Force channel info command for some v2
+ firmwares
+
+Some SoCs were released with a DSP firmware using CVP v2.0 and
+CVD v2.3, but the same versions got a modification on later
+firmwares found on, for example, SM8150.
+
+Unfortunately, the new firmware doesn't declare a different
+version for CVP nor CVD, but the old one does not support the
+device_channels command, with the channel_info command being
+the only option to set the CVP channels right: this is found
+to happen on SDM845's DSP firmware.
+
+For this reason, check if the current machine is SDM845 and
+force sending the CVP channel info command on there: this
+way, the DSP doesn't return any error and we're able to use
+advanced features, like AEC and (A)ANC.
+---
+ techpack/audio/dsp/q6voice.c         | 7 ++++++-
+ techpack/audio/include/dsp/q6voice.h | 1 +
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/techpack/audio/dsp/q6voice.c b/techpack/audio/dsp/q6voice.c
+index c3da1f74e543..5b2249c67f57 100644
+--- a/techpack/audio/dsp/q6voice.c
++++ b/techpack/audio/dsp/q6voice.c
+@@ -4666,7 +4666,8 @@ static int voice_send_cvp_media_fmt_info_cmd(struct voice_data *v)
+ {
+ 	int ret = 0;
+ 
+-	if (common.cvp_version < CVP_VERSION_2)
++	if (common.cvp_version < CVP_VERSION_2 ||
++	    common.is_legacy_dsp_v2_firmware)
+ 		ret = voice_send_cvp_device_channels_cmd(v);
+ 	else
+ 		ret = voice_send_cvp_channel_info_cmd(v);
+@@ -10117,6 +10118,10 @@ int __init voice_init(void)
+ 	 */
+ 	common.rec_channel_count = NUM_CHANNELS_MONO;
+ 
++	/* Support legacy DSP firmware with CVPv2.0+CVD2.3 */
++	common.is_legacy_dsp_v2_firmware =
++		of_machine_is_compatible("qcom,sdm845");
++
+ 	mutex_init(&common.common_lock);
+ 
+ 	common.uevent_data = kzalloc(sizeof(*(common.uevent_data)), GFP_KERNEL);
+diff --git a/techpack/audio/include/dsp/q6voice.h b/techpack/audio/include/dsp/q6voice.h
+index 35ace4eed388..ea72010233b8 100644
+--- a/techpack/audio/include/dsp/q6voice.h
++++ b/techpack/audio/include/dsp/q6voice.h
+@@ -1991,6 +1991,7 @@ struct common_data {
+ 	bool is_destroy_cvd;
+ 	char cvd_version[CVD_VERSION_STRING_MAX_SIZE];
+ 	int cvp_version;
++	bool is_legacy_dsp_v2_firmware;
+ 	bool is_avcs_version_queried;
+ 	bool is_per_vocoder_cal_enabled;
+ 	bool is_sound_focus_resp_success;
+-- 
+2.48.1
+

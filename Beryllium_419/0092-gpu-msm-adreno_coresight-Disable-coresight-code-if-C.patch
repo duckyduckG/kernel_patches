@@ -1,0 +1,49 @@
+From 4961c1f728bc907ae970e995e4e4167cc0f3c81f Mon Sep 17 00:00:00 2001
+From: AngeloGioacchino Del Regno <kholk11@gmail.com>
+Date: Wed, 6 Nov 2019 17:39:00 +0100
+Subject: [PATCH 092/175] gpu: msm: adreno_coresight: Disable coresight code if
+ !CONFIG_CORESIGHT
+
+This permits us to disable CONFIG_CORESIGHT for production devices.
+---
+ drivers/gpu/msm/adreno_coresight.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/gpu/msm/adreno_coresight.c b/drivers/gpu/msm/adreno_coresight.c
+index 5a4d93545c23..4c0e90db086d 100644
+--- a/drivers/gpu/msm/adreno_coresight.c
++++ b/drivers/gpu/msm/adreno_coresight.c
+@@ -393,6 +393,7 @@ static const struct coresight_ops adreno_coresight_ops = {
+ 
+ void adreno_coresight_remove(struct adreno_device *adreno_dev)
+ {
++#ifdef CONFIG_CORESIGHT
+ 	int i, adreno_dev_flag = -EINVAL;
+ 
+ 	for (i = 0; i < GPU_CORESIGHT_MAX; ++i) {
+@@ -408,10 +409,14 @@ void adreno_coresight_remove(struct adreno_device *adreno_dev)
+ 			adreno_dev->csdev[i] = NULL;
+ 		}
+ 	}
++#else
++	return;
++#endif
+ }
+ 
+ int adreno_coresight_init(struct adreno_device *adreno_dev)
+ {
++#ifdef CONFIG_CORESIGHT
+ 	int ret = 0;
+ 	struct adreno_gpudev *gpudev = ADRENO_GPU_DEVICE(adreno_dev);
+ 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
+@@ -464,4 +469,7 @@ int adreno_coresight_init(struct adreno_device *adreno_dev)
+ 
+ 	of_node_put(node);
+ 	return ret;
++#else
++	return 0;
++#endif
+ }
+-- 
+2.48.1
+

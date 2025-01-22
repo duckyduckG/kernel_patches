@@ -1,0 +1,39 @@
+From ea68d08fe8aad3c34f225090441eb58281b55d18 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 7 Jun 2023 02:59:10 +0000
+Subject: [PATCH 107/175] msm: vidc: Switch to timer_setup()
+
+---
+ drivers/media/platform/msm/vidc/msm_vidc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc.c b/drivers/media/platform/msm/vidc/msm_vidc.c
+index 680bc052c271..cd5823ab0598 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc.c
+@@ -1870,9 +1870,9 @@ static const struct v4l2_ctrl_ops msm_vidc_ctrl_ops = {
+ 	.g_volatile_ctrl = msm_vidc_op_g_volatile_ctrl,
+ };
+ 
+-static void batch_timer_callback(unsigned long data)
++static void batch_timer_callback(struct timer_list *t)
+ {
+-	struct msm_vidc_inst *inst = (struct msm_vidc_inst *)data;
++	struct msm_vidc_inst *inst = from_timer(inst, t, batch_timer);
+ 
+ 	if (!inst->batch.enable)
+ 		return;
+@@ -2017,8 +2017,8 @@ void *msm_vidc_open(int core_id, int session_type)
+ 	}
+ 
+ 	INIT_WORK(&inst->batch_work, msm_vidc_batch_handler);
+-	setup_timer(&inst->batch_timer,
+-				batch_timer_callback, (unsigned long)inst);
++	timer_setup(&inst->batch_timer,
++				batch_timer_callback, 0);
+ 
+ 	return inst;
+ fail_init:
+-- 
+2.48.1
+

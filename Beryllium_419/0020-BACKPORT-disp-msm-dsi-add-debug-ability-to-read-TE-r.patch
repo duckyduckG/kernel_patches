@@ -1,0 +1,466 @@
+From 4756ca906d285d7641cdee7df0c009b85ab82b2c Mon Sep 17 00:00:00 2001
+From: Satya Rama Aditya Pinapala <psraditya30@codeaurora.org>
+Date: Wed, 15 Jul 2020 02:10:24 -0700
+Subject: [PATCH 020/175] BACKPORT: disp: msm: dsi: add debug ability to read
+ TE read pointer line count
+
+The change adds register mapping of MDP_INTF_[1/2]_TEAR_INT_COUNT_VAL
+register to DSI controller. This allows for the controller to read the
+line count and frame count of the read pointer during trigger and
+successful transfer of DMA command.
+
+To enable the debug feature:
+echo 1 > /d/<panel_name>/dsi-ctrl-0/enable_cmd_dma_stats.
+
+To disable the debug feature
+echo 0 > /d/<panel_name>/dsi-ctrl-0/enable_cmd_dma_stats.
+
+To read line count value:
+cat /d/<panel_name>/dsi-ctrl-0/cmd_dma_stats.
+
+Change-Id: I5cdeb54ca941af05b226a9d7ab332b899ecc5797
+Signed-off-by: Satya Rama Aditya Pinapala <psraditya30@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_catalog.c     |   6 +
+ techpack/display/msm/dsi/dsi_catalog.h     |   3 +
+ techpack/display/msm/dsi/dsi_ctrl.c        | 131 ++++++++++++++++++++-
+ techpack/display/msm/dsi/dsi_ctrl.h        |  19 +++
+ techpack/display/msm/dsi/dsi_ctrl_hw.h     |  25 ++++
+ techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c |  82 +++++++++++++
+ 6 files changed, 264 insertions(+), 2 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_catalog.c b/techpack/display/msm/dsi/dsi_catalog.c
+index 3ca48834f16d..9f3b2192a7f8 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.c
++++ b/techpack/display/msm/dsi/dsi_catalog.c
+@@ -83,6 +83,8 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		ctrl->ops.config_clk_gating = NULL;
+ 		ctrl->ops.configure_cmddma_window = NULL;
+ 		ctrl->ops.reset_trig_ctrl = NULL;
++		ctrl->ops.map_mdp_regs = NULL;
++		ctrl->ops.log_line_count = NULL;
+ 		break;
+ 	case DSI_CTRL_VERSION_2_0:
+ 		ctrl->ops.setup_lane_map = dsi_ctrl_hw_20_setup_lane_map;
+@@ -100,6 +102,8 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		ctrl->ops.config_clk_gating = NULL;
+ 		ctrl->ops.configure_cmddma_window = NULL;
+ 		ctrl->ops.reset_trig_ctrl = NULL;
++		ctrl->ops.map_mdp_regs = NULL;
++		ctrl->ops.log_line_count = NULL;
+ 		break;
+ 	case DSI_CTRL_VERSION_2_2:
+ 	case DSI_CTRL_VERSION_2_3:
+@@ -124,6 +128,8 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 			dsi_ctrl_hw_22_configure_cmddma_window;
+ 		ctrl->ops.reset_trig_ctrl =
+ 			dsi_ctrl_hw_22_reset_trigger_controls;
++		ctrl->ops.map_mdp_regs = dsi_ctrl_hw_22_map_mdp_regs;
++		ctrl->ops.log_line_count = dsi_ctrl_hw_22_log_line_count;
+ 		break;
+ 	default:
+ 		break;
+diff --git a/techpack/display/msm/dsi/dsi_catalog.h b/techpack/display/msm/dsi/dsi_catalog.h
+index 2544a6095778..9b00441569b9 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.h
++++ b/techpack/display/msm/dsi/dsi_catalog.h
+@@ -276,4 +276,7 @@ void dsi_ctrl_hw_22_configure_cmddma_window(struct dsi_ctrl_hw *ctrl,
+ 		u32 line_no, u32 window);
+ void dsi_ctrl_hw_22_reset_trigger_controls(struct dsi_ctrl_hw *ctrl,
+ 				       struct dsi_host_common_cfg *cfg);
++int dsi_ctrl_hw_22_map_mdp_regs(struct platform_device *pdev,
++		struct dsi_ctrl_hw *ctrl);
++u32 dsi_ctrl_hw_22_log_line_count(struct dsi_ctrl_hw *ctrl, bool cmd_mode);
+ #endif /* _DSI_CATALOG_H_ */
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 4ad2f6f0c82f..7cab92c1d9d2 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -190,6 +190,58 @@ static ssize_t debugfs_reg_dump_read(struct file *file,
+ 	return len;
+ }
+ 
++static ssize_t debugfs_line_count_read(struct file *file,
++				 char __user *user_buf,
++				 size_t user_len,
++				 loff_t *ppos)
++{
++	struct dsi_ctrl *dsi_ctrl = file->private_data;
++	char *buf;
++	int rc = 0;
++	u32 len = 0;
++	size_t max_len = min_t(size_t, user_len, SZ_4K);
++
++	if (!dsi_ctrl)
++		return -ENODEV;
++
++	if (*ppos)
++		return 0;
++
++	buf = kzalloc(max_len, GFP_KERNEL);
++	if (ZERO_OR_NULL_PTR(buf))
++		return -ENOMEM;
++
++	mutex_lock(&dsi_ctrl->ctrl_lock);
++
++	len += scnprintf(buf, max_len, "Command triggered at line: %04x\n",
++			dsi_ctrl->cmd_trigger_line);
++	len += scnprintf((buf + len), max_len - len,
++			"Command triggered at frame: %04x\n",
++			dsi_ctrl->cmd_trigger_frame);
++	len += scnprintf((buf + len), max_len - len,
++			"Command successful at line: %04x\n",
++			dsi_ctrl->cmd_success_line);
++	len += scnprintf((buf + len), max_len - len,
++			"Command successful at frame: %04x\n",
++			dsi_ctrl->cmd_success_frame);
++
++	mutex_unlock(&dsi_ctrl->ctrl_lock);
++
++	if (len > max_len)
++		len = max_len;
++
++	if (copy_to_user(user_buf, buf, len)) {
++		rc = -EFAULT;
++		goto error;
++	}
++
++	*ppos += len;
++
++error:
++	kfree(buf);
++	return len;
++}
++
+ static const struct file_operations state_info_fops = {
+ 	.open = simple_open,
+ 	.read = debugfs_state_info_read,
+@@ -200,11 +252,16 @@ static const struct file_operations reg_dump_fops = {
+ 	.read = debugfs_reg_dump_read,
+ };
+ 
++static const struct file_operations cmd_dma_stats_fops = {
++	.open = simple_open,
++	.read = debugfs_line_count_read,
++};
++
+ static int dsi_ctrl_debugfs_init(struct dsi_ctrl *dsi_ctrl,
+ 				 struct dentry *parent)
+ {
+ 	int rc = 0;
+-	struct dentry *dir, *state_file, *reg_dump;
++	struct dentry *dir, *state_file, *reg_dump, *cmd_dma_logs;
+ 	char dbg_name[DSI_DEBUG_NAME_LEN];
+ 
+ 	if (!dsi_ctrl || !parent) {
+@@ -242,6 +299,30 @@ static int dsi_ctrl_debugfs_init(struct dsi_ctrl *dsi_ctrl,
+ 		goto error_remove_dir;
+ 	}
+ 
++	cmd_dma_logs = debugfs_create_bool("enable_cmd_dma_stats",
++				       0600,
++				       dir,
++				       &dsi_ctrl->enable_cmd_dma_stats);
++	if (IS_ERR_OR_NULL(cmd_dma_logs)) {
++		rc = PTR_ERR(cmd_dma_logs);
++		DSI_CTRL_ERR(dsi_ctrl,
++				"enable cmd dma stats failed, rc=%d\n",
++				rc);
++		goto error_remove_dir;
++	}
++
++	cmd_dma_logs = debugfs_create_file("cmd_dma_stats",
++				       0444,
++				       dir,
++				       dsi_ctrl,
++				       &cmd_dma_stats_fops);
++	if (IS_ERR_OR_NULL(cmd_dma_logs)) {
++		rc = PTR_ERR(cmd_dma_logs);
++		DSI_CTRL_ERR(dsi_ctrl, "Line count file failed, rc=%d\n",
++				rc);
++		goto error_remove_dir;
++	}
++
+ 	dsi_ctrl->debugfs_root = dir;
+ 
+ 	snprintf(dbg_name, DSI_DEBUG_NAME_LEN, "dsi%d_ctrl",
+@@ -1297,6 +1378,8 @@ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 	if (flags & DSI_CTRL_CMD_CUSTOM_DMA_SCHED)
+ 		dsi_configure_command_scheduling(dsi_ctrl, cmd_mem);
+ 
++	dsi_ctrl->cmd_mode = (dsi_ctrl->host_config.panel_mode ==
++			DSI_OP_CMD_MODE);
+ 	hw_flags |= (flags & DSI_CTRL_CMD_DEFER_TRIGGER) ?
+ 			DSI_CTRL_HW_CMD_WAIT_FOR_TRIGGER : 0;
+ 
+@@ -1349,6 +1432,17 @@ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 							      cmd,
+ 							      hw_flags);
+ 		}
++
++		if (dsi_ctrl->enable_cmd_dma_stats) {
++			u32 reg = dsi_hw_ops.log_line_count(&dsi_ctrl->hw,
++					dsi_ctrl->cmd_mode);
++			dsi_ctrl->cmd_trigger_line = (reg & 0xFFFF);
++			dsi_ctrl->cmd_trigger_frame = ((reg >> 16) & 0xFFFF);
++			SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_CASE1,
++					dsi_ctrl->cmd_trigger_line,
++					dsi_ctrl->cmd_trigger_frame);
++		}
++
+ 		if (flags & DSI_CTRL_CMD_ASYNC_WAIT) {
+ 			dsi_ctrl->dma_wait_queued = true;
+ 			queue_work(dsi_ctrl->dma_cmd_workq,
+@@ -2039,6 +2133,9 @@ static int dsi_ctrl_dev_probe(struct platform_device *pdev)
+ 		DSI_CTRL_DEBUG(dsi_ctrl, "failed to init axi bus client, rc = %d\n",
+ 				rc);
+ 
++	if (dsi_ctrl->hw.ops.map_mdp_regs)
++		dsi_ctrl->hw.ops.map_mdp_regs(pdev, &dsi_ctrl->hw);
++
+ 	item->ctrl = dsi_ctrl;
+ 
+ 	mutex_lock(&dsi_ctrl_list_lock);
+@@ -2705,6 +2802,15 @@ static irqreturn_t dsi_ctrl_isr(int irq, void *ptr)
+ 		dsi_ctrl_handle_error_status(dsi_ctrl, errors);
+ 
+ 	if (status & DSI_CMD_MODE_DMA_DONE) {
++		if (dsi_ctrl->enable_cmd_dma_stats) {
++			u32 reg = dsi_ctrl->hw.ops.log_line_count(&dsi_ctrl->hw,
++						dsi_ctrl->cmd_mode);
++			dsi_ctrl->cmd_success_line = (reg & 0xFFFF);
++			dsi_ctrl->cmd_success_frame = ((reg >> 16) & 0xFFFF);
++			SDE_EVT32(dsi_ctrl->cell_index,	SDE_EVTLOG_FUNC_CASE1,
++					dsi_ctrl->cmd_success_line,
++					dsi_ctrl->cmd_success_frame);
++		}
+ 		atomic_set(&dsi_ctrl->dma_irq_trig, 1);
+ 		dsi_ctrl_disable_status_interrupt(dsi_ctrl,
+ 					DSI_SINT_CMD_MODE_DMA_DONE);
+@@ -3332,8 +3438,18 @@ int dsi_ctrl_cmd_tx_trigger(struct dsi_ctrl *dsi_ctrl, u32 flags)
+ 
+ 	mutex_lock(&dsi_ctrl->ctrl_lock);
+ 
+-	if (!(flags & DSI_CTRL_CMD_BROADCAST_MASTER))
++	if (!(flags & DSI_CTRL_CMD_BROADCAST_MASTER)) {
+ 		dsi_hw_ops.trigger_command_dma(&dsi_ctrl->hw);
++		if (dsi_ctrl->enable_cmd_dma_stats) {
++			u32 reg = dsi_hw_ops.log_line_count(&dsi_ctrl->hw,
++					dsi_ctrl->cmd_mode);
++			dsi_ctrl->cmd_trigger_line = (reg & 0xFFFF);
++			dsi_ctrl->cmd_trigger_frame = ((reg >> 16) & 0xFFFF);
++			SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_CASE1,
++					dsi_ctrl->cmd_trigger_line,
++					dsi_ctrl->cmd_trigger_frame);
++		}
++	}
+ 
+ 	if ((flags & DSI_CTRL_CMD_BROADCAST) &&
+ 		(flags & DSI_CTRL_CMD_BROADCAST_MASTER)) {
+@@ -3345,6 +3461,17 @@ int dsi_ctrl_cmd_tx_trigger(struct dsi_ctrl *dsi_ctrl, u32 flags)
+ 
+ 		/* trigger command */
+ 		dsi_hw_ops.trigger_command_dma(&dsi_ctrl->hw);
++
++		if (dsi_ctrl->enable_cmd_dma_stats) {
++			u32 reg = dsi_hw_ops.log_line_count(&dsi_ctrl->hw,
++					dsi_ctrl->cmd_mode);
++			dsi_ctrl->cmd_trigger_line = (reg & 0xFFFF);
++			dsi_ctrl->cmd_trigger_frame = ((reg >> 16) & 0xFFFF);
++			SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_CASE1,
++					dsi_ctrl->cmd_trigger_line,
++					dsi_ctrl->cmd_trigger_frame);
++		}
++
+ 		if (flags & DSI_CTRL_CMD_ASYNC_WAIT) {
+ 			dsi_ctrl->dma_wait_queued = true;
+ 			queue_work(dsi_ctrl->dma_cmd_workq,
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.h b/techpack/display/msm/dsi/dsi_ctrl.h
+index d1ad3862d3dc..19625c530ad1 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.h
++++ b/techpack/display/msm/dsi/dsi_ctrl.h
+@@ -239,6 +239,19 @@ struct dsi_ctrl_interrupts {
+  *                           insert null packet.
+  * @modeupdated:	  Boolean to send new roi if mode is updated.
+  * @split_link_supported: Boolean to check if hw supports split link.
++ * @enable_cmd_dma_stats: Boolean to indicate the verbose logging during
++ *				CMD transfer.
++ *				count.
++ * @cmd_mode:			Boolean to indicate if panel is running in
++ *				command mode.
++ * @cmd_trigger_line:		unsigned integer that indicates the line at
++ *				which command gets triggered.
++ * @cmd_trigger_frame:		unsigned integer that indicates the frame at
++ *				which command gets triggered.
++ * @cmd_success_line:		unsigned integer that indicates the line at
++ *				which command transfer is successful.
++ * @cmd_success_frame:		unsigned integer that indicates the frame at
++ *				which command transfer is successful.
+  */
+ struct dsi_ctrl {
+ 	struct platform_device *pdev;
+@@ -299,6 +312,12 @@ struct dsi_ctrl {
+ 	bool null_insertion_enabled;
+ 	bool modeupdated;
+ 	bool split_link_supported;
++	bool enable_cmd_dma_stats;
++	bool cmd_mode;
++	u32 cmd_trigger_line;
++	u32 cmd_trigger_frame;
++	u32 cmd_success_line;
++	u32 cmd_success_frame;
+ };
+ 
+ /**
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw.h b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+index 7d3f0f13dc5e..952f9bce3751 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw.h
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+@@ -857,6 +857,22 @@ struct dsi_ctrl_hw_ops {
+ 	 */
+ 	void (*reset_trig_ctrl)(struct dsi_ctrl_hw *ctrl,
+ 			struct dsi_host_common_cfg *cfg);
++
++	/**
++	 * hw.ops.map_mdp_regs() - maps MDP interface line count registers.
++	 * @pdev:	Pointer to platform device.
++	 * @ctrl:	Pointer to the controller host hardware.
++	 */
++	int (*map_mdp_regs)(struct platform_device *pdev,
++			struct dsi_ctrl_hw *ctrl);
++
++	/**
++	 * hw.ops.log_line_count() - reads the MDP interface line count
++	 *			     registers.
++	 * @ctrl:	Pointer to the controller host hardware.
++	 * @cmd_mode:	Boolean to indicate command mode operation.
++	 */
++	u32 (*log_line_count)(struct dsi_ctrl_hw *ctrl, bool cmd_mode);
+ };
+ 
+ /*
+@@ -867,6 +883,13 @@ struct dsi_ctrl_hw_ops {
+  * @mmss_misc_length:       Length of mmss_misc register map.
+  * @disp_cc_base:           Base address of disp_cc register map.
+  * @disp_cc_length:         Length of disp_cc register map.
++ * @te_rd_ptr_reg:	    Address of MDP_TEAR_INTF_TEAR_LINE_COUNT. This
++ *			    register is used for testing and validating the RD
++ *			    ptr value when a CMD is triggered and it succeeds.
++ * @line_count_reg:	    Address of MDP_TEAR_INTF_LINE_COUNT. This
++ *			    register is used for testing and validating the
++ *			    line count value when a CMD is triggered and it
++ *			    succeeds.
+  * @index:                  Instance ID of the controller.
+  * @feature_map:            Features supported by the DSI controller.
+  * @ops:                    Function pointers to the operations supported by the
+@@ -886,6 +909,8 @@ struct dsi_ctrl_hw {
+ 	void __iomem *mmss_misc_base;
+ 	u32 mmss_misc_length;
+ 	void __iomem *disp_cc_base;
++	void __iomem *te_rd_ptr_reg;
++	void __iomem *line_count_reg;
+ 	u32 disp_cc_length;
+ 	u32 index;
+ 
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+index 5138ccd01b35..f41a90378e43 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+@@ -14,6 +14,12 @@
+ #define DSI_DMA_SCHEDULE_CTRL 0x100
+ #define DSI_DMA_SCHEDULE_CTRL2 0x0104
+ 
++/* MDP INTF registers to be mapped for debug feature*/
++#define MDP_INTF1_TEAR_LINE_COUNT 0xAE36298
++#define MDP_INTF2_TEAR_LINE_COUNT 0xAE37298
++#define MDP_INTF1_LINE_COUNT 0xAE360B0
++#define MDP_INTF2_LINE_COUNT 0xAE370B0
++
+ /**
+  * dsi_ctrl_hw_22_phy_reset_config() - to configure clamp control during ulps
+  * @ctrl:          Pointer to the controller host hardware.
+@@ -198,3 +204,79 @@ void dsi_ctrl_hw_22_reset_trigger_controls(struct dsi_ctrl_hw *ctrl,
+ 	DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL, 0x0);
+ 	ctrl->reset_trig_ctrl = false;
+ }
++
++/**
++ * dsi_ctrl_hw_22_map_mdp_regs() - maps MDP interface line count registers.
++ * @pdev:	Pointer to platform device.
++ * @ctrl:	Pointer to the controller host hardware.
++ *
++ * Return: 0 on success and error on failure.
++ */
++int dsi_ctrl_hw_22_map_mdp_regs(struct platform_device *pdev,
++		struct dsi_ctrl_hw *ctrl)
++{
++	int rc = 0;
++	void __iomem *ptr = NULL, *ptr1 = NULL;
++
++	if (ctrl->index == 0) {
++		ptr = devm_ioremap(&pdev->dev, MDP_INTF1_TEAR_LINE_COUNT, 1);
++		if (IS_ERR_OR_NULL(ptr)) {
++			DSI_CTRL_HW_ERR(ctrl,
++				"MDP TE LINE COUNT address not found\n");
++			rc = PTR_ERR(ptr);
++			return rc;
++		}
++
++		ptr1 = devm_ioremap(&pdev->dev, MDP_INTF1_LINE_COUNT, 1);
++		if (IS_ERR_OR_NULL(ptr1)) {
++			DSI_CTRL_HW_ERR(ctrl,
++				"MDP TE LINE COUNT address not found\n");
++			rc = PTR_ERR(ptr1);
++			return rc;
++		}
++	}
++
++	if (ctrl->index == 1) {
++		ptr = devm_ioremap(&pdev->dev, MDP_INTF2_TEAR_LINE_COUNT, 1);
++		if (IS_ERR_OR_NULL(ptr)) {
++			DSI_CTRL_HW_ERR(ctrl,
++				"MDP TE LINE COUNT address not found\n");
++			rc = PTR_ERR(ptr);
++			return rc;
++		}
++
++		ptr1 = devm_ioremap(&pdev->dev, MDP_INTF2_LINE_COUNT, 1);
++		if (IS_ERR_OR_NULL(ptr1)) {
++			DSI_CTRL_HW_ERR(ctrl,
++				"MDP TE LINE COUNT address not found\n");
++			rc = PTR_ERR(ptr1);
++			return rc;
++		}
++	}
++
++	ctrl->te_rd_ptr_reg = ptr;
++	ctrl->line_count_reg = ptr1;
++
++	return rc;
++}
++
++/**
++ * dsi_ctrl_hw_22_log_line_count() - reads the MDP interface line count
++ *				     registers.
++ * @ctrl:	Pointer to the controller host hardware.
++ * @cmd_mode:	Boolean to indicate command mode operation.
++ *
++ * Return: INTF register value.
++ */
++u32 dsi_ctrl_hw_22_log_line_count(struct dsi_ctrl_hw *ctrl, bool cmd_mode)
++{
++
++	u32 reg = 0;
++
++	if (cmd_mode && ctrl->te_rd_ptr_reg)
++		reg = readl_relaxed(ctrl->te_rd_ptr_reg);
++	else if (ctrl->line_count_reg)
++		reg = readl_relaxed(ctrl->line_count_reg);
++
++	return reg;
++}
+-- 
+2.48.1
+

@@ -1,0 +1,401 @@
+From 35846286191642e4b9dac20cf3956ffb82ed9ce4 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Fri, 5 Nov 2021 17:41:25 +0200
+Subject: [PATCH 074/175] clk: qcom: sdm845: Update Fabia PLL configuration for
+ 4.19
+
+Update Fabia PLL configuration for SDM845 clock controller
+drivers according to current Alpha PLL driver.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/camcc-sdm845.c   | 47 +++++++++++++++++--------------
+ drivers/clk/qcom/dispcc-sdm845.c  | 12 ++++----
+ drivers/clk/qcom/gcc-sdm845.c     | 15 +++++-----
+ drivers/clk/qcom/gpucc-sdm845.c   | 19 +++++++------
+ drivers/clk/qcom/videocc-sdm845.c |  8 +++---
+ 5 files changed, 54 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/clk/qcom/camcc-sdm845.c b/drivers/clk/qcom/camcc-sdm845.c
+index f3f0fbe9bab2..5f3e30dc9047 100644
+--- a/drivers/clk/qcom/camcc-sdm845.c
++++ b/drivers/clk/qcom/camcc-sdm845.c
+@@ -85,22 +85,22 @@ static struct pll_vco fabia_vco[] = {
+ 	{ 125000000, 1000000000, 1 },
+ };
+ 
+-static const struct pll_config cam_cc_pll0_config = {
++static const struct alpha_pll_config cam_cc_pll0_config = {
+ 	.l = 0x1f,
+-	.frac = 0x4000,
++	.alpha = 0x4000,
+ };
+ 
+ static struct clk_alpha_pll cam_cc_pll0 = {
+ 	.offset = 0x0,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "cam_cc_pll0",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+@@ -124,30 +124,31 @@ static struct clk_alpha_pll_postdiv cam_cc_pll0_out_even = {
+ 	.post_div_table = post_div_table_fabia_even,
+ 	.num_post_div = ARRAY_SIZE(post_div_table_fabia_even),
+ 	.width = 4,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr.hw.init = &(struct clk_init_data){
+ 		.name = "cam_cc_pll0_out_even",
+ 		.parent_names = (const char *[]){ "cam_cc_pll0" },
+ 		.num_parents = 1,
+-		.ops = &clk_generic_pll_postdiv_ops,
++		.ops = &clk_alpha_pll_postdiv_fabia_ops,
+ 	},
+ };
+ 
+-static const struct pll_config cam_cc_pll1_config = {
++static const struct alpha_pll_config cam_cc_pll1_config = {
+ 	.l = 0x2a,
+-	.frac = 0x1556,
++	.alpha = 0x1556,
+ };
+ 
+ static struct clk_alpha_pll cam_cc_pll1 = {
+ 	.offset = 0x1000,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "cam_cc_pll1",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+@@ -163,30 +164,31 @@ static struct clk_alpha_pll_postdiv cam_cc_pll1_out_even = {
+ 	.post_div_table = post_div_table_fabia_even,
+ 	.num_post_div = ARRAY_SIZE(post_div_table_fabia_even),
+ 	.width = 4,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr.hw.init = &(struct clk_init_data){
+ 		.name = "cam_cc_pll1_out_even",
+ 		.parent_names = (const char *[]){ "cam_cc_pll1" },
+ 		.num_parents = 1,
+-		.ops = &clk_generic_pll_postdiv_ops,
++		.ops = &clk_alpha_pll_postdiv_fabia_ops,
+ 	},
+ };
+ 
+-static const struct pll_config cam_cc_pll2_config = {
++static const struct alpha_pll_config cam_cc_pll2_config = {
+ 	.l = 0x32,
+-	.frac = 0x0,
++	.alpha = 0x0,
+ };
+ 
+ static struct clk_alpha_pll cam_cc_pll2 = {
+ 	.offset = 0x2000,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "cam_cc_pll2",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_MX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+@@ -202,11 +204,12 @@ static struct clk_alpha_pll_postdiv cam_cc_pll2_out_even = {
+ 	.post_div_table = post_div_table_fabia_even,
+ 	.num_post_div = ARRAY_SIZE(post_div_table_fabia_even),
+ 	.width = 4,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr.hw.init = &(struct clk_init_data){
+ 		.name = "cam_cc_pll2_out_even",
+ 		.parent_names = (const char *[]){ "cam_cc_pll2" },
+ 		.num_parents = 1,
+-		.ops = &clk_generic_pll_postdiv_ops,
++		.ops = &clk_alpha_pll_postdiv_fabia_ops,
+ 	},
+ };
+ 
+@@ -224,30 +227,31 @@ static struct clk_alpha_pll_postdiv cam_cc_pll2_out_odd = {
+ 	.post_div_table = post_div_table_fabia_odd,
+ 	.num_post_div = ARRAY_SIZE(post_div_table_fabia_odd),
+ 	.width = 4,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr.hw.init = &(struct clk_init_data){
+ 		.name = "cam_cc_pll2_out_odd",
+ 		.parent_names = (const char *[]){ "cam_cc_pll2" },
+ 		.num_parents = 1,
+-		.ops = &clk_generic_pll_postdiv_ops,
++		.ops = &clk_alpha_pll_postdiv_fabia_ops,
+ 	},
+ };
+ 
+-static const struct pll_config cam_cc_pll3_config = {
++static const struct alpha_pll_config cam_cc_pll3_config = {
+ 	.l = 0x14,
+-	.frac = 0x0,
++	.alpha = 0x0,
+ };
+ 
+ static struct clk_alpha_pll cam_cc_pll3 = {
+ 	.offset = 0x3000,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "cam_cc_pll3",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+@@ -263,11 +267,12 @@ static struct clk_alpha_pll_postdiv cam_cc_pll3_out_even = {
+ 	.post_div_table = post_div_table_fabia_even,
+ 	.num_post_div = ARRAY_SIZE(post_div_table_fabia_even),
+ 	.width = 4,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr.hw.init = &(struct clk_init_data){
+ 		.name = "cam_cc_pll3_out_even",
+ 		.parent_names = (const char *[]){ "cam_cc_pll3" },
+ 		.num_parents = 1,
+-		.ops = &clk_generic_pll_postdiv_ops,
++		.ops = &clk_alpha_pll_postdiv_fabia_ops,
+ 	},
+ };
+ 
+diff --git a/drivers/clk/qcom/dispcc-sdm845.c b/drivers/clk/qcom/dispcc-sdm845.c
+index 2689cc9fa6ce..717c3f9c8e8c 100644
+--- a/drivers/clk/qcom/dispcc-sdm845.c
++++ b/drivers/clk/qcom/dispcc-sdm845.c
+@@ -122,27 +122,27 @@ static struct pll_vco fabia_vco[] = {
+ 	{ 125000000, 1000000000, 1 },
+ };
+ 
+-static const struct pll_config disp_cc_pll0_config = {
++static const struct alpha_pll_config disp_cc_pll0_config = {
+ 	.l = 0x15,
+-	.frac = 0x7c00,
++	.alpha = 0x7c00,
+ };
+ 
+-static const struct pll_config disp_cc_pll0_config_v2 = {
++static const struct alpha_pll_config disp_cc_pll0_config_v2 = {
+ 	.l = 0x2c,
+-	.frac = 0xcaaa,
++	.alpha = 0xcaaa,
+ };
+ 
+ static struct clk_alpha_pll disp_cc_pll0 = {
+ 	.offset = 0x0,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "disp_cc_pll0",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+diff --git a/drivers/clk/qcom/gcc-sdm845.c b/drivers/clk/qcom/gcc-sdm845.c
+index 01eade692e2a..206fb5579646 100644
+--- a/drivers/clk/qcom/gcc-sdm845.c
++++ b/drivers/clk/qcom/gcc-sdm845.c
+@@ -245,7 +245,7 @@ static struct clk_alpha_pll gpll0 = {
+ 	.offset = 0x0,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.enable_reg = 0x52000,
+ 		.enable_mask = BIT(0),
+@@ -253,7 +253,7 @@ static struct clk_alpha_pll gpll0 = {
+ 			.name = "gpll0",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_fixed_pll_ops,
++			.ops = &clk_alpha_pll_fixed_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+@@ -267,7 +267,7 @@ static struct clk_alpha_pll gpll4 = {
+ 	.offset = 0x76000,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.enable_reg = 0x52000,
+ 		.enable_mask = BIT(4),
+@@ -275,7 +275,7 @@ static struct clk_alpha_pll gpll4 = {
+ 			.name = "gpll4",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_fixed_pll_ops,
++			.ops = &clk_alpha_pll_fixed_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+@@ -299,11 +299,12 @@ static struct clk_alpha_pll_postdiv gpll0_out_even = {
+ 	.post_div_table = post_div_table_fabia_even,
+ 	.num_post_div = ARRAY_SIZE(post_div_table_fabia_even),
+ 	.width = 4,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr.hw.init = &(struct clk_init_data){
+ 		.name = "gpll0_out_even",
+ 		.parent_names = (const char *[]){ "gpll0" },
+ 		.num_parents = 1,
+-		.ops = &clk_generic_pll_postdiv_ops,
++		.ops = &clk_alpha_pll_postdiv_fabia_ops,
+ 	},
+ };
+ 
+@@ -311,7 +312,7 @@ static struct clk_alpha_pll gpll6 = {
+ 	.offset = 0x13000,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.enable_reg = 0x52000,
+ 		.enable_mask = BIT(6),
+@@ -319,7 +320,7 @@ static struct clk_alpha_pll gpll6 = {
+ 			.name = "gpll6",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_fixed_pll_ops,
++			.ops = &clk_alpha_pll_fixed_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+diff --git a/drivers/clk/qcom/gpucc-sdm845.c b/drivers/clk/qcom/gpucc-sdm845.c
+index f94a20dc4359..ad1310a10a86 100644
+--- a/drivers/clk/qcom/gpucc-sdm845.c
++++ b/drivers/clk/qcom/gpucc-sdm845.c
+@@ -129,27 +129,27 @@ static struct pll_vco fabia_vco[] = {
+ 	{ 125000000, 1000000000, 1 },
+ };
+ 
+-static const struct pll_config gpu_cc_pll0_config = {
++static const struct alpha_pll_config gpu_cc_pll0_config = {
+ 	.l = 0x1d,
+-	.frac = 0x2aaa,
++	.alpha = 0x2aaa,
+ };
+ 
+-static const struct pll_config gpu_cc_pll1_config = {
++static const struct alpha_pll_config gpu_cc_pll1_config = {
+ 	.l = 0x1a,
+-	.frac = 0xaaaa,
++	.alpha = 0xaaaa,
+ };
+ 
+ static struct clk_alpha_pll gpu_cc_pll0 = {
+ 	.offset = 0x0,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "gpu_cc_pll0",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_MX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+@@ -173,12 +173,13 @@ static struct clk_alpha_pll_postdiv gpu_cc_pll0_out_even = {
+ 	.post_div_table = post_div_table_fabia_even,
+ 	.num_post_div = ARRAY_SIZE(post_div_table_fabia_even),
+ 	.width = 4,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr.hw.init = &(struct clk_init_data){
+ 		.name = "gpu_cc_pll0_out_even",
+ 		.parent_names = (const char *[]){ "gpu_cc_pll0" },
+ 		.num_parents = 1,
+ 		.flags = CLK_SET_RATE_PARENT,
+-		.ops = &clk_generic_pll_postdiv_ops,
++		.ops = &clk_alpha_pll_postdiv_fabia_ops,
+ 	},
+ };
+ 
+@@ -186,13 +187,13 @@ static struct clk_alpha_pll gpu_cc_pll1 = {
+ 	.offset = 0x100,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "gpu_cc_pll1",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_MX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+diff --git a/drivers/clk/qcom/videocc-sdm845.c b/drivers/clk/qcom/videocc-sdm845.c
+index a140af23b2f6..6cb12f892e4b 100644
+--- a/drivers/clk/qcom/videocc-sdm845.c
++++ b/drivers/clk/qcom/videocc-sdm845.c
+@@ -61,22 +61,22 @@ static struct pll_vco fabia_vco[] = {
+ 	{ 125000000, 1000000000, 1 },
+ };
+ 
+-static const struct pll_config video_pll0_config = {
++static const struct alpha_pll_config video_pll0_config = {
+ 	.l = 0x10,
+-	.frac = 0xaaab,
++	.alpha = 0xaaab,
+ };
+ 
+ static struct clk_alpha_pll video_pll0 = {
+ 	.offset = 0x42c,
+ 	.vco_table = fabia_vco,
+ 	.num_vco = ARRAY_SIZE(fabia_vco),
+-	.type = FABIA_PLL,
++	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_FABIA],
+ 	.clkr = {
+ 		.hw.init = &(struct clk_init_data){
+ 			.name = "video_pll0",
+ 			.parent_names = (const char *[]){ "bi_tcxo" },
+ 			.num_parents = 1,
+-			.ops = &clk_fabia_pll_ops,
++			.ops = &clk_alpha_pll_fabia_ops,
+ 			VDD_CX_FMAX_MAP4(
+ 				MIN, 615000000,
+ 				LOW, 1066000000,
+-- 
+2.48.1
+

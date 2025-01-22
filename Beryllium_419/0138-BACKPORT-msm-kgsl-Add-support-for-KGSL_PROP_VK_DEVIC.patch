@@ -1,0 +1,80 @@
+From 7bbf64898c6a7bb18eb822955f3fd204268e4eba Mon Sep 17 00:00:00 2001
+From: Hareesh Gundu <hareeshg@codeaurora.org>
+Date: Mon, 10 May 2021 20:56:58 +0530
+Subject: [PATCH 138/175] BACKPORT: msm: kgsl: Add support for
+ KGSL_PROP_VK_DEVICE_ID
+
+Usermode driver expect vulkan device id info from kernel.
+Add new KGSL_PROP_VK_DEVICE_ID property support to provide
+vk-device-id information.
+
+Change-Id: Ib4f6872fcd3a956caeaad6e7c9f534d7c8e87305
+Signed-off-by: Hareesh Gundu <hareeshg@codeaurora.org>
+---
+ drivers/gpu/msm/adreno.c      | 23 +++++++++++++++++++++++
+ include/uapi/linux/msm_kgsl.h |  1 +
+ 2 files changed, 24 insertions(+)
+
+diff --git a/drivers/gpu/msm/adreno.c b/drivers/gpu/msm/adreno.c
+index cd0c0fc7c161..60254a18e941 100644
+--- a/drivers/gpu/msm/adreno.c
++++ b/drivers/gpu/msm/adreno.c
+@@ -1519,6 +1519,26 @@ static const char *adreno_get_gpu_model(struct kgsl_device *device)
+ 	return gpu_model;
+ }
+ 
++static u32 adreno_get_vk_device_id(struct kgsl_device *device)
++{
++	struct device_node *node;
++	static u32 device_id;
++
++	if (device_id)
++		return device_id;
++
++	node = adreno_get_gpu_model_node(device->pdev);
++	if (!node)
++		node = of_node_get(device->pdev->dev.of_node);
++
++	if (of_property_read_u32(node, "qcom,vk-device-id", &device_id))
++		device_id = ADRENO_DEVICE(device)->chipid;
++
++	of_node_put(node);
++
++	return device_id;
++}
++
+ static int adreno_probe_efuse(struct platform_device *pdev,
+ 					struct adreno_device *adreno_dev)
+ {
+@@ -2823,6 +2843,8 @@ static int adreno_prop_u32(struct kgsl_device *device,
+ 		val = adreno_support_64bit(adreno_dev) ? 48 : 32;
+ 	else if (param->type == KGSL_PROP_SPEED_BIN)
+ 		val = adreno_dev->speed_bin;
++	else if (param->type == KGSL_PROP_VK_DEVICE_ID)
++		val = adreno_get_vk_device_id(device);
+ 
+ 	return copy_prop(param, &val, sizeof(val));
+ }
+@@ -2847,6 +2869,7 @@ static const struct {
+ 	{ KGSL_PROP_SPEED_BIN, adreno_prop_u32 },
+ 	{ KGSL_PROP_GAMING_BIN, adreno_prop_gaming_bin },
+ 	{ KGSL_PROP_GPU_MODEL, adreno_prop_gpu_model},
++	{ KGSL_PROP_VK_DEVICE_ID, adreno_prop_u32},
+ };
+ 
+ static int adreno_getproperty(struct kgsl_device *device,
+diff --git a/include/uapi/linux/msm_kgsl.h b/include/uapi/linux/msm_kgsl.h
+index 490762737842..a3ca60764b35 100644
+--- a/include/uapi/linux/msm_kgsl.h
++++ b/include/uapi/linux/msm_kgsl.h
+@@ -341,6 +341,7 @@ enum kgsl_timestamp_type {
+ #define KGSL_PROP_QUERY_CAPABILITIES	0x27
+ #define KGSL_PROP_CONTEXT_PROPERTY	0x28
+ #define KGSL_PROP_GPU_MODEL		0x29
++#define KGSL_PROP_VK_DEVICE_ID		0x2A
+ 
+ /*
+  * kgsl_capabilties_properties returns a list of supported properties.
+-- 
+2.48.1
+

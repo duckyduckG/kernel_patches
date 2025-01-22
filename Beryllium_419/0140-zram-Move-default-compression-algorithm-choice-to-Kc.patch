@@ -1,0 +1,40 @@
+From 395dd7e57a9f991db17860056febfd60516b5b42 Mon Sep 17 00:00:00 2001
+From: Nathan Chancellor <natechancellor@gmail.com>
+Date: Sun, 28 Oct 2018 10:14:01 -0700
+Subject: [PATCH 140/175] zram: Move default compression algorithm choice to
+ Kconfig
+
+Signed-off-by: Nathan Chancellor <natechancellor@gmail.com>
+---
+ drivers/block/zram/Kconfig    | 4 ++++
+ drivers/block/zram/zram_drv.c | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/block/zram/Kconfig b/drivers/block/zram/Kconfig
+index c8aab3115733..c8aab0a66e48 100644
+--- a/drivers/block/zram/Kconfig
++++ b/drivers/block/zram/Kconfig
+@@ -53,3 +53,7 @@ config ZRAM_MEMORY_TRACKING
+ 	  /sys/kernel/debug/zram/zramX/block_state.
+ 
+ 	  See Documentation/blockdev/zram.txt for more information.
++
++config ZRAM_DEFAULT_COMP_ALGORITHM
++	string "Default ZRAM algorithm"
++	default "lzo"
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index e0c96c81a9a1..bc75e061d470 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -41,7 +41,7 @@ static DEFINE_IDR(zram_index_idr);
+ static DEFINE_MUTEX(zram_index_mutex);
+ 
+ static int zram_major;
+-static const char *default_compressor = "lzo";
++static const char *default_compressor = CONFIG_ZRAM_DEFAULT_COMP_ALGORITHM;
+ 
+ /* Module params (documentation at end) */
+ static unsigned int num_devices = 1;
+-- 
+2.48.1
+

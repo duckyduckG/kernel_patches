@@ -1,0 +1,83 @@
+From 036cfe55a192dc4415000019a4d07145d844b35c Mon Sep 17 00:00:00 2001
+From: Narendra Muppalla <NarendraM@codeaurora.org>
+Date: Thu, 10 Dec 2020 13:02:11 -0800
+Subject: [PATCH 014/175] BACKPORT: disp: msm: sde: use different spin lock for
+ frame events
+
+Due to lock sequence inconsistency between sde_crtc->spin_lock and
+sde_kms->hw_intr->irq_lock can cause deadlock, to avoid this possible
+deadlock this change uses different spin lock for frame events.
+
+Change-Id: I51b1184dfa1069c87653099b95b992b277721daf
+Signed-off-by: Narendra Muppalla <NarendraM@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/sde/sde_crtc.c | 9 +++++----
+ techpack/display/msm/sde/sde_crtc.h | 4 +++-
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/techpack/display/msm/sde/sde_crtc.c b/techpack/display/msm/sde/sde_crtc.c
+index 602476ba8a4a..cb02fc59ec12 100644
+--- a/techpack/display/msm/sde/sde_crtc.c
++++ b/techpack/display/msm/sde/sde_crtc.c
+@@ -2161,12 +2161,12 @@ static void sde_crtc_frame_event_cb(void *data, u32 event)
+ 	SDE_DEBUG("crtc%d\n", crtc->base.id);
+ 	SDE_EVT32_VERBOSE(DRMID(crtc), event);
+ 
+-	spin_lock_irqsave(&sde_crtc->spin_lock, flags);
++	spin_lock_irqsave(&sde_crtc->fevent_spin_lock, flags);
+ 	fevent = list_first_entry_or_null(&sde_crtc->frame_event_list,
+ 			struct sde_crtc_frame_event, list);
+ 	if (fevent)
+ 		list_del_init(&fevent->list);
+-	spin_unlock_irqrestore(&sde_crtc->spin_lock, flags);
++	spin_unlock_irqrestore(&sde_crtc->fevent_spin_lock, flags);
+ 
+ 	if (!fevent) {
+ 		SDE_ERROR("crtc%d event %d overflow\n",
+@@ -2447,9 +2447,9 @@ static void sde_crtc_frame_event_work(struct kthread_work *work)
+ 		SDE_ERROR("crtc%d ts:%lld received panel dead event\n",
+ 				crtc->base.id, ktime_to_ns(fevent->ts));
+ 
+-	spin_lock_irqsave(&sde_crtc->spin_lock, flags);
++	spin_lock_irqsave(&sde_crtc->fevent_spin_lock, flags);
+ 	list_add_tail(&fevent->list, &sde_crtc->frame_event_list);
+-	spin_unlock_irqrestore(&sde_crtc->spin_lock, flags);
++	spin_unlock_irqrestore(&sde_crtc->fevent_spin_lock, flags);
+ 	SDE_ATRACE_END("crtc_frame_event");
+ }
+ 
+@@ -6283,6 +6283,7 @@ struct drm_crtc *sde_crtc_init(struct drm_device *dev, struct drm_plane *plane)
+ 
+ 	mutex_init(&sde_crtc->crtc_lock);
+ 	spin_lock_init(&sde_crtc->spin_lock);
++	spin_lock_init(&sde_crtc->fevent_spin_lock);
+ 	atomic_set(&sde_crtc->frame_pending, 0);
+ 	mutex_init(&sde_crtc->vblank_modeset_ctrl_lock);
+ 
+diff --git a/techpack/display/msm/sde/sde_crtc.h b/techpack/display/msm/sde/sde_crtc.h
+index d2854e334cb0..c18421708447 100644
+--- a/techpack/display/msm/sde/sde_crtc.h
++++ b/techpack/display/msm/sde/sde_crtc.h
+@@ -259,7 +259,8 @@ struct sde_crtc_misr_info {
+  * @frame_pending : Whether or not an update is pending
+  * @frame_events  : static allocation of in-flight frame events
+  * @frame_event_list : available frame event list
+- * @spin_lock     : spin lock for frame event, transaction status, etc...
++ * @spin_lock     : spin lock for transaction status, etc...
++ * @fevent_spin_lock     : spin lock for frame event
+  * @event_thread  : Pointer to event handler thread
+  * @event_worker  : Event worker queue
+  * @event_cache   : Local cache of event worker structures
+@@ -341,6 +342,7 @@ struct sde_crtc {
+ 	struct sde_crtc_frame_event frame_events[SDE_CRTC_FRAME_EVENT_SIZE];
+ 	struct list_head frame_event_list;
+ 	spinlock_t spin_lock;
++	spinlock_t fevent_spin_lock;
+ 
+ 	/* for handling internal event thread */
+ 	struct sde_crtc_event event_cache[SDE_CRTC_MAX_EVENT_COUNT];
+-- 
+2.48.1
+

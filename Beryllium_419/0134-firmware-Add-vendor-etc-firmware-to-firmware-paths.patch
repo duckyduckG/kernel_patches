@@ -1,0 +1,27 @@
+From 33feba6a40db34720510bbc829e83e7575a21fd3 Mon Sep 17 00:00:00 2001
+From: LuK1337 <priv.luk@gmail.com>
+Date: Fri, 1 Feb 2019 18:21:35 +0100
+Subject: [PATCH 134/175] firmware: Add /vendor/etc/firmware to firmware paths
+
+Change-Id: Ic36688ba5708866fd985e3f88fdf7a90fd32aebe
+---
+ drivers/base/firmware_loader/main.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/base/firmware_loader/main.c b/drivers/base/firmware_loader/main.c
+index 94b96a9a4e66..79a2d944cf22 100644
+--- a/drivers/base/firmware_loader/main.c
++++ b/drivers/base/firmware_loader/main.c
+@@ -287,7 +287,8 @@ static const char * const fw_path[] = {
+ 	"/lib/firmware/updates/" UTS_RELEASE,
+ 	"/lib/firmware/updates",
+ 	"/lib/firmware/" UTS_RELEASE,
+-	"/lib/firmware"
++	"/lib/firmware",
++	"/vendor/etc/firmware/"
+ };
+ 
+ /*
+-- 
+2.48.1
+

@@ -1,0 +1,250 @@
+From 85a0bda9fbab8d79200af0e26a92ebb21d03f564 Mon Sep 17 00:00:00 2001
+From: Lipsa Rout <lrout@codeaurora.org>
+Date: Wed, 4 Nov 2020 17:06:29 +0530
+Subject: [PATCH 023/175] BACKPORT: disp: msm: dsi: Add support for parsing
+ mdp_intf base address from dt
+
+Currently, mdp_intf_line_count and mdp_intf_tear_line_count register
+addresses are defined in dsi_ctrl_hw for debug feature. But mdp_intf
+base address is target specific and independent of dsi controller
+version. This change adds support for parsing the mdp intf base
+address from dt, thereby remapping using base + offset addressing.
+
+Change-Id: Ibb72dfe84a786a5c8b95f6a400e8333f6b46814a
+Signed-off-by: Lipsa Rout <lrout@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_catalog.c     |  3 -
+ techpack/display/msm/dsi/dsi_catalog.h     |  2 -
+ techpack/display/msm/dsi/dsi_ctrl.c        |  8 ++-
+ techpack/display/msm/dsi/dsi_ctrl_hw.h     | 23 ++-----
+ techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c | 76 ++++------------------
+ 5 files changed, 23 insertions(+), 89 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_catalog.c b/techpack/display/msm/dsi/dsi_catalog.c
+index 04b5bc91ad94..caddc960a265 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.c
++++ b/techpack/display/msm/dsi/dsi_catalog.c
+@@ -83,7 +83,6 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		ctrl->ops.config_clk_gating = NULL;
+ 		ctrl->ops.configure_cmddma_window = NULL;
+ 		ctrl->ops.reset_trig_ctrl = NULL;
+-		ctrl->ops.map_mdp_regs = NULL;
+ 		ctrl->ops.log_line_count = NULL;
+ 		break;
+ 	case DSI_CTRL_VERSION_2_0:
+@@ -102,7 +101,6 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		ctrl->ops.config_clk_gating = NULL;
+ 		ctrl->ops.configure_cmddma_window = NULL;
+ 		ctrl->ops.reset_trig_ctrl = NULL;
+-		ctrl->ops.map_mdp_regs = NULL;
+ 		ctrl->ops.log_line_count = NULL;
+ 		break;
+ 	case DSI_CTRL_VERSION_2_2:
+@@ -128,7 +126,6 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 			dsi_ctrl_hw_22_configure_cmddma_window;
+ 		ctrl->ops.reset_trig_ctrl =
+ 			dsi_ctrl_hw_22_reset_trigger_controls;
+-		ctrl->ops.map_mdp_regs = dsi_ctrl_hw_22_map_mdp_regs;
+ 		ctrl->ops.log_line_count = dsi_ctrl_hw_22_log_line_count;
+ 		break;
+ 	default:
+diff --git a/techpack/display/msm/dsi/dsi_catalog.h b/techpack/display/msm/dsi/dsi_catalog.h
+index 85ceab08d40c..871c69dd9507 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.h
++++ b/techpack/display/msm/dsi/dsi_catalog.h
+@@ -278,7 +278,5 @@ void dsi_ctrl_hw_22_configure_cmddma_window(struct dsi_ctrl_hw *ctrl,
+ 		u32 line_no, u32 window);
+ void dsi_ctrl_hw_22_reset_trigger_controls(struct dsi_ctrl_hw *ctrl,
+ 				       struct dsi_host_common_cfg *cfg);
+-int dsi_ctrl_hw_22_map_mdp_regs(struct platform_device *pdev,
+-		struct dsi_ctrl_hw *ctrl);
+ u32 dsi_ctrl_hw_22_log_line_count(struct dsi_ctrl_hw *ctrl, bool cmd_mode);
+ #endif /* _DSI_CATALOG_H_ */
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index d91755b3f414..4790b440d70a 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -632,6 +632,7 @@ static int dsi_ctrl_init_regmap(struct platform_device *pdev,
+ 		}
+ 		ctrl->hw.mmss_misc_base = ptr;
+ 		ctrl->hw.disp_cc_base = NULL;
++		ctrl->hw.mdp_intf_base = NULL;
+ 		break;
+ 	case DSI_CTRL_VERSION_2_2:
+ 	case DSI_CTRL_VERSION_2_3:
+@@ -644,6 +645,10 @@ static int dsi_ctrl_init_regmap(struct platform_device *pdev,
+ 		}
+ 		ctrl->hw.disp_cc_base = ptr;
+ 		ctrl->hw.mmss_misc_base = NULL;
++
++		ptr = msm_ioremap(pdev, "mdp_intf_base", ctrl->name);
++		if (!IS_ERR(ptr))
++			ctrl->hw.mdp_intf_base = ptr;
+ 		break;
+ 	default:
+ 		break;
+@@ -2153,9 +2158,6 @@ static int dsi_ctrl_dev_probe(struct platform_device *pdev)
+ 		DSI_CTRL_DEBUG(dsi_ctrl, "failed to init axi bus client, rc = %d\n",
+ 				rc);
+ 
+-	if (dsi_ctrl->hw.ops.map_mdp_regs)
+-		dsi_ctrl->hw.ops.map_mdp_regs(pdev, &dsi_ctrl->hw);
+-
+ 	item->ctrl = dsi_ctrl;
+ 
+ 	mutex_lock(&dsi_ctrl_list_lock);
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw.h b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+index 952f9bce3751..00b2f4d205a5 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw.h
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+@@ -858,14 +858,6 @@ struct dsi_ctrl_hw_ops {
+ 	void (*reset_trig_ctrl)(struct dsi_ctrl_hw *ctrl,
+ 			struct dsi_host_common_cfg *cfg);
+ 
+-	/**
+-	 * hw.ops.map_mdp_regs() - maps MDP interface line count registers.
+-	 * @pdev:	Pointer to platform device.
+-	 * @ctrl:	Pointer to the controller host hardware.
+-	 */
+-	int (*map_mdp_regs)(struct platform_device *pdev,
+-			struct dsi_ctrl_hw *ctrl);
+-
+ 	/**
+ 	 * hw.ops.log_line_count() - reads the MDP interface line count
+ 	 *			     registers.
+@@ -883,13 +875,11 @@ struct dsi_ctrl_hw_ops {
+  * @mmss_misc_length:       Length of mmss_misc register map.
+  * @disp_cc_base:           Base address of disp_cc register map.
+  * @disp_cc_length:         Length of disp_cc register map.
+- * @te_rd_ptr_reg:	    Address of MDP_TEAR_INTF_TEAR_LINE_COUNT. This
+- *			    register is used for testing and validating the RD
+- *			    ptr value when a CMD is triggered and it succeeds.
+- * @line_count_reg:	    Address of MDP_TEAR_INTF_LINE_COUNT. This
+- *			    register is used for testing and validating the
+- *			    line count value when a CMD is triggered and it
+- *			    succeeds.
++ * @mdp_intf_base:	    Base address of mdp_intf register map. Addresses of
++ *			    MDP_TEAR_INTF_TEAR_LINE_COUNT and MDP_TEAR_INTF_LINE_COUNT
++ *			    are mapped using the base address to test and validate
++ *			    the RD ptr value and line count value respectively when
++ *			    a CMD is triggered and it succeeds.
+  * @index:                  Instance ID of the controller.
+  * @feature_map:            Features supported by the DSI controller.
+  * @ops:                    Function pointers to the operations supported by the
+@@ -909,9 +899,8 @@ struct dsi_ctrl_hw {
+ 	void __iomem *mmss_misc_base;
+ 	u32 mmss_misc_length;
+ 	void __iomem *disp_cc_base;
+-	void __iomem *te_rd_ptr_reg;
+-	void __iomem *line_count_reg;
+ 	u32 disp_cc_length;
++	void __iomem *mdp_intf_base;
+ 	u32 index;
+ 
+ 	/* features */
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+index f41a90378e43..ce165d5c69d4 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+@@ -14,11 +14,10 @@
+ #define DSI_DMA_SCHEDULE_CTRL 0x100
+ #define DSI_DMA_SCHEDULE_CTRL2 0x0104
+ 
+-/* MDP INTF registers to be mapped for debug feature*/
+-#define MDP_INTF1_TEAR_LINE_COUNT 0xAE36298
+-#define MDP_INTF2_TEAR_LINE_COUNT 0xAE37298
+-#define MDP_INTF1_LINE_COUNT 0xAE360B0
+-#define MDP_INTF2_LINE_COUNT 0xAE370B0
++/* offset addresses of MDP INTF base register, to be mapped for debug feature */
++#define MDP_INTF_TEAR_OFFSET 0x280
++#define MDP_INTF_TEAR_LINE_COUNT_OFFSET 0x30
++#define MDP_INTF_LINE_COUNT_OFFSET 0xB0
+ 
+ /**
+  * dsi_ctrl_hw_22_phy_reset_config() - to configure clamp control during ulps
+@@ -205,61 +204,6 @@ void dsi_ctrl_hw_22_reset_trigger_controls(struct dsi_ctrl_hw *ctrl,
+ 	ctrl->reset_trig_ctrl = false;
+ }
+ 
+-/**
+- * dsi_ctrl_hw_22_map_mdp_regs() - maps MDP interface line count registers.
+- * @pdev:	Pointer to platform device.
+- * @ctrl:	Pointer to the controller host hardware.
+- *
+- * Return: 0 on success and error on failure.
+- */
+-int dsi_ctrl_hw_22_map_mdp_regs(struct platform_device *pdev,
+-		struct dsi_ctrl_hw *ctrl)
+-{
+-	int rc = 0;
+-	void __iomem *ptr = NULL, *ptr1 = NULL;
+-
+-	if (ctrl->index == 0) {
+-		ptr = devm_ioremap(&pdev->dev, MDP_INTF1_TEAR_LINE_COUNT, 1);
+-		if (IS_ERR_OR_NULL(ptr)) {
+-			DSI_CTRL_HW_ERR(ctrl,
+-				"MDP TE LINE COUNT address not found\n");
+-			rc = PTR_ERR(ptr);
+-			return rc;
+-		}
+-
+-		ptr1 = devm_ioremap(&pdev->dev, MDP_INTF1_LINE_COUNT, 1);
+-		if (IS_ERR_OR_NULL(ptr1)) {
+-			DSI_CTRL_HW_ERR(ctrl,
+-				"MDP TE LINE COUNT address not found\n");
+-			rc = PTR_ERR(ptr1);
+-			return rc;
+-		}
+-	}
+-
+-	if (ctrl->index == 1) {
+-		ptr = devm_ioremap(&pdev->dev, MDP_INTF2_TEAR_LINE_COUNT, 1);
+-		if (IS_ERR_OR_NULL(ptr)) {
+-			DSI_CTRL_HW_ERR(ctrl,
+-				"MDP TE LINE COUNT address not found\n");
+-			rc = PTR_ERR(ptr);
+-			return rc;
+-		}
+-
+-		ptr1 = devm_ioremap(&pdev->dev, MDP_INTF2_LINE_COUNT, 1);
+-		if (IS_ERR_OR_NULL(ptr1)) {
+-			DSI_CTRL_HW_ERR(ctrl,
+-				"MDP TE LINE COUNT address not found\n");
+-			rc = PTR_ERR(ptr1);
+-			return rc;
+-		}
+-	}
+-
+-	ctrl->te_rd_ptr_reg = ptr;
+-	ctrl->line_count_reg = ptr1;
+-
+-	return rc;
+-}
+-
+ /**
+  * dsi_ctrl_hw_22_log_line_count() - reads the MDP interface line count
+  *				     registers.
+@@ -273,10 +217,14 @@ u32 dsi_ctrl_hw_22_log_line_count(struct dsi_ctrl_hw *ctrl, bool cmd_mode)
+ 
+ 	u32 reg = 0;
+ 
+-	if (cmd_mode && ctrl->te_rd_ptr_reg)
+-		reg = readl_relaxed(ctrl->te_rd_ptr_reg);
+-	else if (ctrl->line_count_reg)
+-		reg = readl_relaxed(ctrl->line_count_reg);
++	if (IS_ERR_OR_NULL(ctrl->mdp_intf_base))
++		return reg;
+ 
++	if (cmd_mode)
++		reg = readl_relaxed(ctrl->mdp_intf_base + MDP_INTF_TEAR_OFFSET
++					+ MDP_INTF_TEAR_LINE_COUNT_OFFSET);
++	else
++		reg = readl_relaxed(ctrl->mdp_intf_base
++					+ MDP_INTF_LINE_COUNT_OFFSET);
+ 	return reg;
+ }
+-- 
+2.48.1
+

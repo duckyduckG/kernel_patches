@@ -1,0 +1,26 @@
+From 16a375a93cc8a5f99211f310446f1a144b4b7694 Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Sat, 4 Nov 2023 23:30:01 +0400
+Subject: [PATCH 045/175] defconfig: sdm845-perf: -UNCOMPRESSED_KERNEL
+ +APPENDED_DTB_IMAGE
+
+---
+ arch/arm64/configs/vendor/sdm845-perf_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/vendor/sdm845-perf_defconfig b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+index b149f9377bc3..0cb57b11babb 100644
+--- a/arch/arm64/configs/vendor/sdm845-perf_defconfig
++++ b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+@@ -64,7 +64,7 @@ CONFIG_RANDOMIZE_BASE=y
+ CONFIG_CMDLINE="cgroup_disable=pressure"
+ CONFIG_CMDLINE_EXTEND=y
+ # CONFIG_EFI is not set
+-CONFIG_BUILD_ARM64_UNCOMPRESSED_KERNEL=y
++CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+ CONFIG_COMPAT=y
+ CONFIG_PM_WAKELOCKS=y
+ CONFIG_PM_WAKELOCKS_LIMIT=0
+-- 
+2.48.1
+

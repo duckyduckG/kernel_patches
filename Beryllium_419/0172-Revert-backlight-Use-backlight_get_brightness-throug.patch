@@ -1,0 +1,33 @@
+From da55fb9aa8c2ce252f729099c1eb85abe5ba6f83 Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Thu, 16 Jan 2025 13:03:16 +0500
+Subject: [PATCH 172/175] Revert "backlight: Use backlight_get_brightness()
+ throughout" This reverts commit torvalds/linux@51d53e5
+
+---
+ drivers/video/backlight/qcom-wled.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/backlight/qcom-wled.c b/drivers/video/backlight/qcom-wled.c
+index 070400030cb8..9469a133f31e 100644
+--- a/drivers/video/backlight/qcom-wled.c
++++ b/drivers/video/backlight/qcom-wled.c
+@@ -439,9 +439,14 @@ static int wled5_ovp_delay(struct wled *wled)
+ static int wled_update_status(struct backlight_device *bl)
+ {
+ 	struct wled *wled = bl_get_data(bl);
+-	u16 brightness = backlight_get_brightness(bl);
++	u16 brightness = bl->props.brightness;
+ 	int rc = 0;
+ 
++	if (bl->props.power != FB_BLANK_UNBLANK ||
++	    bl->props.fb_blank != FB_BLANK_UNBLANK ||
++	    bl->props.state & BL_CORE_FBBLANK)
++		brightness = 0;
++
+ 	mutex_lock(&wled->lock);
+ 	if (brightness) {
+ 		rc = wled->wled_set_brightness(wled, brightness);
+-- 
+2.48.1
+

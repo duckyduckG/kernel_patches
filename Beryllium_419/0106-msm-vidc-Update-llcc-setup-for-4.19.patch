@@ -1,0 +1,62 @@
+From a7de72d487d204e1847f7bc07d62137ec17ceabd Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Fri, 9 Jun 2023 02:26:10 +0000
+Subject: [PATCH 106/175] msm: vidc: Update llcc setup for 4.19
+
+Stolen from techpack/video
+---
+ drivers/media/platform/msm/vidc/venus_hfi.c | 23 ++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index 0c6de9141891..83d54ceb26f3 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -4229,10 +4229,19 @@ static int __init_subcaches(struct venus_hfi_device *device)
+ 		return 0;
+ 
+ 	venus_hfi_for_each_subcache(device, sinfo) {
+-		sinfo->subcache = llcc_slice_getd(&device->res->pdev->dev,
+-			sinfo->name);
++		if (!strcmp("vidsc0", sinfo->name)) {
++			sinfo->subcache = llcc_slice_getd(LLCC_VIDSC0);
++		} else if (!strcmp("vidsc1", sinfo->name)) {
++			sinfo->subcache = llcc_slice_getd(LLCC_VIDSC1);
++		} else if (!strcmp("vidscfw", sinfo->name)) {
++			sinfo->subcache = llcc_slice_getd(LLCC_VIDFW);
++		} else {
++			dprintk(VIDC_ERR, "Invalid subcache name %s\n",
++					sinfo->name);
++		}
+ 		if (IS_ERR_OR_NULL(sinfo->subcache)) {
+-			rc = PTR_ERR(sinfo->subcache) ? : -EBADHANDLE;
++			rc = PTR_ERR(sinfo->subcache) ?
++				PTR_ERR(sinfo->subcache) : -EBADHANDLE;
+ 			dprintk(VIDC_ERR,
+ 				 "init_subcaches: invalid subcache: %s rc %d\n",
+ 				sinfo->name, rc);
+@@ -4519,8 +4528,8 @@ static int __set_subcaches(struct venus_hfi_device *device)
+ 
+ 	venus_hfi_for_each_subcache(device, sinfo) {
+ 		if (sinfo->isactive == true) {
+-			sc_res[c].size = sinfo->subcache->llcc_slice_size;
+-			sc_res[c].sc_id = sinfo->subcache->llcc_slice_id;
++			sc_res[c].size = sinfo->subcache->slice_size;
++			sc_res[c].sc_id = sinfo->subcache->slice_id;
+ 			c++;
+ 		}
+ 	}
+@@ -4579,8 +4588,8 @@ static int __release_subcaches(struct venus_hfi_device *device)
+ 	venus_hfi_for_each_subcache_reverse(device, sinfo) {
+ 		if (sinfo->isset == true) {
+ 			/* Update the entry */
+-			sc_res[c].size = sinfo->subcache->llcc_slice_size;
+-			sc_res[c].sc_id = sinfo->subcache->llcc_slice_id;
++			sc_res[c].size = sinfo->subcache->slice_size;
++			sc_res[c].sc_id = sinfo->subcache->slice_id;
+ 			c++;
+ 			sinfo->isset = false;
+ 		}
+-- 
+2.48.1
+

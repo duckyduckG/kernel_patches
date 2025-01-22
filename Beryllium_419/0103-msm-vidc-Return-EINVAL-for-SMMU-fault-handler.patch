@@ -1,0 +1,40 @@
+From d784560d9c7a693ee37d83d47f57663de7f0b3c1 Mon Sep 17 00:00:00 2001
+From: Vaibhav Deshu Venkatesh <vdeshuve@codeaurora.org>
+Date: Wed, 28 Nov 2018 12:10:46 -0800
+Subject: [PATCH 103/175] msm: vidc: Return EINVAL for SMMU fault handler
+
+Currently we are returning 0 in SMMU fault handler.
+However, if we return -EINVAL, then smmu driver assumes
+page fault handler is not installed and prints a list of
+useful debug information.
+
+CRs-Fixed: 2344373
+Change-Id: I3ca6731eb9a30b7d4ef03f4d580e622d9a8c6c0f
+Signed-off-by: Vaibhav Deshu Venkatesh <vdeshuve@codeaurora.org>
+---
+ drivers/media/platform/msm/vidc/msm_vidc_res_parse.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+index bff189c8760a..d0fec086730d 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+@@ -1146,12 +1146,12 @@ int msm_vidc_smmu_fault_handler(struct iommu_domain *domain,
+ 	core->smmu_fault_handled = true;
+ 	mutex_unlock(&core->lock);
+ 	/*
+-	 * Return -ENOSYS to elicit the default behaviour of smmu driver.
+-	 * If we return -ENOSYS, then smmu driver assumes page fault handler
++	 * Return -EINVAL to elicit the default behaviour of smmu driver.
++	 * If we return -EINVAL, then smmu driver assumes page fault handler
+ 	 * is not installed and prints a list of useful debug information like
+ 	 * FAR, SID etc. This information is not printed if we return 0.
+ 	 */
+-	return -ENOSYS;
++	return -EINVAL;
+ }
+ 
+ static int msm_vidc_populate_context_bank(struct device *dev,
+-- 
+2.48.1
+

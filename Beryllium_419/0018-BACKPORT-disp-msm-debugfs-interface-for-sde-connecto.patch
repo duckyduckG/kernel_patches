@@ -1,0 +1,569 @@
+From c1fe90a117e45a4adfb1d079c06b26c5c7fe152d Mon Sep 17 00:00:00 2001
+From: Yuan Zhao <yzhao@codeaurora.org>
+Date: Tue, 12 May 2020 14:44:03 +0800
+Subject: [PATCH 018/175] BACKPORT: disp: msm: debugfs interface for sde
+ connector to do DSI read
+
+This change implements a new feature to read the cmds response
+of the panel from sde connector interface. Sde connector opens
+debugfs interface for all the connectors those have support for
+cmd receive operation.
+
+Sde connector init module creates rx_cmd debugfs file at
+/<debugfs-root>/dri/0/DSI-1/ for DSI-1 connector.
+Format for DSI command transfer:
+echo "command bytes" > /<debugfs-root/dri/0/DSI-1/rx_cmd
+byte-0: the length of received buffer
+byte-1: data-type
+byte-2: last command. always 0x01
+byte-3: channel number
+byte-4: flags. MIPI_DSI_MSG_*, must be set to 0xa
+byte-5: 0x00
+byte-6 and byte-7: command payload length
+byte-8 to byte-[8+payload length]: command payload
+Example:
+echo "0x01 0x06 0x01 0x00 0x0a 0x00 0x00 0x01 0x0a" > rx_cmd
+The command receive operations are allowed only if controller
+(ex. DSI controller) is in active state.
+Read the value of panel response:
+cat /<debugfs-root>/dri/0/DSI-1/rx_cmd
+returns the value of this command.
+nothing - failure, xx xx - success.
+
+Change-Id: I912b65d606e248c7a886d219f4363bf7766ee7b6
+Signed-off-by: Yuan Zhao <yzhao@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_display.c   |  94 ++++++++++
+ techpack/display/msm/dsi/dsi_display.h   |  11 ++
+ techpack/display/msm/sde/sde_connector.c | 218 +++++++++++++++++++++--
+ techpack/display/msm/sde/sde_connector.h |  18 ++
+ techpack/display/msm/sde/sde_kms.c       |   3 +
+ 5 files changed, 327 insertions(+), 17 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_display.c b/techpack/display/msm/dsi/dsi_display.c
+index decf90eb6564..bfedfe196f6e 100644
+--- a/techpack/display/msm/dsi/dsi_display.c
++++ b/techpack/display/msm/dsi/dsi_display.c
+@@ -909,6 +909,58 @@ static int dsi_display_ctrl_get_host_init_state(struct dsi_display *dsi_display,
+ 	return rc;
+ }
+ 
++static int dsi_display_cmd_rx(struct dsi_display *display,
++			      struct dsi_cmd_desc *cmd)
++{
++	struct dsi_display_ctrl *m_ctrl = NULL;
++	u32 mask = 0, flags = 0;
++	int rc = 0;
++
++	if (!display || !display->panel)
++		return -EINVAL;
++
++	m_ctrl = &display->ctrl[display->cmd_master_idx];
++	if (!m_ctrl || !m_ctrl->ctrl)
++		return -EINVAL;
++
++	/* acquire panel_lock to make sure no commands are in progress */
++	dsi_panel_acquire_panel_lock(display->panel);
++	if (!display->panel->panel_initialized) {
++		DSI_DEBUG("panel not initialized\n");
++		goto release_panel_lock;
++	}
++
++	rc = dsi_display_clk_ctrl(display->dsi_clk_handle,
++		DSI_ALL_CLKS, DSI_CLK_ON);
++	if (rc)
++		goto release_panel_lock;
++
++	mask = BIT(DSI_FIFO_OVERFLOW) | BIT(DSI_FIFO_UNDERFLOW);
++	dsi_display_mask_ctrl_error_interrupts(display, mask, true);
++	rc = dsi_display_cmd_engine_enable(display);
++	if (rc) {
++		DSI_ERR("cmd engine enable failed rc = %d\n", rc);
++		goto error;
++	}
++
++	flags |= (DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_READ |
++			DSI_CTRL_CMD_CUSTOM_DMA_SCHED);
++	rc = dsi_ctrl_cmd_transfer(m_ctrl->ctrl, &cmd->msg, &flags);
++	if (rc <= 0)
++		DSI_ERR("rx cmd transfer failed rc = %d\n", rc);
++
++	dsi_display_cmd_engine_disable(display);
++
++error:
++	dsi_display_mask_ctrl_error_interrupts(display, mask, false);
++	dsi_display_clk_ctrl(display->dsi_clk_handle,
++		DSI_ALL_CLKS, DSI_CLK_OFF);
++release_panel_lock:
++	dsi_panel_release_panel_lock(display->panel);
++	return rc;
++}
++
++
+ int dsi_display_cmd_transfer(struct drm_connector *connector,
+ 		void *display, const char *cmd_buf,
+ 		u32 cmd_buf_len)
+@@ -987,6 +1039,48 @@ static void _dsi_display_continuous_clk_ctrl(struct dsi_display *display,
+ 	}
+ }
+ 
++int dsi_display_cmd_receive(void *display, const char *cmd_buf,
++		u32 cmd_buf_len,  u8 *recv_buf, u32 recv_buf_len)
++{
++	struct dsi_display *dsi_display = display;
++	struct dsi_cmd_desc cmd = {};
++	u8 cmd_payload[MAX_CMD_PAYLOAD_SIZE] = {0};
++	bool state = false;
++	int rc = -1;
++
++	if (!dsi_display || !cmd_buf || !recv_buf) {
++		DSI_ERR("[DSI] invalid params\n");
++		return -EINVAL;
++	}
++
++	rc = dsi_display_cmd_prepare(cmd_buf, cmd_buf_len,
++			&cmd, cmd_payload, MAX_CMD_PAYLOAD_SIZE);
++	if (rc) {
++		DSI_ERR("[DSI] command prepare failed, rc = %d\n", rc);
++		return rc;
++	}
++
++	cmd.msg.rx_buf = recv_buf;
++	cmd.msg.rx_len = recv_buf_len;
++
++	mutex_lock(&dsi_display->display_lock);
++	rc = dsi_display_ctrl_get_host_init_state(dsi_display, &state);
++	if (rc || !state) {
++		DSI_ERR("[DSI] Invalid host state = %d rc = %d\n",
++			state, rc);
++		rc = -EPERM;
++		goto end;
++	}
++
++	rc = dsi_display_cmd_rx(dsi_display, &cmd);
++	if (rc <= 0)
++		DSI_ERR("[DSI] Display command receive failed, rc=%d\n", rc);
++
++end:
++	mutex_unlock(&dsi_display->display_lock);
++	return rc;
++}
++
+ int dsi_display_soft_reset(void *display)
+ {
+ 	struct dsi_display *dsi_display;
+diff --git a/techpack/display/msm/dsi/dsi_display.h b/techpack/display/msm/dsi/dsi_display.h
+index d254dfe739bd..62f0ce265b87 100644
+--- a/techpack/display/msm/dsi/dsi_display.h
++++ b/techpack/display/msm/dsi/dsi_display.h
+@@ -656,6 +656,17 @@ int dsi_display_cmd_transfer(struct drm_connector *connector,
+ 		void *display, const char *cmd_buffer,
+ 		u32 cmd_buf_len);
+ 
++/**
++ * dsi_display_cmd_receive() - receive response from the panel
++ * @display:            Handle to display.
++ * @cmd_buf:            Command buffer
++ * @cmd_buf_len:        Command buffer length in bytes
++ * @recv_buf:           Receive buffer
++ * @recv_buf_len:       Receive buffer length in bytes
++ */
++int dsi_display_cmd_receive(void *display, const char *cmd_buf,
++			    u32 cmd_buf_len, u8 *recv_buf, u32 recv_buf_len);
++
+ /**
+  * dsi_display_soft_reset() - perform a soft reset on DSI controller
+  * @display:         Handle to display
+diff --git a/techpack/display/msm/sde/sde_connector.c b/techpack/display/msm/sde/sde_connector.c
+index 35f678373c1d..6f20aa6f0abf 100644
+--- a/techpack/display/msm/sde/sde_connector.c
++++ b/techpack/display/msm/sde/sde_connector.c
+@@ -1798,8 +1798,8 @@ static ssize_t _sde_debugfs_conn_cmd_tx_sts_read(struct file *file,
+ 		char __user *buf, size_t count, loff_t *ppos)
+ {
+ 	struct drm_connector *connector = file->private_data;
+-	struct sde_connector *c_conn;
+-	char buffer[MAX_CMD_PAYLOAD_SIZE];
++	struct sde_connector *c_conn = NULL;
++	char buffer[MAX_CMD_PAYLOAD_SIZE] = {0};
+ 	int blen = 0;
+ 
+ 	if (*ppos)
+@@ -1807,7 +1807,7 @@ static ssize_t _sde_debugfs_conn_cmd_tx_sts_read(struct file *file,
+ 
+ 	if (!connector) {
+ 		SDE_ERROR("invalid argument, conn is NULL\n");
+-		return 0;
++		return -EINVAL;
+ 	}
+ 
+ 	c_conn = to_sde_connector(connector);
+@@ -1821,7 +1821,7 @@ static ssize_t _sde_debugfs_conn_cmd_tx_sts_read(struct file *file,
+ 	SDE_DEBUG("output: %s\n", buffer);
+ 	if (blen <= 0) {
+ 		SDE_ERROR("snprintf failed, blen %d\n", blen);
+-		return 0;
++		return -EINVAL;
+ 	}
+ 
+ 	if (blen > count)
+@@ -1841,16 +1841,16 @@ static ssize_t _sde_debugfs_conn_cmd_tx_write(struct file *file,
+ 			const char __user *p, size_t count, loff_t *ppos)
+ {
+ 	struct drm_connector *connector = file->private_data;
+-	struct sde_connector *c_conn;
++	struct sde_connector *c_conn = NULL;
+ 	char *input, *token, *input_copy, *input_dup = NULL;
+ 	const char *delim = " ";
++	char buffer[MAX_CMD_PAYLOAD_SIZE] = {0};
++	int rc = 0, strtoint = 0;
+ 	u32 buf_size = 0;
+-	char buffer[MAX_CMD_PAYLOAD_SIZE];
+-	int rc = 0, strtoint;
+ 
+ 	if (*ppos || !connector) {
+ 		SDE_ERROR("invalid argument(s), conn %d\n", connector != NULL);
+-		return 0;
++		return -EINVAL;
+ 	}
+ 
+ 	c_conn = to_sde_connector(connector);
+@@ -1858,10 +1858,10 @@ static ssize_t _sde_debugfs_conn_cmd_tx_write(struct file *file,
+ 	if (!c_conn->ops.cmd_transfer) {
+ 		SDE_ERROR("no cmd transfer support for connector name %s\n",
+ 				c_conn->name);
+-		return 0;
++		return -EINVAL;
+ 	}
+ 
+-	input = kmalloc(count + 1, GFP_KERNEL);
++	input = kzalloc(count + 1, GFP_KERNEL);
+ 	if (!input)
+ 		return -ENOMEM;
+ 
+@@ -1872,7 +1872,7 @@ static ssize_t _sde_debugfs_conn_cmd_tx_write(struct file *file,
+ 	}
+ 	input[count] = '\0';
+ 
+-	SDE_INFO("Command requested for trasnfer to panel: %s\n", input);
++	SDE_INFO("Command requested for transfer to panel: %s\n", input);
+ 
+ 	input_copy = kstrdup(input, GFP_KERNEL);
+ 	if (!input_copy) {
+@@ -1886,20 +1886,23 @@ static ssize_t _sde_debugfs_conn_cmd_tx_write(struct file *file,
+ 		rc = kstrtoint(token, 0, &strtoint);
+ 		if (rc) {
+ 			SDE_ERROR("input buffer conversion failed\n");
+-			goto end;
++			goto end1;
+ 		}
+ 
++		buffer[buf_size++] = (strtoint & 0xff);
+ 		if (buf_size >= MAX_CMD_PAYLOAD_SIZE) {
+ 			SDE_ERROR("buffer size exceeding the limit %d\n",
+ 					MAX_CMD_PAYLOAD_SIZE);
+-			goto end;
++			rc = -EFAULT;
++			goto end1;
+ 		}
+-		buffer[buf_size++] = (strtoint & 0xff);
+ 		token = strsep(&input_copy, delim);
+ 	}
+ 	SDE_DEBUG("command packet size in bytes: %u\n", buf_size);
+-	if (!buf_size)
+-		goto end;
++	if (!buf_size) {
++		rc = -EFAULT;
++		goto end1;
++	}
+ 
+ 	mutex_lock(&c_conn->lock);
+ 	rc = c_conn->ops.cmd_transfer(&c_conn->base, c_conn->display, buffer,
+@@ -1908,8 +1911,9 @@ static ssize_t _sde_debugfs_conn_cmd_tx_write(struct file *file,
+ 	mutex_unlock(&c_conn->lock);
+ 
+ 	rc = count;
+-end:
++end1:
+ 	kfree(input_dup);
++end:
+ 	kfree(input);
+ 	return rc;
+ }
+@@ -1920,6 +1924,177 @@ static const struct file_operations conn_cmd_tx_fops = {
+ 	.write =	_sde_debugfs_conn_cmd_tx_write,
+ };
+ 
++static int _sde_debugfs_conn_cmd_rx_open(struct inode *inode, struct file *file)
++{
++	/* non-seekable */
++	file->private_data = inode->i_private;
++	return nonseekable_open(inode, file);
++}
++
++static ssize_t _sde_debugfs_conn_cmd_rx_read(struct file *file,
++		char __user *buf, size_t count, loff_t *ppos)
++{
++	struct drm_connector *connector = file->private_data;
++	struct sde_connector *c_conn = NULL;
++	char *strs = NULL;
++	char *strs_temp = NULL;
++	int blen = 0, i = 0, n = 0, left_size = 0;
++
++	if (*ppos)
++		return 0;
++
++	if (!connector) {
++		SDE_ERROR("invalid argument, conn is NULL\n");
++		return -EINVAL;
++	}
++
++	c_conn = to_sde_connector(connector);
++	if (c_conn->rx_len <= 0 || c_conn->rx_len > MAX_CMD_RECEIVE_SIZE) {
++		SDE_ERROR("no valid data from panel\n");
++		return -EINVAL;
++	}
++
++	/*
++	 * Rx data was stored as HEX value in rx buffer,
++	 * convert 1 HEX value to strings for display, need 5 bytes.
++	 * for example: HEX value 0xFF, converted to strings, should be '0',
++	 * 'x','F','F' and 1 space.
++	 */
++	left_size = c_conn->rx_len * 5 + 1;
++	strs = kzalloc(left_size, GFP_KERNEL);
++	if (!strs)
++		return -ENOMEM;
++	strs_temp = strs;
++
++	mutex_lock(&c_conn->lock);
++	for (i = 0; i < c_conn->rx_len; i++) {
++		n = scnprintf(strs_temp, left_size, "0x%.2x ",
++			     c_conn->cmd_rx_buf[i]);
++		strs_temp += n;
++		left_size -= n;
++	}
++	mutex_unlock(&c_conn->lock);
++
++	blen = strlen(strs);
++	if (blen <= 0) {
++		SDE_ERROR("snprintf failed, blen %d\n", blen);
++		blen = -EFAULT;
++		goto err;
++	}
++
++	if (copy_to_user(buf, strs, blen)) {
++		SDE_ERROR("copy to user buffer failed\n");
++		blen = -EFAULT;
++		goto err;
++	}
++
++	*ppos += blen;
++
++err:
++	kfree(strs);
++	return blen;
++}
++
++
++static ssize_t _sde_debugfs_conn_cmd_rx_write(struct file *file,
++			const char __user *p, size_t count, loff_t *ppos)
++{
++	struct drm_connector *connector = file->private_data;
++	struct sde_connector *c_conn = NULL;
++	char *input, *token, *input_copy, *input_dup = NULL;
++	const char *delim = " ";
++	unsigned char buffer[MAX_CMD_PAYLOAD_SIZE] = {0};
++	int rc = 0, strtoint = 0;
++	u32 buf_size = 0;
++
++	if (*ppos || !connector) {
++		SDE_ERROR("invalid argument(s), conn %d\n", connector != NULL);
++		return -EINVAL;
++	}
++
++	c_conn = to_sde_connector(connector);
++	if (!c_conn->ops.cmd_receive) {
++		SDE_ERROR("no cmd receive support for connector name %s\n",
++				c_conn->name);
++		return -EINVAL;
++	}
++
++	memset(c_conn->cmd_rx_buf, 0x0, MAX_CMD_RECEIVE_SIZE);
++	c_conn->rx_len = 0;
++
++	input = kzalloc(count + 1, GFP_KERNEL);
++	if (!input)
++		return -ENOMEM;
++
++	if (copy_from_user(input, p, count)) {
++		SDE_ERROR("copy from user failed\n");
++		rc  = -EFAULT;
++		goto end;
++	}
++	input[count] = '\0';
++
++	SDE_INFO("Command requested for rx from panel: %s\n", input);
++
++	input_copy = kstrdup(input, GFP_KERNEL);
++	if (!input_copy) {
++		rc = -ENOMEM;
++		goto end;
++	}
++
++	input_dup = input_copy;
++	token = strsep(&input_copy, delim);
++	while (token) {
++		rc = kstrtoint(token, 0, &strtoint);
++		if (rc) {
++			SDE_ERROR("input buffer conversion failed\n");
++			goto end1;
++		}
++
++		buffer[buf_size++] = (strtoint & 0xff);
++		if (buf_size >= MAX_CMD_PAYLOAD_SIZE) {
++			SDE_ERROR("buffer size = %d exceeding the limit %d\n",
++					buf_size, MAX_CMD_PAYLOAD_SIZE);
++			rc = -EFAULT;
++			goto end1;
++		}
++		token = strsep(&input_copy, delim);
++	}
++
++	if (!buffer[0] || buffer[0] > MAX_CMD_RECEIVE_SIZE) {
++		SDE_ERROR("invalid rx length\n");
++		rc = -EFAULT;
++		goto end1;
++	}
++
++	SDE_DEBUG("command packet size in bytes: %u, rx len: %u\n",
++			buf_size, buffer[0]);
++	if (!buf_size) {
++		rc = -EFAULT;
++		goto end1;
++	}
++
++	mutex_lock(&c_conn->lock);
++	c_conn->rx_len = c_conn->ops.cmd_receive(c_conn->display, buffer + 1,
++			buf_size - 1, c_conn->cmd_rx_buf, buffer[0]);
++	mutex_unlock(&c_conn->lock);
++
++	if (c_conn->rx_len <= 0)
++		rc = -EINVAL;
++	else
++		rc = count;
++end1:
++	kfree(input_dup);
++end:
++	kfree(input);
++	return rc;
++}
++
++static const struct file_operations conn_cmd_rx_fops = {
++	.open =         _sde_debugfs_conn_cmd_rx_open,
++	.read =         _sde_debugfs_conn_cmd_rx_read,
++	.write =        _sde_debugfs_conn_cmd_rx_write,
++};
++
+ #ifdef CONFIG_DEBUG_FS
+ /**
+  * sde_connector_init_debugfs - initialize connector debugfs
+@@ -1960,6 +2135,15 @@ static int sde_connector_init_debugfs(struct drm_connector *connector)
+ 		}
+ 	}
+ 
++	if (sde_connector->ops.cmd_receive) {
++		if (!debugfs_create_file("rx_cmd", 0600,
++			connector->debugfs_entry,
++			connector, &conn_cmd_rx_fops)) {
++			SDE_ERROR("failed to create connector cmd_rx\n");
++			return -ENOMEM;
++		}
++	}
++
+ 	return 0;
+ }
+ #else
+diff --git a/techpack/display/msm/sde/sde_connector.h b/techpack/display/msm/sde/sde_connector.h
+index cbc6bfa0ce7f..1771a36d74ed 100644
+--- a/techpack/display/msm/sde/sde_connector.h
++++ b/techpack/display/msm/sde/sde_connector.h
+@@ -18,6 +18,7 @@
+ 
+ #define SDE_CONNECTOR_NAME_SIZE	16
+ #define SDE_CONNECTOR_DHDR_MEMPOOL_MAX_SIZE	SZ_32
++#define MAX_CMD_RECEIVE_SIZE       256
+ 
+ struct sde_connector;
+ struct sde_connector_state;
+@@ -263,6 +264,18 @@ struct sde_connector_ops {
+ 	int (*cmd_transfer)(struct drm_connector *connector,
+ 			void *display, const char *cmd_buf,
+ 			u32 cmd_buf_len);
++	/**
++	 * cmd_receive - Receive the response from the connected display panel
++	 * @display: Pointer to private display handle
++	 * @cmd_buf: Command buffer
++	 * @cmd_buf_len: Command buffer length in bytes
++	 * @recv_buf: rx buffer
++	 * @recv_buf_len: rx buffer length
++	 * Returns: number of bytes read, if successful, negative for failure
++	 */
++
++	int (*cmd_receive)(void *display, const char *cmd_buf,
++			   u32 cmd_buf_len, u8 *recv_buf, u32 recv_buf_len);
+ 
+ 	/**
+ 	 * config_hdr - configure HDR
+@@ -433,6 +446,8 @@ struct sde_connector_dyn_hdr_metadata {
+  * last_cmd_tx_sts: status of the last command transfer
+  * @hdr_capable: external hdr support present
+  * @core_clk_rate: MDP core clk rate used for dynamic HDR packet calculation
++ * @cmd_rx_buf: the return buffer of response of command transfer
++ * @rx_len: the length of dcs command received buffer
+  */
+ struct sde_connector {
+ 	struct drm_connector base;
+@@ -486,6 +501,9 @@ struct sde_connector {
+ 
+ 	bool last_cmd_tx_sts;
+ 	bool hdr_capable;
++
++	u8 cmd_rx_buf[MAX_CMD_RECEIVE_SIZE];
++	int rx_len;
+ };
+ 
+ /**
+diff --git a/techpack/display/msm/sde/sde_kms.c b/techpack/display/msm/sde/sde_kms.c
+index 6ac6735b0de5..0e98cf561f07 100644
+--- a/techpack/display/msm/sde/sde_kms.c
++++ b/techpack/display/msm/sde/sde_kms.c
+@@ -1435,6 +1435,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
+ 		.get_panel_vfp = dsi_display_get_panel_vfp,
+ 		.get_default_lms = dsi_display_get_default_lms,
+ 		.get_qsync_min_fps = dsi_display_get_qsync_min_fps,
++		.cmd_receive = dsi_display_cmd_receive,
+ 	};
+ 	static const struct sde_connector_ops wb_ops = {
+ 		.post_init =    sde_wb_connector_post_init,
+@@ -1450,6 +1451,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
+ 		.cmd_transfer = NULL,
+ 		.cont_splash_config = NULL,
+ 		.get_panel_vfp = NULL,
++		.cmd_receive = NULL,
+ 	};
+ 	static const struct sde_connector_ops dp_ops = {
+ 		.set_info_blob = dp_connnector_set_info_blob,
+@@ -1468,6 +1470,7 @@ static int _sde_kms_setup_displays(struct drm_device *dev,
+ 		.cont_splash_config = NULL,
+ 		.get_panel_vfp = NULL,
+ 		.update_pps = dp_connector_update_pps,
++		.cmd_receive = NULL,
+ 	};
+ 	struct msm_display_info info;
+ 	struct drm_encoder *encoder;
+-- 
+2.48.1
+

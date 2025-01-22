@@ -1,0 +1,104 @@
+From 52452781dce4b92ea8af0294951bc918465dfd9a Mon Sep 17 00:00:00 2001
+From: Sultan Alsawaf <sultan@kerneltoast.com>
+Date: Sat, 10 Jul 2021 15:31:19 -0700
+Subject: [PATCH 102/175] msm: vidc: Fix uninitialized tag_data usage
+
+Signed-off-by: Sultan Alsawaf <sultan@kerneltoast.com>
+Change-Id: I3839d059c7666250519423c5417bcc4b3785d0e2
+---
+ drivers/media/platform/msm/vidc/msm_vidc.c    | 10 +++++++---
+ .../media/platform/msm/vidc/msm_vidc_common.c | 19 +++++++++++++------
+ .../media/platform/msm/vidc/msm_vidc_common.h |  2 +-
+ 3 files changed, 21 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc.c b/drivers/media/platform/msm/vidc/msm_vidc.c
+index 0dbcd352e75f..680bc052c271 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc.c
+@@ -608,9 +608,13 @@ int msm_vidc_dqbuf(void *instance, struct v4l2_buffer *b)
+ 	tag_data.index = b->index;
+ 	tag_data.type = b->type;
+ 
+-	msm_comm_fetch_tags(inst, &tag_data);
+-	b->m.planes[0].reserved[5] = tag_data.input_tag;
+-	b->m.planes[0].reserved[6] = tag_data.output_tag;
++	if (msm_comm_fetch_tags(inst, &tag_data)) {
++		b->m.planes[0].reserved[5] = tag_data.input_tag;
++		b->m.planes[0].reserved[6] = tag_data.output_tag;
++	} else {
++		b->m.planes[0].reserved[5] = 0;
++		b->m.planes[0].reserved[6] = 0;
++	}
+ 
+ 	return rc;
+ }
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_common.c b/drivers/media/platform/msm/vidc/msm_vidc_common.c
+index bde2bdd84147..631b3f890139 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_common.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_common.c
+@@ -4264,9 +4264,13 @@ static void populate_frame_data(struct vidc_frame_data *data,
+ 	tag_data.index = vb->index;
+ 	tag_data.type = vb->type;
+ 
+-	msm_comm_fetch_tags(inst, &tag_data);
+-	data->input_tag = tag_data.input_tag;
+-	data->output_tag = tag_data.output_tag;
++	if (msm_comm_fetch_tags(inst, &tag_data)) {
++		data->input_tag = tag_data.input_tag;
++		data->output_tag = tag_data.output_tag;
++	} else {
++		data->input_tag = 0;
++		data->output_tag = 0;
++	}
+ 
+ 
+ 	extra_idx = EXTRADATA_IDX(vb->num_planes);
+@@ -7054,7 +7058,7 @@ void msm_comm_store_tags(struct msm_vidc_inst *inst,
+ 	mutex_unlock(&inst->buffer_tags.lock);
+ }
+ 
+-void msm_comm_fetch_tags(struct msm_vidc_inst *inst,
++bool msm_comm_fetch_tags(struct msm_vidc_inst *inst,
+ 	struct vidc_tag_data *tag_data)
+ {
+ 	struct vidc_tag_data *temp, *next;
+@@ -7062,7 +7066,7 @@ void msm_comm_fetch_tags(struct msm_vidc_inst *inst,
+ 	if (!inst || !tag_data) {
+ 		dprintk(VIDC_ERR, "%s: invalid params %pK %pK\n",
+ 				__func__, inst, tag_data);
+-		return;
++		return false;
+ 	}
+ 	mutex_lock(&inst->buffer_tags.lock);
+ 	list_for_each_entry_safe(temp, next, &inst->buffer_tags.list, list) {
+@@ -7070,10 +7074,13 @@ void msm_comm_fetch_tags(struct msm_vidc_inst *inst,
+ 				temp->type == tag_data->type) {
+ 			tag_data->input_tag = temp->input_tag;
+ 			tag_data->output_tag = temp->output_tag;
+-			break;
++			mutex_unlock(&inst->buffer_tags.lock);
++			return true;
+ 		}
+ 	}
+ 	mutex_unlock(&inst->buffer_tags.lock);
++
++	return false;
+ }
+ 
+ void msm_comm_store_mark_data(struct msm_vidc_list *data_list,
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_common.h b/drivers/media/platform/msm/vidc/msm_vidc_common.h
+index a4e4b7821b3f..2119e06d7309 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_common.h
++++ b/drivers/media/platform/msm/vidc/msm_vidc_common.h
+@@ -234,7 +234,7 @@ bool msm_comm_compare_device_planes(struct msm_vidc_buffer *mbuf,
+ 		u32 type, u32 *planes);
+ void msm_comm_store_tags(struct msm_vidc_inst *inst,
+ 		struct vidc_tag_data *tag_data);
+-void msm_comm_fetch_tags(struct msm_vidc_inst *inst,
++bool msm_comm_fetch_tags(struct msm_vidc_inst *inst,
+ 		struct vidc_tag_data *tag_data);
+ void msm_comm_free_buffer_tags(struct msm_vidc_inst *inst);
+ int msm_comm_qbuf_cache_operations(struct msm_vidc_inst *inst,
+-- 
+2.48.1
+

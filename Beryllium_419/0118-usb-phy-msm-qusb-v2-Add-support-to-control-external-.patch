@@ -1,0 +1,165 @@
+From 1bf9df10f76840c3f065bbf70bdccd0b9f451531 Mon Sep 17 00:00:00 2001
+From: Hemant Kumar <hemantk@codeaurora.org>
+Date: Wed, 22 Nov 2017 13:53:08 -0800
+Subject: [PATCH 118/175] usb: phy-msm-qusb-v2: Add support to control external
+ pull down
+
+Add phy driver call back to enable external pull down on D+
+line in host mode. External pull-down is only needed during
+port reset before enabling high speed terminations. Pull-down
+will be disabled 20ms after its enabled in timer function.
+
+Change-Id: Id2a4e34b4937dc63d3e20cd48f5d586bbcb7599a
+Signed-off-by: Hemant Kumar <hemantk@codeaurora.org>
+Signed-off-by: Vamsi Krishna Samavedam <vskrishn@codeaurora.org>
+---
+ drivers/usb/phy/phy-msm-qusb-v2.c | 68 +++++++++++++++++++++++++++++++
+ include/linux/usb/phy.h           | 11 +++++
+ 2 files changed, 79 insertions(+)
+
+diff --git a/drivers/usb/phy/phy-msm-qusb-v2.c b/drivers/usb/phy/phy-msm-qusb-v2.c
+index 47d49c92c671..f3f6c0603b1d 100644
+--- a/drivers/usb/phy/phy-msm-qusb-v2.c
++++ b/drivers/usb/phy/phy-msm-qusb-v2.c
+@@ -19,6 +19,7 @@
+ #include <linux/usb/phy.h>
+ #include <linux/reset.h>
+ #include <linux/debugfs.h>
++#include <linux/hrtimer.h>
+ 
+ /* QUSB2PHY_PWR_CTRL1 register related bits */
+ #define PWR_CTRL1_POWR_DOWN		BIT(0)
+@@ -131,6 +132,10 @@ struct qusb_phy {
+ 	struct regulator_desc	dpdm_rdesc;
+ 	struct regulator_dev	*dpdm_rdev;
+ 
++	struct pinctrl		*pinctrl;
++	struct pinctrl_state	*atest_usb13_suspend;
++	struct pinctrl_state	*atest_usb13_active;
++
+ 	/* emulation targets specific */
+ 	void __iomem		*emu_phy_base;
+ 	bool			emulation;
+@@ -147,6 +152,8 @@ struct qusb_phy {
+ 	u8                      bias_ctrl2;
+ 
+ 	bool			override_bias_ctrl2;
++
++	struct hrtimer		timer;
+ };
+ 
+ static void qusb_phy_enable_clocks(struct qusb_phy *qphy, bool on)
+@@ -668,6 +675,42 @@ static int qusb_phy_init(struct usb_phy *phy)
+ 	return 0;
+ }
+ 
++static enum hrtimer_restart qusb_dis_ext_pulldown_timer(struct hrtimer *timer)
++{
++	struct qusb_phy *qphy = container_of(timer, struct qusb_phy, timer);
++	int ret = 0;
++
++	if (qphy->pinctrl && qphy->atest_usb13_suspend) {
++		ret = pinctrl_select_state(qphy->pinctrl,
++				qphy->atest_usb13_suspend);
++		if (ret < 0)
++			dev_err(qphy->phy.dev,
++				"pinctrl state suspend select failed\n");
++	}
++
++	return HRTIMER_NORESTART;
++}
++
++static void qusb_phy_enable_ext_pulldown(struct usb_phy *phy)
++{
++	struct qusb_phy *qphy = container_of(phy, struct qusb_phy, phy);
++	int ret = 0;
++
++	dev_dbg(phy->dev, "%s\n", __func__);
++
++	if (qphy->pinctrl && qphy->atest_usb13_active) {
++		ret = pinctrl_select_state(qphy->pinctrl,
++				qphy->atest_usb13_active);
++		if (ret < 0) {
++			dev_err(phy->dev,
++					"pinctrl state active select failed\n");
++			return;
++		}
++
++		hrtimer_start(&qphy->timer, ms_to_ktime(10), HRTIMER_MODE_REL);
++	}
++}
++
+ static void qusb_phy_shutdown(struct usb_phy *phy)
+ {
+ 	struct qusb_phy *qphy = container_of(phy, struct qusb_phy, phy);
+@@ -1305,6 +1348,30 @@ static int qusb_phy_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	qphy->pinctrl = devm_pinctrl_get(dev);
++	if (IS_ERR(qphy->pinctrl)) {
++		ret = PTR_ERR(qphy->pinctrl);
++		if (ret == -EPROBE_DEFER)
++			return ret;
++		dev_err(dev, "pinctrl not available\n");
++		goto skip_pinctrl_config;
++	}
++	qphy->atest_usb13_suspend = pinctrl_lookup_state(qphy->pinctrl,
++							"atest_usb13_suspend");
++	if (IS_ERR(qphy->atest_usb13_suspend)) {
++		dev_err(dev, "pinctrl lookup atest_usb13_suspend failed\n");
++		goto skip_pinctrl_config;
++	}
++
++	qphy->atest_usb13_active = pinctrl_lookup_state(qphy->pinctrl,
++							"atest_usb13_active");
++	if (IS_ERR(qphy->atest_usb13_active))
++		dev_err(dev, "pinctrl lookup atest_usb13_active failed\n");
++
++	hrtimer_init(&qphy->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	qphy->timer.function = qusb_dis_ext_pulldown_timer;
++
++skip_pinctrl_config:
+ 	mutex_init(&qphy->lock);
+ 	platform_set_drvdata(pdev, qphy);
+ 
+@@ -1316,6 +1383,7 @@ static int qusb_phy_probe(struct platform_device *pdev)
+ 	qphy->phy.notify_connect        = qusb_phy_notify_connect;
+ 	qphy->phy.notify_disconnect     = qusb_phy_notify_disconnect;
+ 	qphy->phy.drive_dp_pulse	= msm_qusb_phy_drive_dp_pulse;
++	qphy->phy.start_port_reset	= qusb_phy_enable_ext_pulldown;
+ 
+ 	ret = usb_add_phy_dev(&qphy->phy);
+ 	if (ret)
+diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
+index 7b2a7c313391..dfcfa2fe93b4 100644
+--- a/include/linux/usb/phy.h
++++ b/include/linux/usb/phy.h
+@@ -146,6 +146,8 @@ struct usb_phy {
+ 
+ 	/* enable/disable VBUS */
+ 	int	(*set_vbus)(struct usb_phy *x, int on);
++	/* callback to indicate port is being reset or reset the port */
++	void	(*start_port_reset)(struct usb_phy *x);
+ 
+ 	/* effective for B devices, ignored for A-peripheral */
+ 	int	(*set_power)(struct usb_phy *x,
+@@ -240,6 +242,15 @@ usb_phy_vbus_off(struct usb_phy *x)
+ 	return x->set_vbus(x, false);
+ }
+ 
++static inline void
++usb_phy_start_port_reset(struct usb_phy *x)
++{
++	if (!x || !x->start_port_reset)
++		return;
++
++	x->start_port_reset(x);
++}
++
+ static inline int
+ usb_phy_reset(struct usb_phy *x)
+ {
+-- 
+2.48.1
+

@@ -1,0 +1,49 @@
+From e005d2e367c8bb895b91e86e7139026b5b012790 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Tue, 7 Dec 2021 04:02:32 +0200
+Subject: [PATCH 090/175] thermal: msm_lmh_dcvs: Protect lmh_enabled with
+ qcom,legacy-lmh-enable
+
+Initialize LMH TZ only once only on legacy targets with defined
+qcom,legacy-lmh-enable property.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/thermal/qcom/msm_lmh_dcvs.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/thermal/qcom/msm_lmh_dcvs.c b/drivers/thermal/qcom/msm_lmh_dcvs.c
+index 6fbd63303b3a..423f9d4993e4 100644
+--- a/drivers/thermal/qcom/msm_lmh_dcvs.c
++++ b/drivers/thermal/qcom/msm_lmh_dcvs.c
+@@ -346,7 +346,7 @@ static struct limits_dcvs_hw *get_dcvsh_hw_from_cpu(int cpu)
+ 	return NULL;
+ }
+ 
+-static int enable_lmh(void)
++static int enable_lmh(struct device_node *dn)
+ {
+ 	int ret = 0;
+ 	struct scm_desc desc_arg;
+@@ -363,7 +363,8 @@ static int enable_lmh(void)
+ 		return ret;
+ 	}
+ 
+-	lmh_enabled = true;
++	if (of_property_read_bool(dn, "qcom,legacy-lmh-enable"))
++		lmh_enabled = true;
+ 
+ 	return ret;
+ }
+@@ -656,7 +657,7 @@ static int limits_dcvs_probe(struct platform_device *pdev)
+ 				affinity);
+ 			return ret;
+ 		}
+-		ret = enable_lmh();
++		ret = enable_lmh(dn);
+ 		if (ret)
+ 			return ret;
+ 	}
+-- 
+2.48.1
+

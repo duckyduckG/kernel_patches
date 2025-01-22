@@ -1,0 +1,24 @@
+From 4f4d22faf9b6bd7c176e7b9f3557944e392bdc43 Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Tue, 26 Dec 2023 03:14:56 +0400
+Subject: [PATCH 058/175] ARM64: dts: Build xiaomi device trees
+
+---
+ arch/arm64/boot/dts/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
+index c267dbfbf65f..2b188866ec4e 100644
+--- a/arch/arm64/boot/dts/Makefile
++++ b/arch/arm64/boot/dts/Makefile
+@@ -25,6 +25,7 @@ subdir-y += socionext
+ subdir-y += sprd
+ subdir-y += synaptics
+ subdir-y += ti
++subdir-y += xiaomi
+ subdir-y += xilinx
+ subdir-y += zte
+ 
+-- 
+2.48.1
+

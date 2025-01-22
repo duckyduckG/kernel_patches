@@ -1,0 +1,27 @@
+From dc03142eac79d7a82f19e038c7374c9fcf33c737 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Sat, 6 Nov 2021 21:16:45 +0200
+Subject: [PATCH 065/175] mailbox: apcs-ipc: Add spcs bindings for SDM845
+
+Add compatible string for the spcs region for SDM845.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/mailbox/qcom-apcs-ipc-mailbox.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mailbox/qcom-apcs-ipc-mailbox.c b/drivers/mailbox/qcom-apcs-ipc-mailbox.c
+index f3deddf176bc..eb0b38f15204 100644
+--- a/drivers/mailbox/qcom-apcs-ipc-mailbox.c
++++ b/drivers/mailbox/qcom-apcs-ipc-mailbox.c
+@@ -134,6 +134,7 @@ static const struct of_device_id qcom_apcs_ipc_of_match[] = {
+ 	{ .compatible = "qcom,msm8998-apcs-hmss-global", .data = (void *)8 },
+ 	{ .compatible = "qcom,sdm845-apss-shared", .data = (void *)12 },
+ 	{ .compatible = "qcom,sm8150-apcs-hmss-global", .data = (void *) 12 },
++	{ .compatible = "qcom,sdm845-spcs-global", .data = (void *)0 },
+ 	{ .compatible = "qcom,sm8150-spcs-global", .data = (void *)0 },
+ 	{ .compatible = "qcom,kona-spcs-global", .data = (void *)0 },
+ 	{ .compatible = "qcom,bengal-apcs-hmss-global", .data = (void *)8 },
+-- 
+2.48.1
+

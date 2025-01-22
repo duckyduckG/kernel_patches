@@ -1,0 +1,33 @@
+From 10f935ef3081eb03b4febbe29da253b2f77f8528 Mon Sep 17 00:00:00 2001
+From: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Date: Mon, 26 Jul 2021 17:04:28 +0200
+Subject: [PATCH 057/175] defconfig: sdm845-perf: Properly disable per-cgroup
+ pressure tracking
+
+- Instead of defconfig cmdline disable through bootargs.
+same as commit c73f6aba08baa2ce3d7c38b964fa98604d771eb2: ARM: dts: msm: switch off kpti on some targets
+
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Change-Id: Ic1d418d287beab2e4c3868d2fb6b2fec5b214fd2
+
+[MrArtemSid] Apply kona change for sdm845
+---
+ arch/arm64/configs/vendor/sdm845-perf_defconfig | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/arch/arm64/configs/vendor/sdm845-perf_defconfig b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+index 0f6249515ffe..cd980016d5ac 100644
+--- a/arch/arm64/configs/vendor/sdm845-perf_defconfig
++++ b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+@@ -62,8 +62,6 @@ CONFIG_SETEND_EMULATION=y
+ CONFIG_ARM64_SW_TTBR0_PAN=y
+ # CONFIG_ARM64_VHE is not set
+ CONFIG_RANDOMIZE_BASE=y
+-CONFIG_CMDLINE="cgroup_disable=pressure"
+-CONFIG_CMDLINE_EXTEND=y
+ # CONFIG_EFI is not set
+ CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+ CONFIG_COMPAT=y
+-- 
+2.48.1
+

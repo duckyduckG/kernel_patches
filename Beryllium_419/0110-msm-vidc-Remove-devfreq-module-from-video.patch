@@ -1,0 +1,1017 @@
+From 37d8f4888df8c3ace94bdb68224dcc08a887c5dc Mon Sep 17 00:00:00 2001
+From: Vikash Garodia <vgarodia@codeaurora.org>
+Date: Fri, 22 Mar 2019 19:43:29 +0530
+Subject: [PATCH 110/175] msm: vidc: Remove devfreq module from video
+
+Bus bandwidth voting can be achieved by directly call
+the bus apis. DevFreq functionality is not utilized nor
+necessary. Also, video bus bandwidth votes are dynamic
+and cannot conform to the OPP table entries.
+
+CRs-Fixed: 2384822
+Change-Id: Ib83f51d7d07efe24a256e0287433e7a28e2ae057
+Signed-off-by: Chinmay Sawarkar <chinmays@codeaurora.org>
+Signed-off-by: Vikash Garodia <vgarodia@codeaurora.org>
+---
+ drivers/media/platform/msm/vidc/Kconfig       |   2 -
+ drivers/media/platform/msm/vidc/Makefile      |   4 +-
+ .../msm/vidc/{governors => }/fixedpoint.h     |   0
+ .../media/platform/msm/vidc/governors/Kconfig |   6 -
+ .../platform/msm/vidc/governors/Makefile      |   9 -
+ .../{governors => }/msm_vidc_ar50_dyn_gov.c   | 192 +++++------------
+ .../vidc/{governors => }/msm_vidc_dyn_gov.c   | 196 ++++++------------
+ .../platform/msm/vidc/msm_vidc_res_parse.c    |  16 +-
+ .../platform/msm/vidc/msm_vidc_resources.h    |   5 +-
+ drivers/media/platform/msm/vidc/venus_hfi.c   | 146 ++-----------
+ drivers/media/platform/msm/vidc/venus_hfi.h   |   3 +
+ 11 files changed, 148 insertions(+), 431 deletions(-)
+ rename drivers/media/platform/msm/vidc/{governors => }/fixedpoint.h (100%)
+ delete mode 100644 drivers/media/platform/msm/vidc/governors/Kconfig
+ delete mode 100644 drivers/media/platform/msm/vidc/governors/Makefile
+ rename drivers/media/platform/msm/vidc/{governors => }/msm_vidc_ar50_dyn_gov.c (87%)
+ rename drivers/media/platform/msm/vidc/{governors => }/msm_vidc_dyn_gov.c (88%)
+
+diff --git a/drivers/media/platform/msm/vidc/Kconfig b/drivers/media/platform/msm/vidc/Kconfig
+index 7d31ba880b62..af46985494fb 100644
+--- a/drivers/media/platform/msm/vidc/Kconfig
++++ b/drivers/media/platform/msm/vidc/Kconfig
+@@ -6,5 +6,3 @@ menuconfig MSM_VIDC_LEGACY_V4L2
+ 	tristate "Qualcomm Technologies, Inc. MSM V4L2 based video driver"
+ 		depends on ARCH_QCOM && VIDEO_V4L2
+ 		select VIDEOBUF2_CORE
+-
+-source "drivers/media/platform/msm/vidc/governors/Kconfig"
+diff --git a/drivers/media/platform/msm/vidc/Makefile b/drivers/media/platform/msm/vidc/Makefile
+index 0464ce7d4abc..57bf05ce5b22 100644
+--- a/drivers/media/platform/msm/vidc/Makefile
++++ b/drivers/media/platform/msm/vidc/Makefile
+@@ -10,6 +10,8 @@ msm-vidc-objs := msm_v4l2_vidc.o \
+                                 msm_cvp.o \
+                                 msm_smem.o \
+                                 msm_vidc_debug.o \
++                                msm_vidc_ar50_dyn_gov.o \
++                                msm_vidc_dyn_gov.o \
+                                 msm_vidc_res_parse.o \
+                                 venus_hfi.o \
+                                 hfi_response_handler.o \
+@@ -18,5 +20,3 @@ msm-vidc-objs := msm_v4l2_vidc.o \
+                                 msm_vidc_clocks.o
+ 
+ obj-$(CONFIG_MSM_VIDC_LEGACY_V4L2) := msm-vidc.o
+-
+-obj-$(CONFIG_MSM_VIDC_LEGACY_V4L2) += governors/
+diff --git a/drivers/media/platform/msm/vidc/governors/fixedpoint.h b/drivers/media/platform/msm/vidc/fixedpoint.h
+similarity index 100%
+rename from drivers/media/platform/msm/vidc/governors/fixedpoint.h
+rename to drivers/media/platform/msm/vidc/fixedpoint.h
+diff --git a/drivers/media/platform/msm/vidc/governors/Kconfig b/drivers/media/platform/msm/vidc/governors/Kconfig
+deleted file mode 100644
+index a8526c4441c9..000000000000
+--- a/drivers/media/platform/msm/vidc/governors/Kconfig
++++ /dev/null
+@@ -1,6 +0,0 @@
+-menuconfig MSM_VIDC_LEGACY_GOVERNORS
+-	tristate "Clock and bandwidth governors for QTI MSM V4L2 based video driver"
+-	depends on MSM_VIDC_LEGACY_V4L2 && PM_DEVFREQ
+-	help
+-	Chooses a set of devfreq governors aimed at providing accurate bandwidth
+-	or clock frequency values for MSM V4L2 video driver.
+diff --git a/drivers/media/platform/msm/vidc/governors/Makefile b/drivers/media/platform/msm/vidc/governors/Makefile
+deleted file mode 100644
+index f8ae4549e1a9..000000000000
+--- a/drivers/media/platform/msm/vidc/governors/Makefile
++++ /dev/null
+@@ -1,9 +0,0 @@
+-ccflags-y := -I$(srctree)/drivers/devfreq/ \
+-	-I$(srctree)/drivers/media/platform/msm/vidc/ \
+-        -I$(srctree)/drivers/media/platform/msm/vidc/governors/
+-
+-msm-vidc-dyn-gov-objs := msm_vidc_dyn_gov.o
+-
+-msm-vidc-ar50-dyn-gov-objs := msm_vidc_ar50_dyn_gov.o
+-
+-obj-$(CONFIG_MSM_VIDC_LEGACY_GOVERNORS) := msm-vidc-dyn-gov.o msm-vidc-ar50-dyn-gov.o
+diff --git a/drivers/media/platform/msm/vidc/governors/msm_vidc_ar50_dyn_gov.c b/drivers/media/platform/msm/vidc/msm_vidc_ar50_dyn_gov.c
+similarity index 87%
+rename from drivers/media/platform/msm/vidc/governors/msm_vidc_ar50_dyn_gov.c
+rename to drivers/media/platform/msm/vidc/msm_vidc_ar50_dyn_gov.c
+index fdf2b7ef0651..6f0e89cc4c0e 100644
+--- a/drivers/media/platform/msm/vidc/governors/msm_vidc_ar50_dyn_gov.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_ar50_dyn_gov.c
+@@ -11,29 +11,24 @@
+  */
+ 
+ #include <linux/module.h>
+-#include "governor.h"
++#include "msm_vidc_debug.h"
+ #include "fixedpoint.h"
+ #include "msm_vidc_internal.h"
+-#include "msm_vidc_debug.h"
+ #include "vidc_hfi_api.h"
+ #define COMPRESSION_RATIO_MAX 5
+ 
+-static bool debug;
+-module_param(debug, bool, 0644);
+-
+-enum governor_mode {
+-	GOVERNOR_DDR,
+-	GOVERNOR_LLCC,
+-};
++static bool debug_ar50;
++module_param(debug_ar50, bool, 0644);
+ 
+-struct governor {
+-	enum governor_mode mode;
+-	struct devfreq_governor devfreq_gov;
++enum vidc_bus_type {
++	PERF,
++	DDR,
++	LLCC,
+ };
+ 
+ /*
+- * Minimum dimensions that the governor is willing to calculate
+- * bandwidth for.  This means that anything bandwidth(0, 0) ==
++ * Minimum dimensions for which to calculate bandwidth.
++ * This means that anything bandwidth(0, 0) ==
+  * bandwidth(BASELINE_DIMENSIONS.width, BASELINE_DIMENSIONS.height)
+  */
+ static const struct {
+@@ -43,15 +38,6 @@ static const struct {
+ 	.height = 720,
+ };
+ 
+-/*
+- * These are hardcoded AB values that the governor votes for in certain
+- * situations, where a certain bus frequency is desired.  It isn't exactly
+- * scalable since different platforms have different bus widths, but we'll
+- * deal with that in the future.
+- */
+-static const unsigned long NOMINAL_BW_MBPS = 6000 /* ideally 320 Mhz */,
+-	SVS_BW_MBPS = 2000 /* ideally 100 Mhz */;
+-
+ /* converts Mbps to bps (the "b" part can be bits or bytes based on context) */
+ #define kbps(__mbps) ((__mbps) * 1000)
+ #define bps(__mbps) (kbps(__mbps) * 1000)
+@@ -216,6 +202,16 @@ static struct lut {
+ 	},
+ };
+ 
++static u32 get_type_frm_name(char *name)
++{
++	if (!strcmp(name, "venus-ar50-llcc"))
++		return LLCC;
++	else if (!strcmp(name, "venus-ar50-ddr"))
++		return DDR;
++	else
++		return PERF;
++}
++
+ static struct lut const *__lut(int width, int height, int fps)
+ {
+ 	int frame_size = height * width, c = 0;
+@@ -288,7 +284,7 @@ static void __dump(struct dump dump[], int len)
+ }
+ 
+ static unsigned long __calculate_vpe(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+ 	return 0;
+ }
+@@ -323,7 +319,7 @@ static int __bpp(enum hal_uncompressed_format f)
+ }
+ 
+ static unsigned long __calculate_decoder(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+ 	/*
+ 	 * XXX: Don't fool around with any of the hardcoded numbers unless you
+@@ -506,7 +502,7 @@ static unsigned long __calculate_decoder(struct vidc_bus_vote_data *d,
+ 	llc.total = llc.dpb_read + llc.opb_read + ddr.total;
+ 
+ 	/* Dump all the variables for easier debugging */
+-	if (debug) {
++	if (debug_ar50) {
+ 		struct dump dump[] = {
+ 		{"DECODER PARAMETERS", "", DUMP_HEADER_MAGIC},
+ 		{"LCU size", "%d", lcu_size},
+@@ -568,11 +564,11 @@ static unsigned long __calculate_decoder(struct vidc_bus_vote_data *d,
+ 		__dump(dump, ARRAY_SIZE(dump));
+ 	}
+ 
+-	switch (gm) {
+-	case GOVERNOR_DDR:
++	switch (type) {
++	case DDR:
+ 		ret = kbps(fp_round(ddr.total));
+ 		break;
+-	case GOVERNOR_LLCC:
++	case LLCC:
+ 		ret = kbps(fp_round(llc.total));
+ 		break;
+ 	default:
+@@ -583,7 +579,7 @@ static unsigned long __calculate_decoder(struct vidc_bus_vote_data *d,
+ }
+ 
+ static unsigned long __calculate_encoder(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+ 	/*
+ 	 * XXX: Don't fool around with any of the hardcoded numbers unless you
+@@ -792,7 +788,7 @@ static unsigned long __calculate_encoder(struct vidc_bus_vote_data *d,
+ 	qsmmu_bw_overhead_factor = FP(1, 3, 100);
+ 	ddr.total = fp_mult(ddr.total, qsmmu_bw_overhead_factor);
+ 
+-	if (debug) {
++	if (debug_ar50) {
+ 		struct dump dump[] = {
+ 		{"ENCODER PARAMETERS", "", DUMP_HEADER_MAGIC},
+ 		{"width", "%d", width},
+@@ -839,11 +835,11 @@ static unsigned long __calculate_encoder(struct vidc_bus_vote_data *d,
+ 		__dump(dump, ARRAY_SIZE(dump));
+ 	}
+ 
+-	switch (gm) {
+-	case GOVERNOR_DDR:
++	switch (type) {
++	case DDR:
+ 		ret = kbps(fp_round(ddr.total));
+ 		break;
+-	case GOVERNOR_LLCC:
++	case LLCC:
+ 		ret = kbps(fp_round(llc.total));
+ 		break;
+ 	default:
+@@ -854,40 +850,34 @@ static unsigned long __calculate_encoder(struct vidc_bus_vote_data *d,
+ }
+ 
+ static unsigned long __calculate(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+-	unsigned long (*calc[])(struct vidc_bus_vote_data *,
+-			enum governor_mode) = {
+-		[HAL_VIDEO_DOMAIN_VPE] = __calculate_vpe,
+-		[HAL_VIDEO_DOMAIN_ENCODER] = __calculate_encoder,
+-		[HAL_VIDEO_DOMAIN_DECODER] = __calculate_decoder,
+-	};
+-
+-	if (d->domain >= ARRAY_SIZE(calc)) {
+-		dprintk(VIDC_ERR, "%s: invalid domain %d\n",
+-			__func__, d->domain);
+-		return 0;
++	unsigned long value = 0;
++
++	switch (d->domain) {
++	case HAL_VIDEO_DOMAIN_VPE:
++		value = __calculate_vpe(d, type);
++		break;
++	case HAL_VIDEO_DOMAIN_ENCODER:
++		value = __calculate_encoder(d, type);
++		break;
++	case HAL_VIDEO_DOMAIN_DECODER:
++		value = __calculate_decoder(d, type);
++		break;
++	default:
++		dprintk(VIDC_ERR, "Unknown Domain");
+ 	}
+-	return calc[d->domain](d, gm);
+-}
+ 
++	return value;
++}
+ 
+-static int __get_target_freq(struct devfreq *dev, unsigned long *freq)
++unsigned long __calc_bw_ar50(struct bus_info *bus,
++				struct msm_vidc_gov_data *vidc_data)
+ {
+ 	unsigned long ab_kbps = 0, c = 0;
+-	struct devfreq_dev_status stats = {0};
+-	struct msm_vidc_gov_data *vidc_data = NULL;
+-	struct governor *gov = NULL;
+-
+-	if (!dev || !freq)
+-		return -EINVAL;
+-
+-	gov = container_of(dev->governor,
+-			struct governor, devfreq_gov);
+-	dev->profile->get_dev_status(dev->dev.parent, &stats);
+-	vidc_data = (struct msm_vidc_gov_data *)stats.private_data;
++	enum vidc_bus_type type;
+ 
+-	if (!vidc_data || !vidc_data->data_count)
++	if (!vidc_data || !vidc_data->data_count || !vidc_data->data)
+ 		goto exit;
+ 
+ 	for (c = 0; c < vidc_data->data_count; ++c) {
+@@ -897,82 +887,12 @@ static int __get_target_freq(struct devfreq *dev, unsigned long *freq)
+ 		}
+ 	}
+ 
++	type = get_type_frm_name(bus->name);
++
+ 	for (c = 0; c < vidc_data->data_count; ++c)
+-		ab_kbps += __calculate(&vidc_data->data[c], gov->mode);
++		ab_kbps += __calculate(&vidc_data->data[c], type);
+ 
+ exit:
+-	*freq = clamp(ab_kbps, dev->min_freq, dev->max_freq ?: UINT_MAX);
+-	trace_msm_vidc_perf_bus_vote(gov->devfreq_gov.name, *freq);
+-	return 0;
+-}
+-
+-static int __event_handler(struct devfreq *devfreq, unsigned int event,
+-		void *data)
+-{
+-	int rc = 0;
+-
+-	if (!devfreq)
+-		return -EINVAL;
+-
+-	switch (event) {
+-	case DEVFREQ_GOV_START:
+-		mutex_lock(&devfreq->lock);
+-		rc = update_devfreq(devfreq);
+-		mutex_unlock(&devfreq->lock);
+-		break;
+-	}
+-
+-	return rc;
+-}
+-
+-static struct governor governors[] = {
+-	{
+-		.mode = GOVERNOR_DDR,
+-		.devfreq_gov = {
+-			.name = "vidc-ar50-ddr",
+-			.get_target_freq = __get_target_freq,
+-			.event_handler = __event_handler,
+-		},
+-	},
+-	{
+-		.mode = GOVERNOR_LLCC,
+-		.devfreq_gov = {
+-			.name = "vidc-ar50-llcc",
+-			.get_target_freq = __get_target_freq,
+-			.event_handler = __event_handler,
+-		},
+-	},
+-};
+-
+-static int __init msm_vidc_ar50_bw_gov_init(void)
+-{
+-	int c = 0, rc = 0;
+-
+-	for (c = 0; c < ARRAY_SIZE(governors); ++c) {
+-		dprintk(VIDC_DBG, "Adding governor %s\n",
+-				governors[c].devfreq_gov.name);
+-
+-		rc = devfreq_add_governor(&governors[c].devfreq_gov);
+-		if (rc) {
+-			dprintk(VIDC_ERR, "Error adding governor %s: %d\n",
+-				governors[c].devfreq_gov.name, rc);
+-			break;
+-		}
+-	}
+-
+-	return rc;
+-}
+-module_init(msm_vidc_ar50_bw_gov_init);
+-
+-static void __exit msm_vidc_ar50_bw_gov_exit(void)
+-{
+-	int c = 0;
+-
+-	for (c = 0; c < ARRAY_SIZE(governors); ++c) {
+-		dprintk(VIDC_DBG, "Removing governor %s\n",
+-				governors[c].devfreq_gov.name);
+-		devfreq_remove_governor(&governors[c].devfreq_gov);
+-	}
++	trace_msm_vidc_perf_bus_vote(bus->name, ab_kbps);
++	return ab_kbps;
+ }
+-module_exit(msm_vidc_ar50_bw_gov_exit);
+-MODULE_LICENSE("GPL v2");
+diff --git a/drivers/media/platform/msm/vidc/governors/msm_vidc_dyn_gov.c b/drivers/media/platform/msm/vidc/msm_vidc_dyn_gov.c
+similarity index 88%
+rename from drivers/media/platform/msm/vidc/governors/msm_vidc_dyn_gov.c
+rename to drivers/media/platform/msm/vidc/msm_vidc_dyn_gov.c
+index c434e864d6da..7571cda9f0e9 100644
+--- a/drivers/media/platform/msm/vidc/governors/msm_vidc_dyn_gov.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_dyn_gov.c
+@@ -11,29 +11,24 @@
+  */
+ 
+ #include <linux/module.h>
+-#include "governor.h"
++#include "msm_vidc_debug.h"
+ #include "fixedpoint.h"
+ #include "msm_vidc_internal.h"
+-#include "msm_vidc_debug.h"
+ #include "vidc_hfi_api.h"
+ #define COMPRESSION_RATIO_MAX 5
+ 
+ static bool debug;
+ module_param(debug, bool, 0644);
+ 
+-enum governor_mode {
+-	GOVERNOR_DDR,
+-	GOVERNOR_LLCC,
+-};
+-
+-struct governor {
+-	enum governor_mode mode;
+-	struct devfreq_governor devfreq_gov;
++enum vidc_bus_type {
++	PERF,
++	DDR,
++	LLCC,
+ };
+ 
+ /*
+- * Minimum dimensions that the governor is willing to calculate
+- * bandwidth for.  This means that anything bandwidth(0, 0) ==
++ * Minimum dimensions for which to calculate bandwidth.
++ * This means that anything bandwidth(0, 0) ==
+  * bandwidth(BASELINE_DIMENSIONS.width, BASELINE_DIMENSIONS.height)
+  */
+ static const struct {
+@@ -43,15 +38,6 @@ static const struct {
+ 	.height = 720,
+ };
+ 
+-/*
+- * These are hardcoded AB values that the governor votes for in certain
+- * situations, where a certain bus frequency is desired.  It isn't exactly
+- * scalable since different platforms have different bus widths, but we'll
+- * deal with that in the future.
+- */
+-const unsigned long NOMINAL_BW_MBPS = 6000 /* ideally 320 Mhz */,
+-	SVS_BW_MBPS = 2000 /* ideally 100 Mhz */;
+-
+ /* converts Mbps to bps (the "b" part can be bits or bytes based on context) */
+ #define kbps(__mbps) ((__mbps) * 1000)
+ #define bps(__mbps) (kbps(__mbps) * 1000)
+@@ -216,6 +202,16 @@ static struct lut {
+ 	},
+ };
+ 
++static u32 get_type_frm_name(char *name)
++{
++	if (!strcmp(name, "venus-llcc"))
++		return LLCC;
++	else if (!strcmp(name, "venus-ddr"))
++		return DDR;
++	else
++		return PERF;
++}
++
+ static struct lut const *__lut(int width, int height, int fps)
+ {
+ 	int frame_size = height * width, c = 0;
+@@ -288,21 +284,21 @@ static void __dump(struct dump dump[], int len)
+ }
+ 
+ static unsigned long __calculate_vpe(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+ 	return 0;
+ }
+ 
+ static unsigned long __calculate_cvp(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+ 	unsigned long ret = 0;
+ 
+-	switch (gm) {
+-	case GOVERNOR_DDR:
++	switch (type) {
++	case DDR:
+ 		ret = d->ddr_bw;
+ 		break;
+-	case GOVERNOR_LLCC:
++	case LLCC:
+ 		ret = d->sys_cache_bw;
+ 		break;
+ 	default:
+@@ -343,7 +339,7 @@ static int __bpp(enum hal_uncompressed_format f)
+ }
+ 
+ static unsigned long __calculate_decoder(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+ 	/*
+ 	 * XXX: Don't fool around with any of the hardcoded numbers unless you
+@@ -583,11 +579,11 @@ static unsigned long __calculate_decoder(struct vidc_bus_vote_data *d,
+ 		__dump(dump, ARRAY_SIZE(dump));
+ 	}
+ 
+-	switch (gm) {
+-	case GOVERNOR_DDR:
++	switch (type) {
++	case DDR:
+ 		ret = kbps(fp_round(ddr.total));
+ 		break;
+-	case GOVERNOR_LLCC:
++	case LLCC:
+ 		ret = kbps(fp_round(llc.total));
+ 		break;
+ 	default:
+@@ -598,7 +594,7 @@ static unsigned long __calculate_decoder(struct vidc_bus_vote_data *d,
+ }
+ 
+ static unsigned long __calculate_encoder(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+ 	/*
+ 	 * XXX: Don't fool around with any of the hardcoded numbers unless you
+@@ -880,11 +876,11 @@ static unsigned long __calculate_encoder(struct vidc_bus_vote_data *d,
+ 		__dump(dump, ARRAY_SIZE(dump));
+ 	}
+ 
+-	switch (gm) {
+-	case GOVERNOR_DDR:
++	switch (type) {
++	case DDR:
+ 		ret = kbps(fp_round(ddr.total));
+ 		break;
+-	case GOVERNOR_LLCC:
++	case LLCC:
+ 		ret = kbps(fp_round(llc.total));
+ 		break;
+ 	default:
+@@ -895,41 +891,37 @@ static unsigned long __calculate_encoder(struct vidc_bus_vote_data *d,
+ }
+ 
+ static unsigned long __calculate(struct vidc_bus_vote_data *d,
+-		enum governor_mode gm)
++		enum vidc_bus_type type)
+ {
+-	unsigned long (*calc[])(struct vidc_bus_vote_data *,
+-			enum governor_mode) = {
+-		[HAL_VIDEO_DOMAIN_VPE] = __calculate_vpe,
+-		[HAL_VIDEO_DOMAIN_ENCODER] = __calculate_encoder,
+-		[HAL_VIDEO_DOMAIN_DECODER] = __calculate_decoder,
+-		[HAL_VIDEO_DOMAIN_CVP] = __calculate_cvp,
+-	};
+-
+-	if (d->domain >= ARRAY_SIZE(calc)) {
+-		dprintk(VIDC_ERR, "%s: invalid domain %d\n",
+-			__func__, d->domain);
+-		return 0;
++	unsigned long value = 0;
++
++	switch (d->domain) {
++	case HAL_VIDEO_DOMAIN_VPE:
++		value = __calculate_vpe(d, type);
++		break;
++	case HAL_VIDEO_DOMAIN_ENCODER:
++		value = __calculate_encoder(d, type);
++		break;
++	case HAL_VIDEO_DOMAIN_DECODER:
++		value = __calculate_decoder(d, type);
++		break;
++	case HAL_VIDEO_DOMAIN_CVP:
++		value = __calculate_cvp(d, type);
++		break;
++	default:
++		dprintk(VIDC_ERR, "Unknown Domain");
+ 	}
+-	return calc[d->domain](d, gm);
+-}
+ 
++	return value;
++}
+ 
+-static int __get_target_freq(struct devfreq *dev, unsigned long *freq)
++unsigned long __calc_bw(struct bus_info *bus,
++				struct msm_vidc_gov_data *vidc_data)
+ {
+ 	unsigned long ab_kbps = 0, c = 0;
+-	struct devfreq_dev_status stats = {0};
+-	struct msm_vidc_gov_data *vidc_data = NULL;
+-	struct governor *gov = NULL;
+-
+-	if (!dev || !freq)
+-		return -EINVAL;
++	enum vidc_bus_type type;
+ 
+-	gov = container_of(dev->governor,
+-			struct governor, devfreq_gov);
+-	dev->profile->get_dev_status(dev->dev.parent, &stats);
+-	vidc_data = (struct msm_vidc_gov_data *)stats.private_data;
+-
+-	if (!vidc_data || !vidc_data->data_count)
++	if (!vidc_data || !vidc_data->data_count || !vidc_data->data)
+ 		goto exit;
+ 
+ 	for (c = 0; c < vidc_data->data_count; ++c) {
+@@ -939,82 +931,12 @@ static int __get_target_freq(struct devfreq *dev, unsigned long *freq)
+ 		}
+ 	}
+ 
++	type = get_type_frm_name(bus->name);
++
+ 	for (c = 0; c < vidc_data->data_count; ++c)
+-		ab_kbps += __calculate(&vidc_data->data[c], gov->mode);
++		ab_kbps += __calculate(&vidc_data->data[c], type);
+ 
+ exit:
+-	*freq = clamp(ab_kbps, dev->min_freq, dev->max_freq ?: UINT_MAX);
+-	trace_msm_vidc_perf_bus_vote(gov->devfreq_gov.name, *freq);
+-	return 0;
+-}
+-
+-static int __event_handler(struct devfreq *devfreq, unsigned int event,
+-		void *data)
+-{
+-	int rc = 0;
+-
+-	if (!devfreq)
+-		return -EINVAL;
+-
+-	switch (event) {
+-	case DEVFREQ_GOV_START:
+-		mutex_lock(&devfreq->lock);
+-		rc = update_devfreq(devfreq);
+-		mutex_unlock(&devfreq->lock);
+-		break;
+-	}
+-
+-	return rc;
+-}
+-
+-static struct governor governors[] = {
+-	{
+-		.mode = GOVERNOR_DDR,
+-		.devfreq_gov = {
+-			.name = "msm-vidc-ddr",
+-			.get_target_freq = __get_target_freq,
+-			.event_handler = __event_handler,
+-		},
+-	},
+-	{
+-		.mode = GOVERNOR_LLCC,
+-		.devfreq_gov = {
+-			.name = "msm-vidc-llcc",
+-			.get_target_freq = __get_target_freq,
+-			.event_handler = __event_handler,
+-		},
+-	},
+-};
+-
+-static int __init msm_vidc_bw_gov_init(void)
+-{
+-	int c = 0, rc = 0;
+-
+-	for (c = 0; c < ARRAY_SIZE(governors); ++c) {
+-		dprintk(VIDC_DBG, "Adding governor %s\n",
+-				governors[c].devfreq_gov.name);
+-
+-		rc = devfreq_add_governor(&governors[c].devfreq_gov);
+-		if (rc) {
+-			dprintk(VIDC_ERR, "Error adding governor %s: %d\n",
+-				governors[c].devfreq_gov.name, rc);
+-			break;
+-		}
+-	}
+-
+-	return rc;
+-}
+-module_init(msm_vidc_bw_gov_init);
+-
+-static void __exit msm_vidc_bw_gov_exit(void)
+-{
+-	int c = 0;
+-
+-	for (c = 0; c < ARRAY_SIZE(governors); ++c) {
+-		dprintk(VIDC_DBG, "Removing governor %s\n",
+-				governors[c].devfreq_gov.name);
+-		devfreq_remove_governor(&governors[c].devfreq_gov);
+-	}
++	trace_msm_vidc_perf_bus_vote(bus->name, ab_kbps);
++	return ab_kbps;
+ }
+-module_exit(msm_vidc_bw_gov_exit);
+-MODULE_LICENSE("GPL v2");
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+index 31cc5c4ebf4b..a55ad394dfdc 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_res_parse.c
+@@ -436,16 +436,10 @@ static int msm_vidc_populate_bus(struct device *dev,
+ 		goto err_bus;
+ 	}
+ 
+-	rc = of_property_read_string(dev->of_node, "qcom,bus-governor",
+-			&bus->governor);
+-	if (rc) {
+-		rc = 0;
+-		dprintk(VIDC_DBG,
+-				"'qcom,bus-governor' not found, default to performance governor\n");
+-		bus->governor = PERF_GOV;
+-	}
++	rc = of_property_read_string(dev->of_node, "qcom,mode",
++			&bus->mode);
+ 
+-	if (!strcmp(bus->governor, PERF_GOV))
++	if (!strcmp(bus->mode, PERF_GOV))
+ 		bus->is_prfm_gov_used = true;
+ 
+ 	rc = of_property_read_u32_array(dev->of_node, "qcom,bus-range-kbps",
+@@ -463,8 +457,8 @@ static int msm_vidc_populate_bus(struct device *dev,
+ 
+ 	buses->count++;
+ 	bus->dev = dev;
+-	dprintk(VIDC_DBG, "Found bus %s [%d->%d] with governor %s\n",
+-			bus->name, bus->master, bus->slave, bus->governor);
++	dprintk(VIDC_DBG, "Found bus %s [%d->%d] with mode %s\n",
++			bus->name, bus->master, bus->slave, bus->mode);
+ err_bus:
+ 	return rc;
+ }
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_resources.h b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+index 6475d87d5c4c..790e88c647f5 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_resources.h
++++ b/drivers/media/platform/msm/vidc/msm_vidc_resources.h
+@@ -14,7 +14,6 @@
+ #ifndef __MSM_VIDC_RESOURCES_H__
+ #define __MSM_VIDC_RESOURCES_H__
+ 
+-#include <linux/devfreq.h>
+ #include <linux/platform_device.h>
+ #include "msm_vidc.h"
+ #include <linux/soc/qcom/llcc-qcom.h>
+@@ -103,12 +102,10 @@ struct bus_info {
+ 	int master;
+ 	int slave;
+ 	unsigned int range[2];
+-	const char *governor;
+ 	struct device *dev;
+-	struct devfreq_dev_profile devfreq_prof;
+-	struct devfreq *devfreq;
+ 	struct msm_bus_client_handle *client;
+ 	bool is_prfm_gov_used;
++	const char *mode;
+ };
+ 
+ struct bus_set {
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index 83d54ceb26f3..9b601e0dc5f1 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -16,7 +16,6 @@
+ #include <linux/clk/qcom.h>
+ #include <linux/coresight-stm.h>
+ #include <linux/delay.h>
+-#include <linux/devfreq.h>
+ #include <linux/hash.h>
+ #include <linux/interrupt.h>
+ #include <linux/io.h>
+@@ -985,84 +984,24 @@ static void __set_threshold_registers(struct venus_hfi_device *device)
+ 		dprintk(VIDC_ERR, "Failed to restore threshold values\n");
+ }
+ 
+-static int __devfreq_target(struct device *devfreq_dev,
+-		unsigned long *freq, u32 flags)
++static int __vote_bandwidth(struct bus_info *bus,
++		unsigned long *freq)
+ {
+ 	int rc = 0;
+ 	uint64_t ab = 0;
+-	struct bus_info *bus = NULL, *temp = NULL;
+-	struct venus_hfi_device *device = dev_get_drvdata(devfreq_dev);
+ 
+-	venus_hfi_for_each_bus(device, temp) {
+-		if (temp->dev == devfreq_dev) {
+-			bus = temp;
+-			break;
+-		}
+-	}
+-
+-	if (!bus) {
+-		rc = -EBADHANDLE;
+-		goto err_unknown_device;
+-	}
+-
+-	/*
+-	 * Clamp for all non zero frequencies. This clamp is necessary to stop
+-	 * devfreq driver from spamming - Couldn't update frequency - logs, if
+-	 * the scaled ab value is not part of the frequency table.
+-	 */
+ 	if (*freq)
+ 		*freq = clamp_t(typeof(*freq), *freq, bus->range[0],
+ 				bus->range[1]);
+ 
+-	/* we expect governors to provide values in kBps form, convert to Bps */
++	/* Bus Driver expects values in Bps */
+ 	ab = *freq * 1000;
++	dprintk(VIDC_PROF, "Voting bus %s to ab %llu\n", bus->name, ab);
+ 	rc = msm_bus_scale_update_bw(bus->client, ab, 0);
+-	if (rc) {
+-		dprintk(VIDC_ERR, "Failed voting bus %s to ab %llu\n: %d",
++	if (rc)
++		dprintk(VIDC_ERR, "Failed voting bus %s to ab %llu, rc=%d\n",
+ 				bus->name, ab, rc);
+-		goto err_unknown_device;
+-	}
+-
+-	dprintk(VIDC_PROF, "Voting bus %s to ab %llu\n", bus->name, ab);
+-
+-	return 0;
+-err_unknown_device:
+-	return rc;
+-}
+-
+-static int __devfreq_get_status(struct device *devfreq_dev,
+-		struct devfreq_dev_status *stat)
+-{
+-	int rc = 0;
+-	struct bus_info *bus = NULL, *temp = NULL;
+-	struct venus_hfi_device *device = dev_get_drvdata(devfreq_dev);
+-
+-	venus_hfi_for_each_bus(device, temp) {
+-		if (temp->dev == devfreq_dev) {
+-			bus = temp;
+-			break;
+-		}
+-	}
+-
+-	if (!bus) {
+-		rc = -EBADHANDLE;
+-		goto err_unknown_device;
+-	}
+-
+-	*stat = (struct devfreq_dev_status) {
+-		.private_data = &device->bus_vote,
+-		/*
+-		 * Put in dummy place holder values for upstream govs, our
+-		 * custom gov only needs .private_data.  We should fill this in
+-		 * properly if we can actually measure busy_time accurately
+-		 * (which we can't at the moment)
+-		 */
+-		.total_time = 1,
+-		.busy_time = 1,
+-		.current_frequency = 0,
+-	};
+ 
+-err_unknown_device:
+ 	return rc;
+ }
+ 
+@@ -1070,21 +1009,19 @@ static int __unvote_buses(struct venus_hfi_device *device)
+ {
+ 	int rc = 0;
+ 	struct bus_info *bus = NULL;
++	unsigned long freq = 0, zero = 0;
+ 
+ 	kfree(device->bus_vote.data);
+ 	device->bus_vote.data = NULL;
+ 	device->bus_vote.data_count = 0;
+ 
+ 	venus_hfi_for_each_bus(device, bus) {
+-		unsigned long zero = 0;
+-
+ 		if (!bus->is_prfm_gov_used) {
+-			mutex_lock(&bus->devfreq->lock);
+-			rc = update_devfreq(bus->devfreq);
+-			mutex_unlock(&bus->devfreq->lock);
++			freq = __calc_bw(bus, &device->bus_vote);
++			rc = __vote_bandwidth(bus, &freq);
+ 		}
+ 		else
+-			rc = __devfreq_target(bus->dev, &zero, 0);
++			rc = __vote_bandwidth(bus, &zero);
+ 
+ 		if (rc)
+ 			goto err_unknown_device;
+@@ -1100,6 +1037,7 @@ static int __vote_buses(struct venus_hfi_device *device,
+ 	int rc = 0;
+ 	struct bus_info *bus = NULL;
+ 	struct vidc_bus_vote_data *new_data = NULL;
++	unsigned long freq = 0;
+ 
+ 	if (!num_data) {
+ 		dprintk(VIDC_DBG, "No vote data available\n");
+@@ -1122,17 +1060,18 @@ static int __vote_buses(struct venus_hfi_device *device,
+ 	device->bus_vote.data_count = num_data;
+ 
+ 	venus_hfi_for_each_bus(device, bus) {
+-		if (bus && bus->devfreq) {
++		if (bus) {
+ 			if (!bus->is_prfm_gov_used) {
+-				mutex_lock(&bus->devfreq->lock);
+-				rc = update_devfreq(bus->devfreq);
+-				mutex_unlock(&bus->devfreq->lock);
+-				if (rc)
+-					goto err_no_mem;
++				freq = __calc_bw(bus, &device->bus_vote);
+ 			} else {
+-				bus->devfreq->nb.notifier_call(
+-					&bus->devfreq->nb, 0, NULL);
++				freq = bus->range[1];
++				dprintk(VIDC_DBG, "%s %s perf Vote %u\n",
++						__func__, bus->name,
++						bus->range[1]);
+ 			}
++			rc = __vote_bandwidth(bus, &freq);
++		} else {
++			dprintk(VIDC_ERR, "No BUS to Vote\n");
+ 		}
+ 	}
+ 
+@@ -4071,10 +4010,6 @@ static void __deinit_bus(struct venus_hfi_device *device)
+ 	device->bus_vote = DEFAULT_BUS_VOTE;
+ 
+ 	venus_hfi_for_each_bus_reverse(device, bus) {
+-		devfreq_remove_device(bus->devfreq);
+-		bus->devfreq = NULL;
+-		dev_set_drvdata(bus->dev, NULL);
+-
+ 		msm_bus_scale_unregister(bus->client);
+ 		bus->client = NULL;
+ 	}
+@@ -4089,33 +4024,14 @@ static int __init_bus(struct venus_hfi_device *device)
+ 		return -EINVAL;
+ 
+ 	venus_hfi_for_each_bus(device, bus) {
+-		struct devfreq_dev_profile profile = {
+-			.initial_freq = 0,
+-			.polling_ms = INT_MAX,
+-			.freq_table = NULL,
+-			.max_state = 0,
+-			.target = __devfreq_target,
+-			.get_dev_status = __devfreq_get_status,
+-			.exit = NULL,
+-		};
+-
+-		if (!strcmp(bus->governor, "msm-vidc-llcc")) {
++		if (!strcmp(bus->mode, "msm-vidc-llcc")) {
+ 			if (msm_vidc_syscache_disable) {
+ 				dprintk(VIDC_DBG,
+ 					 "Skipping LLC bus init %s: %s\n",
+-				bus->name, bus->governor);
++				bus->name, bus->mode);
+ 				continue;
+ 			}
+ 		}
+-
+-		/*
+-		 * This is stupid, but there's no other easy way to ahold
+-		 * of struct bus_info in venus_hfi_devfreq_*()
+-		 */
+-		WARN(dev_get_drvdata(bus->dev), "%s's drvdata already set\n",
+-				dev_name(bus->dev));
+-		dev_set_drvdata(bus->dev, device);
+-
+ 		bus->client = msm_bus_scale_register(bus->master, bus->slave,
+ 				bus->name, false);
+ 		if (IS_ERR_OR_NULL(bus->client)) {
+@@ -4125,24 +4041,6 @@ static int __init_bus(struct venus_hfi_device *device)
+ 			bus->client = NULL;
+ 			goto err_add_dev;
+ 		}
+-
+-		bus->devfreq_prof = profile;
+-		bus->devfreq = devfreq_add_device(bus->dev,
+-				&bus->devfreq_prof, bus->governor, NULL);
+-		if (IS_ERR_OR_NULL(bus->devfreq)) {
+-			rc = PTR_ERR(bus->devfreq) ?: -EBADHANDLE;
+-			dprintk(VIDC_ERR,
+-					"Failed to add devfreq device for bus %s and governor %s: %d\n",
+-					bus->name, bus->governor, rc);
+-			bus->devfreq = NULL;
+-			goto err_add_dev;
+-		}
+-
+-		/*
+-		 * Devfreq starts monitoring immediately, since we are just
+-		 * initializing stuff at this point, force it to suspend
+-		 */
+-		devfreq_suspend_device(bus->devfreq);
+ 	}
+ 
+ 	return 0;
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.h b/drivers/media/platform/msm/vidc/venus_hfi.h
+index 1ba14db390b7..04ae650ac9f3 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.h
++++ b/drivers/media/platform/msm/vidc/venus_hfi.h
+@@ -50,6 +50,9 @@
+ #define VIDC_MAX_SUBCACHES 4
+ #define VIDC_MAX_SUBCACHE_SIZE 52
+ 
++extern unsigned long __calc_bw(struct bus_info *bus,
++			struct msm_vidc_gov_data *vidc_data);
++
+ struct hfi_queue_table_header {
+ 	u32 qtbl_version;
+ 	u32 qtbl_size;
+-- 
+2.48.1
+

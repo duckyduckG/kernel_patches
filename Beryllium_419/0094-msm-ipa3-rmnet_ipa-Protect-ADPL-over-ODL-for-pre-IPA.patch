@@ -1,0 +1,42 @@
+From 0e00b5c27bba687446a5485b353be064de374465 Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Fri, 24 Dec 2021 04:34:42 +0200
+Subject: [PATCH 094/175] msm: ipa3: rmnet_ipa: Protect ADPL over ODL for pre
+ IPAv4.1
+
+Do not call ipa3_odl_pipe_open/cleanup() functions for pre
+IPAv4.1 because ADPL over ODL functionality is not supported
+on earlier IPA HW versions.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c b/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
+index 8101cb777e75..69356aa1f653 100644
+--- a/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
++++ b/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
+@@ -2773,7 +2773,8 @@ static int ipa3_lcl_mdm_ssr_notifier_cb(struct notifier_block *this,
+ 		if (atomic_read(&rmnet_ipa3_ctx->is_ssr) &&
+ 			ipa3_ctx->ipa_hw_type >= IPA_HW_v4_0)
+ 			ipa3_q6_post_shutdown_cleanup();
+-		ipa3_odl_pipe_cleanup(true);
++		if (ipa3_ctx->ipa_hw_type >= IPA_HW_v4_1)
++			ipa3_odl_pipe_cleanup(true);
+ 		IPAWANINFO("IPA BEFORE_SHUTDOWN handling is complete\n");
+ 		break;
+ 	case SUBSYS_AFTER_SHUTDOWN:
+@@ -2804,7 +2805,8 @@ static int ipa3_lcl_mdm_ssr_notifier_cb(struct notifier_block *this,
+ 		if (!atomic_read(&rmnet_ipa3_ctx->is_initialized) &&
+ 		       atomic_read(&rmnet_ipa3_ctx->is_ssr))
+ 			platform_driver_register(&rmnet_ipa_driver);
+-		ipa3_odl_pipe_open();
++		if (ipa3_ctx->ipa_hw_type >= IPA_HW_v4_1)
++			ipa3_odl_pipe_open();
+ 		IPAWANINFO("IPA AFTER_POWERUP handling is complete\n");
+ 		break;
+ 	default:
+-- 
+2.48.1
+

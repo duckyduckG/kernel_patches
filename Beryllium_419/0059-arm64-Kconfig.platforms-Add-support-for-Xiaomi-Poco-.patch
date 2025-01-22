@@ -1,0 +1,41 @@
+From 9bfc121e8cb0c93209f9edb033e9535b1164df3d Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Tue, 26 Dec 2023 03:17:36 +0400
+Subject: [PATCH 059/175] arm64: Kconfig.platforms: Add support for Xiaomi Poco
+ F1
+
+---
+ arch/arm64/Kconfig.platforms | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/arch/arm64/Kconfig.platforms b/arch/arm64/Kconfig.platforms
+index 2697bac215c8..ebda92774e13 100644
+--- a/arch/arm64/Kconfig.platforms
++++ b/arch/arm64/Kconfig.platforms
+@@ -438,4 +438,23 @@ config ARCH_ZYNQMP
+ 	help
+ 	  This enables support for Xilinx ZynqMP Family
+ 
++config MACH_XIAOMI
++        bool "Xiaomi device"
++        depends on ARCH_QCOM
++        help
++          Support for Xiaomi products
++
++config MACH_XIAOMI_SDM845
++        bool "Xiaomi SDM845"
++        depends on ARCH_SDM845
++        select MACH_XIAOMI
++        help
++          Support for SDM845-based Xiaomi variants
++
++config MACH_XIAOMI_E10
++        bool "E10 board"
++        select MACH_XIAOMI_SDM845
++        help
++          Support for Xiaomi Poco F1 (beryllium)
++
+ endmenu
+-- 
+2.48.1
+

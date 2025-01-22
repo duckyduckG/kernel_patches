@@ -1,0 +1,67 @@
+From 326dd7bddf308a76f648679433928d18b8596a54 Mon Sep 17 00:00:00 2001
+From: Amit Nischal <anischal@codeaurora.org>
+Date: Thu, 14 Jun 2018 13:30:04 +0530
+Subject: [PATCH 082/175] clk: qcom: gdsc: Add support to configure en_few/rest
+ wait values
+
+The EN_FEW_WAIT and EN_REST_WAIT bits value may differ from the
+default value of 0x2. Allow the value to be taken as input from
+device tree as parameter 'qcom,en-few-wait-val' and
+'qcom,en-rest-wait-val'.
+
+Change-Id: I319c8cf5322713e2cb00c9e662084ec6b930b6a7
+Signed-off-by: Amit Nischal <anischal@codeaurora.org>
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/gdsc-regulator.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/clk/qcom/gdsc-regulator.c b/drivers/clk/qcom/gdsc-regulator.c
+index 8e174a13b87a..08f056dfecfe 100644
+--- a/drivers/clk/qcom/gdsc-regulator.c
++++ b/drivers/clk/qcom/gdsc-regulator.c
+@@ -30,6 +30,10 @@
+ #define CLK_DIS_WAIT_MASK	(0xF << 12)
+ #define CLK_DIS_WAIT_SHIFT	(12)
+ #define RETAIN_FF_ENABLE_MASK	BIT(11)
++#define EN_FEW_WAIT_MASK	(0xF << 16)
++#define EN_FEW_WAIT_SHIFT	(16)
++#define EN_REST_WAIT_MASK	(0xF << 20)
++#define EN_REST_WAIT_SHIFT	(20)
+ #define SW_OVERRIDE_MASK	BIT(2)
+ #define HW_CONTROL_MASK		BIT(1)
+ #define SW_COLLAPSE_MASK	BIT(0)
+@@ -917,6 +921,7 @@ static int gdsc_probe(struct platform_device *pdev)
+ 	struct regulator_init_data *init_data = NULL;
+ 	struct gdsc *sc;
+ 	uint32_t regval, clk_dis_wait_val = 0;
++	uint32_t en_few_wait_val, en_rest_wait_val;
+ 	int i, ret;
+ 
+ 	sc = devm_kzalloc(&pdev->dev, sizeof(*sc), GFP_KERNEL);
+@@ -962,6 +967,22 @@ static int gdsc_probe(struct platform_device *pdev)
+ 		regval |= clk_dis_wait_val;
+ 	}
+ 
++	if (!of_property_read_u32(pdev->dev.of_node, "qcom,en-few-wait-val",
++				  &en_few_wait_val)) {
++		en_few_wait_val <<= EN_FEW_WAIT_SHIFT;
++
++		regval &= ~(EN_FEW_WAIT_MASK);
++		regval |= en_few_wait_val;
++	}
++
++	if (!of_property_read_u32(pdev->dev.of_node, "qcom,en-rest-wait-val",
++				  &en_rest_wait_val)) {
++		en_rest_wait_val <<= EN_REST_WAIT_SHIFT;
++
++		regval &= ~(EN_REST_WAIT_MASK);
++		regval |= en_rest_wait_val;
++	}
++
+ 	regmap_write(sc->regmap, REG_OFFSET, regval);
+ 
+ 	if (!sc->toggle_logic) {
+-- 
+2.48.1
+

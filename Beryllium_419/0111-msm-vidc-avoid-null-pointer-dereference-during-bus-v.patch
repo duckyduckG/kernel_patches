@@ -1,0 +1,31 @@
+From 8e533e433539688d88f45f6706ab4a02b4ed1f59 Mon Sep 17 00:00:00 2001
+From: Amit Shekhar <ashekhar@codeaurora.org>
+Date: Fri, 19 Apr 2019 17:08:30 -0700
+Subject: [PATCH 111/175] msm: vidc: avoid null pointer dereference during bus
+ voting
+
+Avoid null pointer dereference to fix video SSR usecase failures.
+
+Change-Id: I8bf00673ed9fb2e013bd2c5e8be8860d9d741ec4
+CRs-Fixed: 2438294
+Signed-off-by: Amit Shekhar <ashekhar@codeaurora.org>
+---
+ drivers/media/platform/msm/vidc/venus_hfi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index 9b601e0dc5f1..5e09145eb0f6 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -1060,7 +1060,7 @@ static int __vote_buses(struct venus_hfi_device *device,
+ 	device->bus_vote.data_count = num_data;
+ 
+ 	venus_hfi_for_each_bus(device, bus) {
+-		if (bus) {
++		if (bus && bus->client) {
+ 			if (!bus->is_prfm_gov_used) {
+ 				freq = __calc_bw(bus, &device->bus_vote);
+ 			} else {
+-- 
+2.48.1
+

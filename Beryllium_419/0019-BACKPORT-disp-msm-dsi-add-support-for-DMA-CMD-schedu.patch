@@ -1,0 +1,642 @@
+From 6be3e3bfaf572ffee2e8ff05a51afbd5c570e0b5 Mon Sep 17 00:00:00 2001
+From: Satya Rama Aditya Pinapala <psraditya30@codeaurora.org>
+Date: Thu, 28 May 2020 19:44:06 -0700
+Subject: [PATCH 019/175] BACKPORT: disp: msm: dsi: add support for DMA CMD
+ scheduling for CMD mode panels
+
+The change allows for configuring a command DMA window during which
+the command is triggered. The DMA window must not intersect with the
+MDP tear check window. Once the command transfer is successful, the
+trigger control needs to reset to the default DMA trigger specified
+by the panel.
+
+Change-Id: I5485ca1f8e141ed92dc8c77c2daf579634271022
+Signed-off-by: Satya Rama Aditya Pinapala <psraditya30@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_catalog.c     |   8 ++
+ techpack/display/msm/dsi/dsi_catalog.h     |   6 +
+ techpack/display/msm/dsi/dsi_ctrl.c        |  77 ++++++++---
+ techpack/display/msm/dsi/dsi_ctrl_hw.h     |  22 +++
+ techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c |  72 ++++++++++
+ techpack/display/msm/dsi/dsi_defs.h        |  10 +-
+ techpack/display/msm/dsi/dsi_display.c     | 147 ++++++++++++++++++++-
+ techpack/display/msm/dsi/dsi_panel.c       |  30 +++--
+ techpack/display/msm/dsi/dsi_panel.h       |   1 +
+ 9 files changed, 337 insertions(+), 36 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_catalog.c b/techpack/display/msm/dsi/dsi_catalog.c
+index f26c72964e5a..3ca48834f16d 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.c
++++ b/techpack/display/msm/dsi/dsi_catalog.c
+@@ -81,6 +81,8 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		ctrl->ops.schedule_dma_cmd = NULL;
+ 		ctrl->ops.kickoff_command_non_embedded_mode = NULL;
+ 		ctrl->ops.config_clk_gating = NULL;
++		ctrl->ops.configure_cmddma_window = NULL;
++		ctrl->ops.reset_trig_ctrl = NULL;
+ 		break;
+ 	case DSI_CTRL_VERSION_2_0:
+ 		ctrl->ops.setup_lane_map = dsi_ctrl_hw_20_setup_lane_map;
+@@ -96,6 +98,8 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		ctrl->ops.schedule_dma_cmd = NULL;
+ 		ctrl->ops.kickoff_command_non_embedded_mode = NULL;
+ 		ctrl->ops.config_clk_gating = NULL;
++		ctrl->ops.configure_cmddma_window = NULL;
++		ctrl->ops.reset_trig_ctrl = NULL;
+ 		break;
+ 	case DSI_CTRL_VERSION_2_2:
+ 	case DSI_CTRL_VERSION_2_3:
+@@ -116,6 +120,10 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		ctrl->ops.schedule_dma_cmd = dsi_ctrl_hw_22_schedule_dma_cmd;
+ 		ctrl->ops.kickoff_command_non_embedded_mode =
+ 			dsi_ctrl_hw_kickoff_non_embedded_mode;
++		ctrl->ops.configure_cmddma_window =
++			dsi_ctrl_hw_22_configure_cmddma_window;
++		ctrl->ops.reset_trig_ctrl =
++			dsi_ctrl_hw_22_reset_trigger_controls;
+ 		break;
+ 	default:
+ 		break;
+diff --git a/techpack/display/msm/dsi/dsi_catalog.h b/techpack/display/msm/dsi/dsi_catalog.h
+index ed047e9ef86d..2544a6095778 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.h
++++ b/techpack/display/msm/dsi/dsi_catalog.h
+@@ -270,4 +270,10 @@ void dsi_phy_hw_v4_0_dyn_refresh_pipe_delay(struct dsi_phy_hw *phy,
+ 
+ int dsi_phy_hw_v4_0_cache_phy_timings(struct dsi_phy_per_lane_cfgs *timings,
+ 				      u32 *dst, u32 size);
++
++void dsi_ctrl_hw_22_configure_cmddma_window(struct dsi_ctrl_hw *ctrl,
++		struct dsi_ctrl_cmd_dma_info *cmd,
++		u32 line_no, u32 window);
++void dsi_ctrl_hw_22_reset_trigger_controls(struct dsi_ctrl_hw *ctrl,
++				       struct dsi_host_common_cfg *cfg);
+ #endif /* _DSI_CATALOG_H_ */
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 2c1c915ddb22..4ad2f6f0c82f 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -1224,6 +1224,60 @@ int dsi_message_validate_tx_mode(struct dsi_ctrl *dsi_ctrl,
+ 	return rc;
+ }
+ 
++static void dsi_configure_command_scheduling(struct dsi_ctrl *dsi_ctrl,
++		struct dsi_ctrl_cmd_dma_info *cmd_mem)
++{
++	u32 line_no = 0, window = 0, sched_line_no = 0;
++	struct dsi_ctrl_hw_ops dsi_hw_ops = dsi_ctrl->hw.ops;
++	struct dsi_mode_info *timing = &(dsi_ctrl->host_config.video_timing);
++
++	line_no = dsi_ctrl->host_config.common_config.dma_sched_line;
++	window = dsi_ctrl->host_config.common_config.dma_sched_window;
++
++	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY, line_no, window);
++	/*
++	 * In case of command scheduling in video mode, the line at which
++	 * the command is scheduled can revert to the default value i.e. 1
++	 * for the following cases:
++	 *	1) No schedule line defined by the panel.
++	 *	2) schedule line defined is greater than VFP.
++	 */
++	if ((dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) &&
++		dsi_hw_ops.schedule_dma_cmd &&
++		(dsi_ctrl->current_state.vid_engine_state ==
++					DSI_CTRL_ENGINE_ON)) {
++		sched_line_no = (line_no == 0) ? 1 : line_no;
++
++		if (timing) {
++			if (sched_line_no >= timing->v_front_porch)
++				sched_line_no = 1;
++			sched_line_no += timing->v_back_porch +
++				timing->v_sync_width + timing->v_active;
++		}
++		dsi_hw_ops.schedule_dma_cmd(&dsi_ctrl->hw, sched_line_no);
++	}
++
++	/*
++	 * In case of command scheduling in command mode, the window size
++	 * is reset to zero, if the total scheduling window is greater
++	 * than the panel height.
++	 */
++	if ((dsi_ctrl->host_config.panel_mode == DSI_OP_CMD_MODE) &&
++			dsi_hw_ops.configure_cmddma_window) {
++		sched_line_no = line_no;
++
++		if ((sched_line_no + window) > timing->v_active)
++			window = 0;
++
++		sched_line_no += timing->v_active;
++
++		dsi_hw_ops.configure_cmddma_window(&dsi_ctrl->hw, cmd_mem,
++				sched_line_no, window);
++	}
++	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_EXIT,
++			sched_line_no, window);
++}
++
+ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 				const struct mipi_dsi_msg *msg,
+ 				struct dsi_ctrl_cmd_dma_fifo_info *cmd,
+@@ -1231,26 +1285,17 @@ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 				u32 flags)
+ {
+ 	u32 hw_flags = 0;
+-	u32 line_no = 0x1;
+-	struct dsi_mode_info *timing;
+ 	struct dsi_ctrl_hw_ops dsi_hw_ops = dsi_ctrl->hw.ops;
+ 
+ 	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY, flags);
+-	/* check if custom dma scheduling line needed */
+-	if ((dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) &&
+-		(flags & DSI_CTRL_CMD_CUSTOM_DMA_SCHED))
+-		line_no = dsi_ctrl->host_config.u.video_engine.dma_sched_line;
+ 
+-	timing = &(dsi_ctrl->host_config.video_timing);
+-	if (timing)
+-		line_no += timing->v_back_porch + timing->v_sync_width +
+-				timing->v_active;
+-	if ((dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) &&
+-		dsi_hw_ops.schedule_dma_cmd &&
+-		(dsi_ctrl->current_state.vid_engine_state ==
+-					DSI_CTRL_ENGINE_ON))
+-		dsi_hw_ops.schedule_dma_cmd(&dsi_ctrl->hw,
+-				line_no);
++	if (dsi_ctrl->hw.reset_trig_ctrl)
++		dsi_hw_ops.reset_trig_ctrl(&dsi_ctrl->hw,
++				&dsi_ctrl->host_config.common_config);
++
++	/* check if custom dma scheduling line needed */
++	if (flags & DSI_CTRL_CMD_CUSTOM_DMA_SCHED)
++		dsi_configure_command_scheduling(dsi_ctrl, cmd_mem);
+ 
+ 	hw_flags |= (flags & DSI_CTRL_CMD_DEFER_TRIGGER) ?
+ 			DSI_CTRL_HW_CMD_WAIT_FOR_TRIGGER : 0;
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw.h b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+index 9411e98c0fb6..7d3f0f13dc5e 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw.h
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+@@ -838,6 +838,25 @@ struct dsi_ctrl_hw_ops {
+ 	 * @sel_phy:	Bool to control whether to select phy or controller
+ 	 */
+ 	void (*hs_req_sel)(struct dsi_ctrl_hw *ctrl, bool sel_phy);
++
++	/**
++	 * hw.ops.configure_cmddma_window() - configure DMA window for CMD TX
++	 * @ctrl:	Pointer to the controller host hardware.
++	 * @cmd:	Pointer to the DSI DMA command info.
++	 * @line_no:	Line number at which the CMD needs to be triggered.
++	 * @window:	Width of the DMA CMD window.
++	 */
++	void (*configure_cmddma_window)(struct dsi_ctrl_hw *ctrl,
++			struct dsi_ctrl_cmd_dma_info *cmd,
++			u32 line_no, u32 window);
++
++	/**
++	 * hw.ops.reset_trig_ctrl() - resets trigger control of DSI controller
++	 * @ctrl:	Pointer to the controller host hardware.
++	 * @cfg:	Common configuration parameters.
++	 */
++	void (*reset_trig_ctrl)(struct dsi_ctrl_hw *ctrl,
++			struct dsi_host_common_cfg *cfg);
+ };
+ 
+ /*
+@@ -858,6 +877,8 @@ struct dsi_ctrl_hw_ops {
+  *                          dsi controller and run only dsi controller.
+  * @null_insertion_enabled:  A boolean property to allow dsi controller to
+  *                           insert null packet.
++ * @reset_trig_ctrl:		Boolean to indicate if trigger control needs to
++ *				be reset to default.
+  */
+ struct dsi_ctrl_hw {
+ 	void __iomem *base;
+@@ -878,6 +899,7 @@ struct dsi_ctrl_hw {
+ 
+ 	bool phy_isolation_enabled;
+ 	bool null_insertion_enabled;
++	bool reset_trig_ctrl;
+ };
+ 
+ #endif /* _DSI_CTRL_HW_H_ */
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+index 0c6d3404a268..5138ccd01b35 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+@@ -12,6 +12,7 @@
+ 
+ /* register to configure DMA scheduling */
+ #define DSI_DMA_SCHEDULE_CTRL 0x100
++#define DSI_DMA_SCHEDULE_CTRL2 0x0104
+ 
+ /**
+  * dsi_ctrl_hw_22_phy_reset_config() - to configure clamp control during ulps
+@@ -47,6 +48,7 @@ void dsi_ctrl_hw_22_schedule_dma_cmd(struct dsi_ctrl_hw *ctrl, int line_no)
+ 	reg |= (line_no & 0xffff);
+ 
+ 	DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL, reg);
++	ctrl->reset_trig_ctrl = true;
+ }
+ 
+ /*
+@@ -126,3 +128,73 @@ void dsi_ctrl_hw_22_config_clk_gating(struct dsi_ctrl_hw *ctrl, bool enable,
+ 
+ 	DSI_DISP_CC_W32(ctrl, DISP_CC_MISC_CMD_REG_OFF, reg);
+ }
++
++/**
++ * dsi_ctrl_hw_22_configure_cmddma_window() - configure DMA window for CMD TX
++ * @ctrl:	Pointer to the controller host hardware.
++ * @cmd:	Pointer to the DSI DMA command info.
++ * @line_no:	Line number at which the CMD needs to be triggered.
++ * @window:	Width of the DMA CMD window.
++ */
++void dsi_ctrl_hw_22_configure_cmddma_window(struct dsi_ctrl_hw *ctrl,
++		struct dsi_ctrl_cmd_dma_info *cmd,
++		u32 line_no, u32 window)
++{
++	u32 reg = 0;
++
++	if (!window)
++		return;
++
++	if (cmd->en_broadcast) {
++		reg = DSI_R32(ctrl, DSI_TRIG_CTRL);
++		if (cmd->is_master) {
++			reg &= ~0xF;
++			reg |= 0xc;
++		} else {
++			reg &= ~0xF;
++			reg |= BIT(16);
++		}
++
++		DSI_W32(ctrl, DSI_TRIG_CTRL, reg);
++
++		if (cmd->is_master) {
++			reg = 0;
++			reg |= line_no;
++			reg |= window << 16;
++			DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL2, reg);
++		}
++	} else {
++		reg = DSI_R32(ctrl, DSI_TRIG_CTRL);
++		reg &= ~0xF;
++		reg |= 0xc;
++		DSI_W32(ctrl, DSI_TRIG_CTRL, reg);
++
++		reg = 0;
++		reg |= line_no;
++		reg |= window << 16;
++		DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL2, reg);
++	}
++	ctrl->reset_trig_ctrl = true;
++}
++
++/**
++ * dsi_ctrl_hw_22_reset_trigger_controls() - reset dsi trigger configurations
++ * @ctrl:             Pointer to the controller host hardware.
++ * @cfg:              DSI host configuration that is common to both video and
++ *                    command modes.
++ */
++void dsi_ctrl_hw_22_reset_trigger_controls(struct dsi_ctrl_hw *ctrl,
++				       struct dsi_host_common_cfg *cfg)
++{
++	u32 reg = 0;
++	const u8 trigger_map[DSI_TRIGGER_MAX] = {
++		0x0, 0x2, 0x1, 0x4, 0x5, 0x6 };
++
++	reg |= (cfg->te_mode == DSI_TE_ON_EXT_PIN) ? BIT(31) : 0;
++	reg |= (trigger_map[cfg->dma_cmd_trigger] & 0x7);
++	reg |= (trigger_map[cfg->mdp_cmd_trigger] & 0x7) << 4;
++	DSI_W32(ctrl, DSI_TRIG_CTRL, reg);
++	DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL2, 0x0);
++	DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL, 0x0);
++	ctrl->reset_trig_ctrl = false;
++}
+diff --git a/techpack/display/msm/dsi/dsi_defs.h b/techpack/display/msm/dsi/dsi_defs.h
+index 5179edfebd02..7922a2c54d56 100644
+--- a/techpack/display/msm/dsi/dsi_defs.h
++++ b/techpack/display/msm/dsi/dsi_defs.h
+@@ -489,6 +489,11 @@ struct dsi_split_link_config {
+  * @phy_type:            DPHY/CPHY is enabled for this panel.
+  * @dsi_split_link_config:  Split Link Configuration.
+  * @byte_intf_clk_div:   Determines the factor for calculating byte intf clock.
++ * @dma_sched_line:      Line at which dma command gets triggered. In case of
++ *			 video mode it is the line number after vactive and for
++ *			 cmd it points to the line after TE.
++ * @dma_sched_window:	 Determines the width of the window during the
++ *			 DSI command will be sent by the HW.
+  */
+ struct dsi_host_common_cfg {
+ 	enum dsi_pixel_format dst_format;
+@@ -515,6 +520,8 @@ struct dsi_host_common_cfg {
+ 	enum dsi_phy_type phy_type;
+ 	struct dsi_split_link_config split_link;
+ 	u32 byte_intf_clk_div;
++	u32 dma_sched_line;
++	u32 dma_sched_window;
+ };
+ 
+ /**
+@@ -531,8 +538,6 @@ struct dsi_host_common_cfg {
+  * @bllp_lp11_en:              Enter low power stop mode (LP-11) during BLLP.
+  * @traffic_mode:              Traffic mode for video stream.
+  * @vc_id:                     Virtual channel identifier.
+- * @dma_sched_line:         Line number, after vactive end, at which command dma
+- *			       needs to be triggered.
+  */
+ struct dsi_video_engine_cfg {
+ 	bool last_line_interleave_en;
+@@ -544,7 +549,6 @@ struct dsi_video_engine_cfg {
+ 	bool bllp_lp11_en;
+ 	enum dsi_video_traffic_mode traffic_mode;
+ 	u32 vc_id;
+-	u32 dma_sched_line;
+ };
+ 
+ /**
+diff --git a/techpack/display/msm/dsi/dsi_display.c b/techpack/display/msm/dsi/dsi_display.c
+index bfedfe196f6e..093ac757ad13 100644
+--- a/techpack/display/msm/dsi/dsi_display.c
++++ b/techpack/display/msm/dsi/dsi_display.c
+@@ -646,8 +646,10 @@ static int dsi_display_read_status(struct dsi_display_ctrl *ctrl,
+ 	lenp = config->status_valid_params ?: config->status_cmds_rlen;
+ 	count = config->status_cmd.count;
+ 	cmds = config->status_cmd.cmds;
+-	flags |= (DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_READ |
+-		  DSI_CTRL_CMD_CUSTOM_DMA_SCHED);
++	flags |= (DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_READ);
++
++	if (ctrl->ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE)
++		flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
+ 
+ 	for (i = 0; i < count; ++i) {
+ 		memset(config->status_buf, 0x0, SZ_4K);
+@@ -655,6 +657,10 @@ static int dsi_display_read_status(struct dsi_display_ctrl *ctrl,
+ 			cmds[i].msg.flags |= MIPI_DSI_MSG_LASTCOMMAND;
+ 			flags |= DSI_CTRL_CMD_LAST_COMMAND;
+ 		}
++		if ((cmds[i].msg.flags & MIPI_DSI_MSG_CMD_DMA_SCHED) &&
++			 (panel->panel_initialized))
++			flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
++
+ 		if (config->status_cmd.state == DSI_CMD_SET_STATE_LP)
+ 			cmds[i].msg.flags |= MIPI_DSI_MSG_USE_LPM;
+ 		cmds[i].msg.rx_buf = config->status_buf;
+@@ -943,8 +949,12 @@ static int dsi_display_cmd_rx(struct dsi_display *display,
+ 		goto error;
+ 	}
+ 
+-	flags |= (DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_READ |
+-			DSI_CTRL_CMD_CUSTOM_DMA_SCHED);
++	flags |= (DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_READ);
++	if ((m_ctrl->ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) ||
++			((cmd->msg.flags & MIPI_DSI_MSG_CMD_DMA_SCHED) &&
++			 (display->panel->panel_initialized)))
++		flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
++
+ 	rc = dsi_ctrl_cmd_transfer(m_ctrl->ctrl, &cmd->msg, &flags);
+ 	if (rc <= 0)
+ 		DSI_ERR("rx cmd transfer failed rc = %d\n", rc);
+@@ -1600,6 +1610,107 @@ static ssize_t debugfs_read_esd_check_mode(struct file *file,
+ 	return len;
+ }
+ 
++static ssize_t debugfs_update_cmd_scheduling_params(struct file *file,
++				  const char __user *user_buf,
++				  size_t user_len,
++				  loff_t *ppos)
++{
++	struct dsi_display *display = file->private_data;
++	struct dsi_display_ctrl *display_ctrl;
++	char *buf;
++	int rc = 0;
++	u32 line = 0, window = 0;
++	size_t len;
++	int i;
++
++	if (!display)
++		return -ENODEV;
++
++	if (*ppos)
++		return 0;
++
++	buf = kzalloc(256, GFP_KERNEL);
++	if (ZERO_OR_NULL_PTR(buf))
++		return -ENOMEM;
++
++	len = min_t(size_t, user_len, 255);
++	if (copy_from_user(buf, user_buf, len)) {
++		rc = -EINVAL;
++		goto error;
++	}
++
++	buf[len] = '\0'; /* terminate the string */
++
++	if (sscanf(buf, "%d %d", &line, &window) != 2)
++		return -EFAULT;
++
++	display_for_each_ctrl(i, display) {
++		struct dsi_ctrl *ctrl;
++
++		display_ctrl = &display->ctrl[i];
++		if (!display_ctrl->ctrl)
++			continue;
++
++		ctrl = display_ctrl->ctrl;
++		ctrl->host_config.common_config.dma_sched_line = line;
++		ctrl->host_config.common_config.dma_sched_window = window;
++	}
++
++	rc = len;
++
++error:
++	kfree(buf);
++	return rc;
++}
++
++static ssize_t debugfs_read_cmd_scheduling_params(struct file *file,
++				 char __user *user_buf,
++				 size_t user_len,
++				 loff_t *ppos)
++{
++	struct dsi_display *display = file->private_data;
++	struct dsi_display_ctrl *m_ctrl;
++	struct dsi_ctrl *ctrl;
++	char *buf;
++	u32 len = 0;
++	int rc = 0;
++	size_t max_len = min_t(size_t, user_len, SZ_4K);
++
++	if (!display)
++		return -ENODEV;
++
++	if (*ppos)
++		return 0;
++
++	m_ctrl = &display->ctrl[display->cmd_master_idx];
++	ctrl = m_ctrl->ctrl;
++
++	buf = kzalloc(max_len, GFP_KERNEL);
++	if (ZERO_OR_NULL_PTR(buf))
++		return -ENOMEM;
++
++	len += scnprintf(buf, max_len, "Schedule command window start: %d\n",
++			ctrl->host_config.common_config.dma_sched_line);
++	len += scnprintf((buf + len), max_len - len,
++			"Schedule command window width: %d\n",
++			ctrl->host_config.common_config.dma_sched_window);
++
++	if (len > max_len)
++		len = max_len;
++
++	if (copy_to_user(user_buf, buf, len)) {
++		rc = -EFAULT;
++		goto error;
++	}
++
++	*ppos += len;
++
++error:
++	kfree(buf);
++	return len;
++
++}
++
+ static const struct file_operations dump_info_fops = {
+ 	.open = simple_open,
+ 	.read = debugfs_dump_info_read,
+@@ -1622,6 +1733,12 @@ static const struct file_operations esd_check_mode_fops = {
+ 	.read = debugfs_read_esd_check_mode,
+ };
+ 
++static const struct file_operations dsi_command_scheduling_fops = {
++	.open = simple_open,
++	.write = debugfs_update_cmd_scheduling_params,
++	.read = debugfs_read_cmd_scheduling_params,
++};
++
+ static int dsi_display_debugfs_init(struct dsi_display *display)
+ {
+ 	int rc = 0;
+@@ -1673,6 +1790,18 @@ static int dsi_display_debugfs_init(struct dsi_display *display)
+ 		goto error_remove_dir;
+ 	}
+ 
++	dump_file = debugfs_create_file("cmd_sched_params",
++					0644,
++					dir,
++					display,
++					&dsi_command_scheduling_fops);
++	if (IS_ERR_OR_NULL(dump_file)) {
++		rc = PTR_ERR(dump_file);
++		DSI_ERR("[%s] debugfs for cmd scheduling file failed, rc=%d\n",
++		       display->name, rc);
++		goto error_remove_dir;
++	}
++
+ 	misr_data = debugfs_create_file("misr_data",
+ 					0600,
+ 					dir,
+@@ -2853,6 +2982,12 @@ static int dsi_display_broadcast_cmd(struct dsi_display *display,
+ 		m_flags |= DSI_CTRL_CMD_LAST_COMMAND;
+ 	}
+ 
++	if ((msg->flags & MIPI_DSI_MSG_CMD_DMA_SCHED) &&
++				(display->panel->panel_initialized)) {
++		flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
++		m_flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
++	}
++
+ 	if (display->queue_cmd_waits ||
+ 			msg->flags & MIPI_DSI_MSG_ASYNC_OVERRIDE) {
+ 		flags |= DSI_CTRL_CMD_ASYNC_WAIT;
+@@ -3020,6 +3155,10 @@ static ssize_t dsi_host_transfer(struct mipi_dsi_host *host,
+ 				msg->flags & MIPI_DSI_MSG_ASYNC_OVERRIDE)
+ 			cmd_flags |= DSI_CTRL_CMD_ASYNC_WAIT;
+ 
++		if ((msg->flags & MIPI_DSI_MSG_CMD_DMA_SCHED) &&
++				(display->panel->panel_initialized))
++			cmd_flags |= DSI_CTRL_CMD_CUSTOM_DMA_SCHED;
++
+ 		rc = dsi_ctrl_cmd_transfer(display->ctrl[ctrl_idx].ctrl, msg,
+ 				&cmd_flags);
+ 		if (rc) {
+diff --git a/techpack/display/msm/dsi/dsi_panel.c b/techpack/display/msm/dsi/dsi_panel.c
+index 2a9c7e56fa62..41651f07ad39 100644
+--- a/techpack/display/msm/dsi/dsi_panel.c
++++ b/techpack/display/msm/dsi/dsi_panel.c
+@@ -1201,7 +1201,7 @@ static int dsi_panel_parse_misc_host_config(struct dsi_host_common_cfg *host,
+ 					    struct dsi_parser_utils *utils,
+ 					    const char *name)
+ {
+-	u32 val = 0;
++	u32 val = 0, line_no = 0, window = 0;
+ 	int rc = 0;
+ 	bool panel_cphy_mode = false;
+ 
+@@ -1237,6 +1237,22 @@ static int dsi_panel_parse_misc_host_config(struct dsi_host_common_cfg *host,
+ 	host->phy_type = panel_cphy_mode ? DSI_PHY_TYPE_CPHY
+ 						: DSI_PHY_TYPE_DPHY;
+ 
++	rc = utils->read_u32(utils->data, "qcom,mdss-dsi-dma-schedule-line",
++				  &line_no);
++	if (rc)
++		host->dma_sched_line = 0;
++	else
++		host->dma_sched_line = line_no;
++
++	rc = utils->read_u32(utils->data, "qcom,mdss-dsi-dma-schedule-window",
++				  &window);
++	if (rc)
++		host->dma_sched_window = 0;
++	else
++		host->dma_sched_window = window;
++
++	DSI_DEBUG("[%s] DMA scheduling parameters Line: %d Window: %d\n", name,
++			host->dma_sched_line, host->dma_sched_window);
+ 	return 0;
+ }
+ 
+@@ -1571,7 +1587,6 @@ static int dsi_panel_parse_video_host_config(struct dsi_video_engine_cfg *cfg,
+ 	const char *traffic_mode;
+ 	u32 vc_id = 0;
+ 	u32 val = 0;
+-	u32 line_no = 0;
+ 
+ 	rc = utils->read_u32(utils->data, "qcom,mdss-dsi-h-sync-pulse", &val);
+ 	if (rc) {
+@@ -1634,17 +1649,6 @@ static int dsi_panel_parse_video_host_config(struct dsi_video_engine_cfg *cfg,
+ 		cfg->vc_id = vc_id;
+ 	}
+ 
+-	rc = utils->read_u32(utils->data, "qcom,mdss-dsi-dma-schedule-line",
+-				  &line_no);
+-	if (rc) {
+-		DSI_DEBUG("[%s] set default dma scheduling line no\n", name);
+-		cfg->dma_sched_line = 0x1;
+-		/* do not fail since we have default value */
+-		rc = 0;
+-	} else {
+-		cfg->dma_sched_line = line_no;
+-	}
+-
+ error:
+ 	return rc;
+ }
+diff --git a/techpack/display/msm/dsi/dsi_panel.h b/techpack/display/msm/dsi/dsi_panel.h
+index ee30cd5375b4..ca5d28b175f3 100644
+--- a/techpack/display/msm/dsi/dsi_panel.h
++++ b/techpack/display/msm/dsi/dsi_panel.h
+@@ -34,6 +34,7 @@
+  * Override to use async transfer
+  */
+ #define MIPI_DSI_MSG_ASYNC_OVERRIDE BIT(4)
++#define MIPI_DSI_MSG_CMD_DMA_SCHED BIT(5)
+ 
+ enum dsi_panel_rotation {
+ 	DSI_PANEL_ROTATE_NONE = 0,
+-- 
+2.48.1
+

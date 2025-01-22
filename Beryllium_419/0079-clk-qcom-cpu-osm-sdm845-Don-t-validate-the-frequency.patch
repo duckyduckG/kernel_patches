@@ -1,0 +1,51 @@
+From 0d7b7d9270791a5331dbca03b97b157f534f086f Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Fri, 5 Nov 2021 21:42:46 +0200
+Subject: [PATCH 079/175] clk: qcom: cpu-osm-sdm845: Don't validate the
+ frequency table twice
+
+The cpufreq core is already validating the CPU frequency table after
+calling the ->init() callback of the cpufreq drivers and the drivers
+don't need to do the same anymore. Though they need to set the
+policy->freq_table field directly from the ->init() callback now.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/clk-cpu-osm-sdm845.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/drivers/clk/qcom/clk-cpu-osm-sdm845.c b/drivers/clk/qcom/clk-cpu-osm-sdm845.c
+index 2483b53dd910..b1afa58cf851 100644
+--- a/drivers/clk/qcom/clk-cpu-osm-sdm845.c
++++ b/drivers/clk/qcom/clk-cpu-osm-sdm845.c
+@@ -730,7 +730,6 @@ static int osm_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	struct cpufreq_frequency_table *table;
+ 	struct clk_osm *c, *parent;
+ 	struct clk_hw *p_hw;
+-	int ret;
+ 	unsigned int i, prev_cc = 0;
+ 	unsigned int xo_kHz;
+ 
+@@ -797,18 +796,9 @@ static int osm_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	}
+ 	table[i].frequency = CPUFREQ_TABLE_END;
+ 
+-	ret = cpufreq_table_validate_and_show(policy, table);
+-	if (ret) {
+-		pr_err("%s: invalid frequency table: %d\n", __func__, ret);
+-		goto err;
+-	}
+-
++	policy->freq_table = table;
+ 	policy->driver_data = c;
+ 	return 0;
+-
+-err:
+-	kfree(table);
+-	return ret;
+ }
+ 
+ static int osm_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+-- 
+2.48.1
+

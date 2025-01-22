@@ -1,0 +1,50 @@
+From c0895d51c1cc54e6324ecb4c2f013bcbdc335b84 Mon Sep 17 00:00:00 2001
+From: AngeloGioacchino Del Regno <kholk11@gmail.com>
+Date: Mon, 25 Nov 2019 13:33:54 +0100
+Subject: [PATCH 115/175] media: msm: vidc: platform: Fix sdm845 properties
+
+Add fw cycles and fw-vpp-cycles for correct calculation of HFR
+and VPP usecases.
+
+Also, fix the power collapse delay and hw response timeout for
+older firmwares.
+---
+ drivers/media/platform/msm/vidc/msm_vidc_platform.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/msm/vidc/msm_vidc_platform.c b/drivers/media/platform/msm/vidc/msm_vidc_platform.c
+index 0470055e24b3..7a55718ad9f7 100644
+--- a/drivers/media/platform/msm/vidc/msm_vidc_platform.c
++++ b/drivers/media/platform/msm/vidc/msm_vidc_platform.c
+@@ -676,11 +676,11 @@ static struct msm_vidc_common_data sdm845_common_data[] = {
+ 	},
+ 	{
+ 		.key = "qcom,power-collapse-delay",
+-		.value = 500,
++		.value = 1500,
+ 	},
+ 	{
+ 		.key = "qcom,hw-resp-timeout",
+-		.value = 250,
++		.value = 1000,
+ 	},
+ 	{
+ 		.key = "qcom,debug-timeout",
+@@ -690,6 +690,14 @@ static struct msm_vidc_common_data sdm845_common_data[] = {
+ 		.key = "qcom,dcvs",
+ 		.value = 1,
+ 	},
++	{
++		.key = "qcom,fw-cycles",
++		.value = 733003,
++	},
++	{
++		.key = "qcom,fw-vpp-cycles",
++		.value = 225975,
++	},
+ };
+ 
+ static struct msm_vidc_common_data sdm670_common_data_v0[] = {
+-- 
+2.48.1
+

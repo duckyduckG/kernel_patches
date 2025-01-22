@@ -1,0 +1,210 @@
+From 76a475473a826c9181cab6148d0e497fb16e883d Mon Sep 17 00:00:00 2001
+From: Rajeev Nandan <quic_rajeevny@quicinc.com>
+Date: Tue, 1 Mar 2022 18:10:50 +0530
+Subject: [PATCH 029/175] BACKPORT: disp: msm: dsi: Fix DMA window scheduling
+ programming
+
+In DMA start window scheduling, TRIG_CTRL.COMMAND_MODE_DMA_TRIGGER_SEL
+is programmed to SW + DMA start window trigger. But if DMS switch
+comes after command is scheduled, COMMAND_MODE_DMA_TRIGGER_SEL gets
+reprogrammed to SW trigger leading to command transfer failure.
+
+Program the COMMAND_MODE_DMA_TRIGGER_SEL only from the CMD DMA Tx path.
+
+Change-Id: I01062497bb70aa5fdcb25be3715c7cbc4c68b681
+Signed-off-by: Ritesh Kumar <quic_riteshk@quicinc.com>
+Signed-off-by: Rajeev Nandan <quic_rajeevny@quicinc.com>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_catalog.c     |  2 ++
+ techpack/display/msm/dsi/dsi_catalog.h     |  3 +++
+ techpack/display/msm/dsi/dsi_ctrl.c        |  5 ++++
+ techpack/display/msm/dsi/dsi_ctrl_hw.h     | 10 ++++++++
+ techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c | 11 +++++---
+ techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c | 29 +++++++++++++++++++---
+ 6 files changed, 53 insertions(+), 7 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_catalog.c b/techpack/display/msm/dsi/dsi_catalog.c
+index db1651438853..9619b7cad49b 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.c
++++ b/techpack/display/msm/dsi/dsi_catalog.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2021-2022 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ 
+ #include <linux/errno.h>
+@@ -66,6 +67,7 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 		dsi_ctrl_hw_cmn_wait4dynamic_refresh_done;
+ 	ctrl->ops.hs_req_sel = dsi_ctrl_hw_cmn_hs_req_sel;
+ 	ctrl->ops.vid_engine_busy = dsi_ctrl_hw_cmn_vid_engine_busy;
++	ctrl->ops.init_cmddma_trig_ctrl = dsi_ctrl_hw_cmn_init_cmddma_trig_ctrl;
+ 
+ 	switch (version) {
+ 	case DSI_CTRL_VERSION_1_4:
+diff --git a/techpack/display/msm/dsi/dsi_catalog.h b/techpack/display/msm/dsi/dsi_catalog.h
+index 723b379923bd..a6f5c6c5a87c 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.h
++++ b/techpack/display/msm/dsi/dsi_catalog.h
+@@ -1,6 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /*
+  * Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2021-2022 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ 
+ #ifndef _DSI_CATALOG_H_
+@@ -214,6 +215,8 @@ void dsi_ctrl_hw_cmn_error_intr_ctrl(struct dsi_ctrl_hw *ctrl, bool en);
+ u32 dsi_ctrl_hw_cmn_get_error_mask(struct dsi_ctrl_hw *ctrl);
+ u32 dsi_ctrl_hw_cmn_get_hw_version(struct dsi_ctrl_hw *ctrl);
+ int dsi_ctrl_hw_cmn_wait_for_cmd_mode_mdp_idle(struct dsi_ctrl_hw *ctrl);
++void dsi_ctrl_hw_cmn_init_cmddma_trig_ctrl(struct dsi_ctrl_hw *ctrl,
++					   struct dsi_host_common_cfg *cfg);
+ 
+ /* Definitions specific to 1.4 DSI controller hardware */
+ int dsi_ctrl_hw_14_wait_for_lane_idle(struct dsi_ctrl_hw *ctrl, u32 lanes);
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 0637ec23b978..9ec92c18b645 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ 
+ #include <linux/of_device.h>
+@@ -1397,6 +1398,10 @@ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 		dsi_hw_ops.reset_trig_ctrl(&dsi_ctrl->hw,
+ 				&dsi_ctrl->host_config.common_config);
+ 
++	if (dsi_hw_ops.init_cmddma_trig_ctrl)
++		dsi_hw_ops.init_cmddma_trig_ctrl(&dsi_ctrl->hw,
++				&dsi_ctrl->host_config.common_config);
++
+ 	/*
+ 	 * Always enable DMA scheduling for video mode panel.
+ 	 *
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw.h b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+index 88babce92fb2..a89d7ba283cd 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw.h
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+@@ -1,6 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /*
+  * Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ 
+ #ifndef _DSI_CTRL_HW_H_
+@@ -871,6 +872,15 @@ struct dsi_ctrl_hw_ops {
+ 	void (*reset_trig_ctrl)(struct dsi_ctrl_hw *ctrl,
+ 			struct dsi_host_common_cfg *cfg);
+ 
++	/**
++	 * hw.ops.init_cmddma_trig_ctrl() - Initialize the default trigger used
++	 *                             for command mode DMA path.
++	 * @ctrl:	Pointer to the controller host hardware.
++	 * @cfg:	Common configuration parameters.
++	 */
++	void (*init_cmddma_trig_ctrl)(struct dsi_ctrl_hw *ctrl,
++			struct dsi_host_common_cfg *cfg);
++
+ 	/**
+ 	 * hw.ops.log_line_count() - reads the MDP interface line count
+ 	 *			     registers.
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+index 98cf4a8d1710..e2ee4b50cb67 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_2_2.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ 
+ #include "dsi_ctrl_hw.h"
+@@ -188,14 +189,16 @@ void dsi_ctrl_hw_22_configure_cmddma_window(struct dsi_ctrl_hw *ctrl,
+ void dsi_ctrl_hw_22_reset_trigger_controls(struct dsi_ctrl_hw *ctrl,
+ 				       struct dsi_host_common_cfg *cfg)
+ {
+-	u32 reg = 0;
++	u32 reg;
+ 	const u8 trigger_map[DSI_TRIGGER_MAX] = {
+ 		0x0, 0x2, 0x1, 0x4, 0x5, 0x6 };
+ 
+-	reg |= (cfg->te_mode == DSI_TE_ON_EXT_PIN) ? BIT(31) : 0;
+-	reg |= (trigger_map[cfg->dma_cmd_trigger] & 0x7);
+-	reg |= (trigger_map[cfg->mdp_cmd_trigger] & 0x7) << 4;
++	reg = DSI_R32(ctrl, DSI_TRIG_CTRL);
++	reg &= ~BIT(16); /* Reset DMA_TRG_MUX */
++	reg &= ~(0xF); /* Reset DMA_TRIGGER_SEL */
++	reg |= (trigger_map[cfg->dma_cmd_trigger] & 0xF);
+ 	DSI_W32(ctrl, DSI_TRIG_CTRL, reg);
++
+ 	DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL2, 0x0);
+ 	DSI_W32(ctrl, DSI_DMA_SCHEDULE_CTRL, 0x0);
+ 	ctrl->reset_trig_ctrl = false;
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c b/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
+index 56ff96c44978..02456d0672cc 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ 
+ #include <linux/delay.h>
+@@ -68,13 +69,20 @@ static void dsi_split_link_setup(struct dsi_ctrl_hw *ctrl,
+ static void dsi_setup_trigger_controls(struct dsi_ctrl_hw *ctrl,
+ 				       struct dsi_host_common_cfg *cfg)
+ {
+-	u32 reg = 0;
++	u32 reg;
+ 	const u8 trigger_map[DSI_TRIGGER_MAX] = {
+ 		0x0, 0x2, 0x1, 0x4, 0x5, 0x6 };
+ 
+-	reg |= (cfg->te_mode == DSI_TE_ON_EXT_PIN) ? BIT(31) : 0;
+-	reg |= (trigger_map[cfg->dma_cmd_trigger] & 0x7);
++	reg = DSI_R32(ctrl, DSI_TRIG_CTRL);
++
++	if (cfg->te_mode == DSI_TE_ON_EXT_PIN)
++		reg |= BIT(31);
++	else
++		reg &= ~BIT(31);
++
++	reg &= ~(0x7 << 4);
+ 	reg |= (trigger_map[cfg->mdp_cmd_trigger] & 0x7) << 4;
++
+ 	DSI_W32(ctrl, DSI_TRIG_CTRL, reg);
+ }
+ 
+@@ -1661,3 +1669,18 @@ bool dsi_ctrl_hw_cmn_vid_engine_busy(struct dsi_ctrl_hw *ctrl)
+ 
+ 	return false;
+ }
++
++void dsi_ctrl_hw_cmn_init_cmddma_trig_ctrl(struct dsi_ctrl_hw *ctrl,
++					   struct dsi_host_common_cfg *cfg)
++{
++	u32 reg;
++	const u8 trigger_map[DSI_TRIGGER_MAX] = {
++		0x0, 0x2, 0x1, 0x4, 0x5, 0x6 };
++
++	/* Initialize the default trigger used for Command Mode DMA path. */
++	reg = DSI_R32(ctrl, DSI_TRIG_CTRL);
++	reg &= ~BIT(16); /* Reset DMA_TRG_MUX */
++	reg &= ~(0xF); /* Reset DMA_TRIGGER_SEL */
++	reg |= (trigger_map[cfg->dma_cmd_trigger] & 0xF);
++	DSI_W32(ctrl, DSI_TRIG_CTRL, reg);
++}
+-- 
+2.48.1
+

@@ -1,0 +1,28 @@
+From db5a6e8dd8e39920d4349ce9c8bfd823519b2554 Mon Sep 17 00:00:00 2001
+From: Danny Lin <danny@kdrag0n.dev>
+Date: Thu, 18 Jul 2019 23:12:26 -0700
+Subject: [PATCH 135/175] qcacld-3.0: Remove forced -Werror
+
+CONFIG_CC_WERROR already controls this globally.
+
+Signed-off-by: Danny Lin <danny@kdrag0n.dev>
+Signed-off-by: sohamxda7 <sensoham135@gmail.com>
+---
+ drivers/staging/qcacld-3.0/Kbuild | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/staging/qcacld-3.0/Kbuild b/drivers/staging/qcacld-3.0/Kbuild
+index 4f45222643a8..f8a7f84c32e3 100644
+--- a/drivers/staging/qcacld-3.0/Kbuild
++++ b/drivers/staging/qcacld-3.0/Kbuild
+@@ -2300,7 +2300,6 @@ ccflags-y += $(INCS)
+ 
+ cppflags-y +=	-DANI_OS_TYPE_ANDROID=6 \
+ 		-Wall\
+-		-Werror\
+ 		-D__linux__
+ 
+ cppflags-$(CONFIG_PTT_SOCK_SVC_ENABLE) += -DPTT_SOCK_SVC_ENABLE
+-- 
+2.48.1
+

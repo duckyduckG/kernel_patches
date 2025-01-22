@@ -1,0 +1,134 @@
+From 6e5f37dbd7da32eab95773e56b0b11208b442d7b Mon Sep 17 00:00:00 2001
+From: Harigovindan P <harigovi@codeaurora.org>
+Date: Mon, 14 Sep 2020 16:26:48 +0530
+Subject: [PATCH 024/175] BACKPORT: disp: msm: read mdp intf line count and
+ trigger dma accordingly
+
+when a broadcast DSI command is scheduled, the command can get
+triggered close to the schedule line. This might cause DMA
+timeout. This change reads the video line count from
+MDP_INTF_LINE_COUNT register and checks whether DMA trigger
+happens close to the schedule line. If it is not close to the
+schedule line, then DMA command transfer is triggered.
+
+Change-Id: Ida92e63e46b4cc703d57ce24097834f810776aa8
+Signed-off-by: Harigovindan P <harigovi@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_ctrl.c        | 65 +++++++++++++++++++++-
+ techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c |  1 -
+ 2 files changed, 64 insertions(+), 2 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 4790b440d70a..1cb5e3220eb8 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -1364,6 +1364,25 @@ static void dsi_configure_command_scheduling(struct dsi_ctrl *dsi_ctrl,
+ 			sched_line_no, window);
+ }
+ 
++static u32 calculate_schedule_line(struct dsi_ctrl *dsi_ctrl, u32 flags)
++{
++	u32 line_no = 0x1;
++	struct dsi_mode_info *timing;
++
++	/* check if custom dma scheduling line needed */
++	if ((dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) &&
++		(flags & DSI_CTRL_CMD_CUSTOM_DMA_SCHED))
++		line_no = dsi_ctrl->host_config.common_config.dma_sched_line;
++
++	timing = &(dsi_ctrl->host_config.video_timing);
++
++	if (timing)
++		line_no += timing->v_back_porch + timing->v_sync_width +
++			timing->v_active;
++
++	return line_no;
++}
++
+ static void dsi_kickoff_msg_tx(struct dsi_ctrl *dsi_ctrl,
+ 				const struct mipi_dsi_msg *msg,
+ 				struct dsi_ctrl_cmd_dma_fifo_info *cmd,
+@@ -3445,6 +3464,10 @@ int dsi_ctrl_cmd_tx_trigger(struct dsi_ctrl *dsi_ctrl, u32 flags)
+ {
+ 	int rc = 0;
+ 	struct dsi_ctrl_hw_ops dsi_hw_ops;
++	u32 v_total = 0, fps = 0, cur_line = 0, mem_latency_us = 100;
++	u32 line_time = 0, schedule_line = 0x1, latency_by_line = 0;
++	struct dsi_mode_info *timing;
++	unsigned long flag;
+ 
+ 	if (!dsi_ctrl) {
+ 		DSI_CTRL_ERR(dsi_ctrl, "Invalid params\n");
+@@ -3460,6 +3483,18 @@ int dsi_ctrl_cmd_tx_trigger(struct dsi_ctrl *dsi_ctrl, u32 flags)
+ 
+ 	mutex_lock(&dsi_ctrl->ctrl_lock);
+ 
++	timing = &(dsi_ctrl->host_config.video_timing);
++
++	if (timing &&
++		(dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE)) {
++		v_total = timing->v_sync_width + timing->v_back_porch +
++			timing->v_front_porch + timing->v_active;
++		fps = timing->refresh_rate;
++		schedule_line = calculate_schedule_line(dsi_ctrl, flags);
++		line_time = (1000000 / fps) / v_total;
++		latency_by_line = CEIL(mem_latency_us, line_time);
++	}
++
+ 	if (!(flags & DSI_CTRL_CMD_BROADCAST_MASTER)) {
+ 		dsi_hw_ops.trigger_command_dma(&dsi_ctrl->hw);
+ 		if (dsi_ctrl->enable_cmd_dma_stats) {
+@@ -3482,7 +3517,35 @@ int dsi_ctrl_cmd_tx_trigger(struct dsi_ctrl *dsi_ctrl, u32 flags)
+ 		reinit_completion(&dsi_ctrl->irq_info.cmd_dma_done);
+ 
+ 		/* trigger command */
+-		dsi_hw_ops.trigger_command_dma(&dsi_ctrl->hw);
++		if ((dsi_ctrl->host_config.panel_mode == DSI_OP_VIDEO_MODE) &&
++			dsi_hw_ops.schedule_dma_cmd &&
++			(dsi_ctrl->current_state.vid_engine_state ==
++			DSI_CTRL_ENGINE_ON)) {
++			/*
++			 * This change reads the video line count from
++			 * MDP_INTF_LINE_COUNT register and checks whether
++			 * DMA trigger happens close to the schedule line.
++			 * If it is not close to the schedule line, then DMA
++			 * command transfer is triggered.
++			 */
++			while (1) {
++				local_irq_save(flag);
++				cur_line =
++				dsi_hw_ops.log_line_count(&dsi_ctrl->hw,
++					dsi_ctrl->cmd_mode);
++				if (cur_line <
++					(schedule_line - latency_by_line) ||
++					cur_line > (schedule_line + 1)) {
++					dsi_hw_ops.trigger_command_dma(
++						&dsi_ctrl->hw);
++					local_irq_restore(flag);
++					break;
++				}
++				local_irq_restore(flag);
++				udelay(1000);
++			}
++		} else
++			dsi_hw_ops.trigger_command_dma(&dsi_ctrl->hw);
+ 
+ 		if (dsi_ctrl->enable_cmd_dma_stats) {
+ 			u32 reg = dsi_hw_ops.log_line_count(&dsi_ctrl->hw,
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c b/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
+index caa1f86591c5..e3e715c2f41c 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
+@@ -778,7 +778,6 @@ void dsi_ctrl_hw_cmn_reset_cmd_fifo(struct dsi_ctrl_hw *ctrl)
+ void dsi_ctrl_hw_cmn_trigger_command_dma(struct dsi_ctrl_hw *ctrl)
+ {
+ 	DSI_W32(ctrl, DSI_CMD_MODE_DMA_SW_TRIGGER, 0x1);
+-	DSI_CTRL_HW_DBG(ctrl, "CMD DMA triggered\n");
+ }
+ 
+ /**
+-- 
+2.48.1
+

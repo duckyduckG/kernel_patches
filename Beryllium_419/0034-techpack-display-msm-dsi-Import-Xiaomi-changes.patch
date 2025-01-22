@@ -1,0 +1,92 @@
+From 8721732253f18b47c8d6f55c265d3a362342c2ea Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Sat, 31 Jul 2021 20:52:59 +0530
+Subject: [PATCH 034/175] techpack: display: msm: dsi: Import Xiaomi changes
+
+Co-authored-by: Jebaitedneko <Jebaitedneko@gmail.com>
+Change-Id: Id085dfd6d32e0b1514c73aacf9528547208c5999
+Signed-off-by: Jebaitedneko <Jebaitedneko@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_panel.c | 14 ++++++++++++++
+ techpack/display/msm/dsi/dsi_panel.h |  1 +
+ 2 files changed, 15 insertions(+)
+
+diff --git a/techpack/display/msm/dsi/dsi_panel.c b/techpack/display/msm/dsi/dsi_panel.c
+index dd16058569c7..8875270e6d2b 100644
+--- a/techpack/display/msm/dsi/dsi_panel.c
++++ b/techpack/display/msm/dsi/dsi_panel.c
+@@ -12,6 +12,7 @@
+ #include <video/mipi_display.h>
+ 
+ #include "dsi_panel.h"
++#include "dsi_display.h"
+ #include "dsi_ctrl_hw.h"
+ #include "dsi_parser.h"
+ 
+@@ -450,6 +451,7 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
+ {
+ 	int rc = 0;
+ 
++	if (!panel->tddi_doubleclick_flag)
+ 	rc = dsi_pwr_enable_regulator(&panel->power_info, true);
+ 	if (rc) {
+ 		DSI_ERR("[%s] failed to enable vregs, rc=%d\n",
+@@ -494,6 +496,7 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
+ 	if (gpio_is_valid(panel->reset_config.disp_en_gpio))
+ 		gpio_set_value(panel->reset_config.disp_en_gpio, 0);
+ 
++	if (!panel->tddi_doubleclick_flag)
+ 	if (gpio_is_valid(panel->reset_config.reset_gpio) &&
+ 					!panel->reset_gpio_always_on)
+ 		gpio_set_value(panel->reset_config.reset_gpio, 0);
+@@ -514,6 +517,7 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
+ 		       rc);
+ 	}
+ 
++	if(!panel->tddi_doubleclick_flag)
+ 	rc = dsi_pwr_enable_regulator(&panel->power_info, false);
+ 	if (rc)
+ 		DSI_ERR("[%s] failed to enable vregs, rc=%d\n",
+@@ -3471,6 +3475,7 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
+ 	if (rc)
+ 		DSI_DEBUG("failed to parse esd config, rc=%d\n", rc);
+ 
++	panel->tddi_doubleclick_flag = false;
+ 	panel->power_mode = SDE_MODE_DPMS_OFF;
+ 	drm_panel_init(&panel->drm_panel);
+ 	panel->drm_panel.dev = &panel->mipi_device.dev;
+@@ -4532,6 +4537,7 @@ int dsi_panel_disable(struct dsi_panel *panel)
+ 
+ 	/* Avoid sending panel off commands when ESD recovery is underway */
+ 	if (!atomic_read(&panel->esd_recovery_pending)) {
++		panel->panel_initialized = false;
+ 		/*
+ 		 * Need to set IBB/AB regulator mode to STANDBY,
+ 		 * if panel is going off from AOD mode.
+@@ -4605,3 +4611,11 @@ int dsi_panel_post_unprepare(struct dsi_panel *panel)
+ 	mutex_unlock(&panel->panel_lock);
+ 	return rc;
+ }
++
++
++void dsi_panel_doubleclick_enable(bool on) {
++	struct dsi_display *primary_display = get_main_display();
++	if (primary_display && primary_display->panel)
++		primary_display->panel->tddi_doubleclick_flag = on;
++}
++EXPORT_SYMBOL(dsi_panel_doubleclick_enable);
+diff --git a/techpack/display/msm/dsi/dsi_panel.h b/techpack/display/msm/dsi/dsi_panel.h
+index 6da6307f4517..4c2fe89c4281 100644
+--- a/techpack/display/msm/dsi/dsi_panel.h
++++ b/techpack/display/msm/dsi/dsi_panel.h
+@@ -222,6 +222,7 @@ struct dsi_panel {
+ 	enum dsi_dms_mode dms_mode;
+ 
+ 	bool sync_broadcast_en;
++	bool tddi_doubleclick_flag;
+ 
+ 	int panel_test_gpio;
+ 	int power_mode;
+-- 
+2.48.1
+

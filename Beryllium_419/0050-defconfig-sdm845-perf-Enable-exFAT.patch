@@ -1,0 +1,23 @@
+From 866c5d97ef2dce2b97145dde0d6b6935fc0a640a Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Wed, 29 Nov 2023 17:18:03 +0700
+Subject: [PATCH 050/175] defconfig: sdm845-perf: Enable exFAT
+
+---
+ arch/arm64/configs/vendor/sdm845-perf_defconfig | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/sdm845-perf_defconfig b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+index 6e7fea06190f..8b91d569b809 100644
+--- a/arch/arm64/configs/vendor/sdm845-perf_defconfig
++++ b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+@@ -697,3 +697,6 @@ CONFIG_ZRAM_DEFAULT_COMP_ALGORITHM="lz4"
+ CONFIG_CRYPTO_LZ4=y
+ CONFIG_LZ4_COMPRESS=y
+ CONFIG_LZ4_DECOMPRESS=y
++
++# exFAT
++CONFIG_EXFAT_FS=y
+-- 
+2.48.1
+

@@ -1,0 +1,162 @@
+From 7c02ec86f4f73ccb664edef2296c3ebce1054781 Mon Sep 17 00:00:00 2001
+From: Harigovindan P <harigovi@codeaurora.org>
+Date: Tue, 15 Sep 2020 12:50:42 +0530
+Subject: [PATCH 027/175] BACKPORT: disp: msm: clear dma done interrupt status
+ for slave controller
+
+When Broadcast is enabled, DMA_DONE bit gets set for slave
+controller on command transfer completion but it is not
+getting cleared. Due to this, DMA transfer failures on slave
+controller are not getting caught. This patch add supports for
+clearing DMA_DONE for slave controller on every successful
+transfer. This also prints error if transfer fails on slave
+controller.
+
+Change-Id: I61ce7b2d8be323adc70d888b5a2416afd9ae9fac
+Signed-off-by: Harigovindan P <harigovi@codeaurora.org>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ techpack/display/msm/dsi/dsi_catalog.c     |  1 +
+ techpack/display/msm/dsi/dsi_catalog.h     |  1 +
+ techpack/display/msm/dsi/dsi_ctrl.c        | 36 ++++++++++++++++++++++
+ techpack/display/msm/dsi/dsi_ctrl_hw.h     |  6 ++++
+ techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c | 27 ++++++++++++++++
+ 5 files changed, 71 insertions(+)
+
+diff --git a/techpack/display/msm/dsi/dsi_catalog.c b/techpack/display/msm/dsi/dsi_catalog.c
+index caddc960a265..2babe097e079 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.c
++++ b/techpack/display/msm/dsi/dsi_catalog.c
+@@ -30,6 +30,7 @@ static void dsi_catalog_cmn_init(struct dsi_ctrl_hw *ctrl,
+ 	ctrl->ops.reset_cmd_fifo         = dsi_ctrl_hw_cmn_reset_cmd_fifo;
+ 	ctrl->ops.trigger_command_dma    = dsi_ctrl_hw_cmn_trigger_command_dma;
+ 	ctrl->ops.get_interrupt_status   = dsi_ctrl_hw_cmn_get_interrupt_status;
++	ctrl->ops.poll_slave_dma_status  = dsi_ctrl_hw_cmn_poll_slave_dma_status;
+ 	ctrl->ops.get_error_status       = dsi_ctrl_hw_cmn_get_error_status;
+ 	ctrl->ops.clear_error_status     = dsi_ctrl_hw_cmn_clear_error_status;
+ 	ctrl->ops.clear_interrupt_status =
+diff --git a/techpack/display/msm/dsi/dsi_catalog.h b/techpack/display/msm/dsi/dsi_catalog.h
+index 871c69dd9507..ccaeebfc2303 100644
+--- a/techpack/display/msm/dsi/dsi_catalog.h
++++ b/techpack/display/msm/dsi/dsi_catalog.h
+@@ -130,6 +130,7 @@ void dsi_phy_hw_v4_0_commit_phy_timing(struct dsi_phy_hw *phy,
+ u32 dsi_ctrl_hw_cmn_get_interrupt_status(struct dsi_ctrl_hw *ctrl);
+ void dsi_ctrl_hw_cmn_debug_bus(struct dsi_ctrl_hw *ctrl, u32 *entries,
+ 			       u32 size);
++u32 dsi_ctrl_hw_cmn_poll_slave_dma_status(struct dsi_ctrl_hw *ctrl);
+ void dsi_ctrl_hw_cmn_clear_interrupt_status(struct dsi_ctrl_hw *ctrl, u32 ints);
+ void dsi_ctrl_hw_cmn_enable_status_interrupts(struct dsi_ctrl_hw *ctrl,
+ 					     u32 ints);
+diff --git a/techpack/display/msm/dsi/dsi_ctrl.c b/techpack/display/msm/dsi/dsi_ctrl.c
+index 581d8f4bf3b1..ecfbc6e24923 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl.c
++++ b/techpack/display/msm/dsi/dsi_ctrl.c
+@@ -1529,6 +1529,39 @@ static void dsi_ctrl_validate_msg_flags(struct dsi_ctrl *dsi_ctrl,
+ 		*flags &= ~DSI_CTRL_CMD_ASYNC_WAIT;
+ }
+ 
++/**
++ * dsi_ctrl_clear_slave_dma_status -   API to clear slave DMA status
++ * @dsi_ctrl:                   DSI controller handle.
++ * @flags:                      Modifiers
++ */
++static void dsi_ctrl_clear_slave_dma_status(struct dsi_ctrl *dsi_ctrl, u32 flags)
++{
++	struct dsi_ctrl_hw_ops dsi_hw_ops;
++	u32 status = 0;
++
++	if (!dsi_ctrl) {
++		DSI_CTRL_ERR(dsi_ctrl, "Invalid params\n");
++		return;
++	}
++
++	/* Return if this is not the last command */
++	if (!(flags & DSI_CTRL_CMD_LAST_COMMAND))
++		return;
++
++	SDE_EVT32(dsi_ctrl->cell_index, SDE_EVTLOG_FUNC_ENTRY);
++
++	dsi_hw_ops = dsi_ctrl->hw.ops;
++
++	status = dsi_hw_ops.poll_slave_dma_status(&dsi_ctrl->hw);
++
++	if (status) {
++		status |= (DSI_CMD_MODE_DMA_DONE | DSI_BTA_DONE);
++		dsi_hw_ops.clear_interrupt_status(&dsi_ctrl->hw,
++						status);
++		SDE_EVT32(dsi_ctrl->cell_index, status);
++	}
++}
++
+ static int dsi_message_tx(struct dsi_ctrl *dsi_ctrl,
+ 			  const struct mipi_dsi_msg *msg,
+ 			  u32 *flags)
+@@ -1561,6 +1594,9 @@ static int dsi_message_tx(struct dsi_ctrl *dsi_ctrl,
+ 	if (dsi_ctrl->dma_wait_queued)
+ 		dsi_ctrl_flush_cmd_dma_queue(dsi_ctrl);
+ 
++	if (!(*flags & DSI_CTRL_CMD_BROADCAST_MASTER))
++		dsi_ctrl_clear_slave_dma_status(dsi_ctrl, *flags);
++
+ 	if (*flags & DSI_CTRL_CMD_NON_EMBEDDED_MODE) {
+ 		cmd_mem.offset = dsi_ctrl->cmd_buffer_iova;
+ 		cmd_mem.en_broadcast = (*flags & DSI_CTRL_CMD_BROADCAST) ?
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw.h b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+index 00b2f4d205a5..c60650077c78 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw.h
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw.h
+@@ -646,6 +646,12 @@ struct dsi_ctrl_hw_ops {
+ 	 */
+ 	void (*clear_interrupt_status)(struct dsi_ctrl_hw *ctrl, u32 ints);
+ 
++	/**
++	 * poll_slave_dma_status()- API to poll slave DMA status
++	 * @ctrl:                 Pointer to the controller host hardware.
++	 */
++	u32 (*poll_slave_dma_status)(struct dsi_ctrl_hw *ctrl);
++
+ 	/**
+ 	 * enable_status_interrupts() - enable the specified interrupts
+ 	 * @ctrl:          Pointer to the controller host hardware.
+diff --git a/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c b/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
+index e3e715c2f41c..6a3bdf32756c 100644
+--- a/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
++++ b/techpack/display/msm/dsi/dsi_ctrl_hw_cmn.c
+@@ -870,6 +870,33 @@ u32 dsi_ctrl_hw_cmn_get_cmd_read_data(struct dsi_ctrl_hw *ctrl,
+ 	return rx_byte;
+ }
+ 
++/**
++ * poll_slave_dma_status() - API to clear poll DMA status
++ * @ctrl:          Pointer to the controller host hardware.
++ *
++ * Return: DMA status.
++ */
++u32 dsi_ctrl_hw_cmn_poll_slave_dma_status(struct dsi_ctrl_hw *ctrl)
++{
++	int rc = 0;
++	u32 status;
++	u32 const delay_us = 10;
++	u32 const timeout_us = 5000;
++
++	rc = readl_poll_timeout_atomic(ctrl->base + DSI_INT_CTRL,
++				      status,
++				      ((status & DSI_CMD_MODE_DMA_DONE)
++					> 0),
++				      delay_us,
++				      timeout_us);
++	if (rc) {
++		DSI_CTRL_HW_DBG(ctrl, "DSI1 CMD_MODE_DMA_DONE failed\n");
++		status = 0;
++	}
++
++	return status;
++}
++
+ /**
+  * get_interrupt_status() - returns the interrupt status
+  * @ctrl:          Pointer to the controller host hardware.
+-- 
+2.48.1
+

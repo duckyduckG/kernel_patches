@@ -1,0 +1,27 @@
+From ed7f0abeeaac622c21c5ce6464bb61aa3914db00 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Sun, 16 Jul 2023 22:46:34 +0000
+Subject: [PATCH 131/175] power: reset: msm: Disable dload mode
+
+Dumping kmsg from edl is broken on 4.19. Disable dload
+mode so we can get logs from pstore when panic occurs
+---
+ drivers/power/reset/msm-poweroff.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
+index c1b0799963e6..a63ce0b4c826 100644
+--- a/drivers/power/reset/msm-poweroff.c
++++ b/drivers/power/reset/msm-poweroff.c
+@@ -62,7 +62,7 @@ static void scm_disable_sdi(void);
+  * There is no API from TZ to re-enable the registers.
+  * So the SDI cannot be re-enabled when it already by-passed.
+  */
+-static int download_mode = 1;
++static int download_mode = 0;
+ static struct kobject dload_kobj;
+ 
+ static int in_panic;
+-- 
+2.48.1
+

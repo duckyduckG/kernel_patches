@@ -1,0 +1,44 @@
+From b7f3687f4d43391b7a74fe8f2b7996f6dfe31bce Mon Sep 17 00:00:00 2001
+From: "Signed-off-by: celtare21" <celtare21@gmail.com>
+Date: Tue, 14 Jan 2025 02:04:47 +0500
+Subject: [PATCH 168/175] kgsl/adreno: Properly set GPU timeout Signed-off-by:
+ celtare21 <celtare21@gmail.com> Signed-off-by: kdrag0n
+ <dragon@khronodragon.com>
+
+---
+ drivers/gpu/msm/adreno.c       | 2 +-
+ drivers/gpu/msm/kgsl_pwrctrl.h | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/msm/adreno.c b/drivers/gpu/msm/adreno.c
+index 60254a18e941..e41c9568db7c 100644
+--- a/drivers/gpu/msm/adreno.c
++++ b/drivers/gpu/msm/adreno.c
+@@ -1261,7 +1261,7 @@ static int adreno_of_get_power(struct adreno_device *adreno_dev,
+ 		device->pwrctrl.pm_qos_wakeup_latency = 101;
+ 
+ 	if (of_property_read_u32(node, "qcom,idle-timeout", &timeout))
+-		timeout = 80;
++		timeout = 64;
+ 
+ 	device->pwrctrl.interval_timeout = msecs_to_jiffies(timeout);
+ 
+diff --git a/drivers/gpu/msm/kgsl_pwrctrl.h b/drivers/gpu/msm/kgsl_pwrctrl.h
+index 406486a8f065..1ca6057dff95 100644
+--- a/drivers/gpu/msm/kgsl_pwrctrl.h
++++ b/drivers/gpu/msm/kgsl_pwrctrl.h
+@@ -52,9 +52,9 @@
+ /*
+  * The effective duration of qos request in usecs at queue time.
+  * After timeout, qos request is cancelled automatically.
+- * Kept 80ms default, inline with default GPU idle time.
++ * Kept 64ms default, inline with default GPU idle time.
+  */
+-#define KGSL_L2PC_QUEUE_TIMEOUT	(80 * 1000)
++#define KGSL_L2PC_QUEUE_TIMEOUT	(64 * 1000)
+ 
+ /*
+  * The effective duration of qos request in usecs at wakeup time.
+-- 
+2.48.1
+

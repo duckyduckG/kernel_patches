@@ -1,0 +1,87 @@
+From dae4c194ea31ff9f7e96ad522d4964397d5fb93e Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Sat, 11 Jan 2025 10:46:27 +0500
+Subject: [PATCH 160/175] Kernel: Add Cpumask for big, LITTLE Taken from San
+ kernel 4.19 sdm660 Credit : Santhosh <santhosh.user.why.red@gmail.com>
+
+---
+ arch/arm64/Kconfig      | 13 +++++++++++++
+ include/linux/cpumask.h |  4 ++++
+ kernel/cpu.c            | 15 +++++++++++++++
+ 3 files changed, 32 insertions(+)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index e35e2c0459c8..00ee610d5d58 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -861,6 +861,19 @@ config NR_CPUS
+ 	# These have to remain sorted largest to smallest
+ 	default "64"
+ 
++config LITTLE_CPU_MASK
++	int "Bitmask of available LITTLE CPUs"
++	help
++	  This is a bitmask specifying which of the CPUs are LITTLE in a
++	  heterogeneous system. Use 0 if you are unsure, which just results in
++	  this storing the bitmask of all available CPUs.
++config BIG_CPU_MASK
++	int "Bitmask of available big CPUs"
++	help
++	  This is a bitmask specifying which of the CPUs are big in a
++	  heterogeneous system. Use 0 if you are unsure, which just results in
++	  this storing the bitmask of all available CPUs.
++
+ config HOTPLUG_CPU
+ 	bool "Support for hot-pluggable CPUs"
+ 	select GENERIC_IRQ_MIGRATION
+diff --git a/include/linux/cpumask.h b/include/linux/cpumask.h
+index 46089bfc1c4e..9063647ca185 100644
+--- a/include/linux/cpumask.h
++++ b/include/linux/cpumask.h
+@@ -55,6 +55,8 @@ extern unsigned int nr_cpu_ids;
+  *     cpu_online_mask  - has bit 'cpu' set iff cpu available to scheduler
+  *     cpu_active_mask  - has bit 'cpu' set iff cpu available to migration
+  *     cpu_isolated_mask- has bit 'cpu' set iff cpu isolated
++ *     cpu_lp_mask      - has bit 'cpu' set iff cpu is part of little cluster
++ *     cpu_perf_mask    - has bit 'cpu' set iff cpu is part of big cluster
+  *
+  *  If !CONFIG_HOTPLUG_CPU, present == possible, and active == online.
+  *
+@@ -97,6 +99,8 @@ extern struct cpumask __cpu_isolated_mask;
+ #define cpu_present_mask  ((const struct cpumask *)&__cpu_present_mask)
+ #define cpu_active_mask   ((const struct cpumask *)&__cpu_active_mask)
+ #define cpu_isolated_mask ((const struct cpumask *)&__cpu_isolated_mask)
++extern const struct cpumask *const cpu_lp_mask;
++extern const struct cpumask *const cpu_perf_mask;
+ 
+ #if NR_CPUS > 1
+ #define num_online_cpus()	cpumask_weight(cpu_online_mask)
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 9e15597c54ca..dc27ce5d18fd 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -2440,6 +2440,21 @@ EXPORT_SYMBOL(__cpu_active_mask);
+ struct cpumask __cpu_isolated_mask __read_mostly;
+ EXPORT_SYMBOL(__cpu_isolated_mask);
+ 
++#if CONFIG_LITTLE_CPU_MASK
++static const unsigned long lp_cpu_bits = CONFIG_LITTLE_CPU_MASK;
++const struct cpumask *const cpu_lp_mask = to_cpumask(&lp_cpu_bits);
++#else
++const struct cpumask *const cpu_lp_mask = cpu_possible_mask;
++#endif
++EXPORT_SYMBOL(cpu_lp_mask);
++#if CONFIG_BIG_CPU_MASK
++static const unsigned long perf_cpu_bits = CONFIG_BIG_CPU_MASK;
++const struct cpumask *const cpu_perf_mask = to_cpumask(&perf_cpu_bits);
++#else
++const struct cpumask *const cpu_perf_mask = cpu_possible_mask;
++#endif
++EXPORT_SYMBOL(cpu_perf_mask);
++
+ void init_cpu_present(const struct cpumask *src)
+ {
+ 	cpumask_copy(&__cpu_present_mask, src);
+-- 
+2.48.1
+

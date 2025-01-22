@@ -1,0 +1,35 @@
+From 3875d50f81e37c1c5863e803bb38fb70999486ca Mon Sep 17 00:00:00 2001
+From: duckyduckG <duckyduckg65@gmail.com>
+Date: Sat, 11 Jan 2025 01:32:30 +0500
+Subject: [PATCH 156/175] Drivers: Fix compilation errors caused by
+ "dispcc-sdm845.cc" Errors : "undeclared identifier"
+
+---
+ drivers/clk/qcom/dispcc-sdm845.c | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/drivers/clk/qcom/dispcc-sdm845.c b/drivers/clk/qcom/dispcc-sdm845.c
+index cd66d09ccf96..0a13e8b0dca6 100644
+--- a/drivers/clk/qcom/dispcc-sdm845.c
++++ b/drivers/clk/qcom/dispcc-sdm845.c
+@@ -944,17 +944,6 @@ static struct clk_branch disp_cc_mdss_vsync_clk = {
+ 	},
+ };
+ 
+-static struct gdsc mdss_gdsc = {
+-	.gdscr = 0x3000,
+-	.en_few_wait_val = 0x6,
+-	.en_rest_wait_val = 0x5,
+-	.pd = {
+-		.name = "mdss_gdsc",
+-	},
+-	.pwrsts = PWRSTS_OFF_ON,
+-	.flags = HW_CTRL | POLL_CFG_GDSCR,
+-};
+-
+ static struct clk_regmap *disp_cc_sdm845_clocks[] = {
+ 	[DISP_CC_MDSS_AHB_CLK] = &disp_cc_mdss_ahb_clk.clkr,
+ 	[DISP_CC_MDSS_AXI_CLK] = &disp_cc_mdss_axi_clk.clkr,
+-- 
+2.48.1
+

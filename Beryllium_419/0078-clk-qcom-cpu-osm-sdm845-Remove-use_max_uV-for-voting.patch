@@ -1,0 +1,29 @@
+From 82aa92c1c7cb630a70ed96c126e880d41c78a38c Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Fri, 5 Nov 2021 21:37:37 +0200
+Subject: [PATCH 078/175] clk: qcom: cpu-osm-sdm845: Remove use_max_uV for
+ voting
+
+The clock framework always vote INT_MAX as the max corner
+for any voltage rail.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/clk/qcom/clk-cpu-osm-sdm845.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/clk/qcom/clk-cpu-osm-sdm845.c b/drivers/clk/qcom/clk-cpu-osm-sdm845.c
+index c8cc9008f85f..2483b53dd910 100644
+--- a/drivers/clk/qcom/clk-cpu-osm-sdm845.c
++++ b/drivers/clk/qcom/clk-cpu-osm-sdm845.c
+@@ -1087,7 +1087,6 @@ static int clk_osm_read_lut(struct platform_device *pdev, struct clk_osm *c)
+ 		}
+ 		vdd->num_levels = j;
+ 		vdd->cur_level = j;
+-		vdd->use_max_uV = true;
+ 	}
+ 
+ 	for (i = 0; i < j; i++)
+-- 
+2.48.1
+

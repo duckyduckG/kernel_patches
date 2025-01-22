@@ -1,0 +1,29 @@
+From f1f006a944ce272dc754fb09d809f577bfdcb065 Mon Sep 17 00:00:00 2001
+From: Swetha Chikkaboraiah <schikk@codeaurora.org>
+Date: Fri, 13 Aug 2021 09:40:52 +0530
+Subject: [PATCH 117/175] msm: vidc: Fix compilation error with new sdclang 12
+
+Fix the compilation error with sdclang 12.0.
+
+Change-Id: If6b5caf655568b0d4ee12a71927df9476f3b4c55
+Signed-off-by: Swetha Chikkaboraiah <schikk@codeaurora.org>
+---
+ drivers/media/platform/msm/vidc/venus_hfi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/vidc/venus_hfi.c b/drivers/media/platform/msm/vidc/venus_hfi.c
+index 04edeced6eb9..4b2b722b61b9 100644
+--- a/drivers/media/platform/msm/vidc/venus_hfi.c
++++ b/drivers/media/platform/msm/vidc/venus_hfi.c
+@@ -164,7 +164,7 @@ static void __dump_packet(u8 *packet, enum vidc_msg_prio log_level)
+ 	 * row must contain enough for 0xdeadbaad * 8 to be converted into
+ 	 * "de ad ba ab " * 8 + '\0'
+ 	 */
+-	char row[3 * row_size];
++	char row[96]; /*char row[3 * row_size];*/
+ 
+ 	for (c = 0; c * row_size < packet_size; ++c) {
+ 		int bytes_to_read = ((c + 1) * row_size > packet_size) ?
+-- 
+2.48.1
+

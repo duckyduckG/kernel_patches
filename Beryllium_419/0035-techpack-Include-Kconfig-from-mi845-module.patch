@@ -1,0 +1,23 @@
+From 6c33f23c7acb434fd7047dfae37b1a7b017b2c27 Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Mon, 6 Nov 2023 03:13:49 +0400
+Subject: [PATCH 035/175] techpack: Include Kconfig from mi845 module
+
+---
+ techpack/Kconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/techpack/Kconfig b/techpack/Kconfig
+index b3c5013ad893..a2c804df7ed2 100644
+--- a/techpack/Kconfig
++++ b/techpack/Kconfig
+@@ -2,4 +2,6 @@ menu "Tech packages"
+ 
+ source "techpack/data/Kconfig"
+ 
++source "techpack/mi845/Kconfig"
++
+ endmenu
+-- 
+2.48.1
+

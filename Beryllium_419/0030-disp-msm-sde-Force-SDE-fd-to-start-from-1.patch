@@ -1,0 +1,59 @@
+From 6e395a8f436775e95621815b3fdd8a9ac4376aae Mon Sep 17 00:00:00 2001
+From: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Date: Tue, 1 Jun 2021 06:27:37 +0200
+Subject: [PATCH 030/175] disp: msm: sde: Force SDE fd to start from 1
+
+Change-Id: Ibddd2ea6dda2052deccc2d62490cc5a1f81377ad
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Signed-off-by: NotZeetaa <rodrigo2005contente@gmail.com>
+---
+ fs/file.c                            | 6 ++++++
+ include/linux/file.h                 | 1 +
+ techpack/display/msm/sde/sde_fence.c | 2 +-
+ 3 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/fs/file.c b/fs/file.c
+index 64faefe4e082..3491d66d7815 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -536,6 +536,12 @@ static int alloc_fd(unsigned start, unsigned flags)
+ 	return __alloc_fd(current->files, start, rlimit(RLIMIT_NOFILE), flags);
+ }
+ 
++int get_unused_fd_start_flags(unsigned start, unsigned flags)
++{
++	return __alloc_fd(current->files, start, rlimit(RLIMIT_NOFILE), flags);
++}
++EXPORT_SYMBOL(get_unused_fd_start_flags);
++
+ int get_unused_fd_flags(unsigned flags)
+ {
+ 	return __alloc_fd(current->files, 0, rlimit(RLIMIT_NOFILE), flags);
+diff --git a/include/linux/file.h b/include/linux/file.h
+index 6c361796254c..a96af01626f9 100644
+--- a/include/linux/file.h
++++ b/include/linux/file.h
+@@ -83,6 +83,7 @@ extern int f_dupfd(unsigned int from, struct file *file, unsigned flags);
+ extern int replace_fd(unsigned fd, struct file *file, unsigned flags);
+ extern void set_close_on_exec(unsigned int fd, int flag);
+ extern bool get_close_on_exec(unsigned int fd);
++extern int get_unused_fd_start_flags(unsigned start, unsigned flags);
+ extern int get_unused_fd_flags(unsigned flags);
+ extern void put_unused_fd(unsigned int fd);
+ 
+diff --git a/techpack/display/msm/sde/sde_fence.c b/techpack/display/msm/sde/sde_fence.c
+index eb9b8fb51dec..6296037841b3 100644
+--- a/techpack/display/msm/sde/sde_fence.c
++++ b/techpack/display/msm/sde/sde_fence.c
+@@ -209,7 +209,7 @@ static int _sde_fence_create_fd(void *fence_ctx, uint32_t val)
+ 	kref_get(&ctx->kref);
+ 
+ 	/* create fd */
+-	fd = get_unused_fd_flags(0);
++	fd = get_unused_fd_start_flags(1, 0);
+ 	if (fd < 0) {
+ 		SDE_ERROR("failed to get_unused_fd_flags(), %s\n",
+ 							sde_fence->name);
+-- 
+2.48.1
+

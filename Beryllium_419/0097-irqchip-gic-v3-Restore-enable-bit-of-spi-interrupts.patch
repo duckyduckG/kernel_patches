@@ -1,0 +1,41 @@
+From d019a3ef65825ef00bffb64bdf0c9ff45ca512e5 Mon Sep 17 00:00:00 2001
+From: Gaurav Kohli <gkohli@codeaurora.org>
+Date: Wed, 27 Jun 2018 12:14:53 +0530
+Subject: [PATCH 097/175] irqchip: gic-v3: Restore enable bit of spi interrupts
+
+While setting enable bit of spi interrupt, there is
+chance of enabling spurious interrupt which is by default
+disabled for soc. So instead of setting restore the
+previous state of enable bit.
+
+Change-Id: Ie6e363f04864fc6e36be83ebd20b19b5e6b45f54
+Signed-off-by: Gaurav Kohli <gkohli@codeaurora.org>
+---
+ drivers/irqchip/irq-gic-v3.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/irqchip/irq-gic-v3.c b/drivers/irqchip/irq-gic-v3.c
+index 52cb8220e156..3c7790e92aef 100644
+--- a/drivers/irqchip/irq-gic-v3.c
++++ b/drivers/irqchip/irq-gic-v3.c
+@@ -345,7 +345,7 @@ static void _gic_v3_dist_restore_set_reg(u32 offset)
+ }
+ 
+ #define _gic_v3_dist_restore_isenabler()		\
+-		_gic_v3_dist_restore_set_reg(GICD_ISENABLER)
++		_gic_v3_dist_restore_reg(SAVED_IS_ENABLER)
+ 
+ #define _gic_v3_dist_restore_ispending()		\
+ 		_gic_v3_dist_restore_set_reg(GICD_ISPENDR)
+@@ -423,7 +423,7 @@ static void _gic_v3_dist_clear_reg(u32 offset)
+  *
+  * 5. Set pending for the interrupt.
+  *
+- * 6. Enable interrupt and wait for its completion.
++ * 6. Restore Enable bit of interrupt and wait for its completion.
+  *
+  */
+ void gic_v3_dist_restore(void)
+-- 
+2.48.1
+

@@ -1,0 +1,42 @@
+From 38cb306703b2b17619314d09acc55f66d9482631 Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Thu, 6 Jun 2019 18:05:44 +0200
+Subject: [PATCH 100/175] soc: qcom: spss_utils: Ignore emulation type register
+ if not present
+
+This register is present only on new SoCs and shouldn't be
+present on older ones like MSM8998 or SDM630.
+
+For this reason, warn the user, but do not fail if this
+register is not found, as it's used only there and it's
+not necessary for core driver functionality.
+---
+ drivers/soc/qcom/spss_utils.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/soc/qcom/spss_utils.c b/drivers/soc/qcom/spss_utils.c
+index e3ab1c4b28e5..be6c08b8bc5b 100644
+--- a/drivers/soc/qcom/spss_utils.c
++++ b/drivers/soc/qcom/spss_utils.c
+@@ -805,8 +805,8 @@ static int spss_parse_dt(struct device_node *node)
+ 	ret = of_property_read_u32(node, "qcom,spss-emul-type-reg-addr",
+ 			     &spss_emul_type_reg_addr);
+ 	if (ret < 0) {
+-		pr_err("can't get spss-emulation-type-reg addr\n");
+-		return -EINVAL;
++		pr_warn("can't get spss-emulation-type-reg addr\n");
++		goto end;
+ 	}
+ 
+ 	spss_emul_type_reg = ioremap_nocache(spss_emul_type_reg_addr,
+@@ -825,6 +825,7 @@ static int spss_parse_dt(struct device_node *node)
+ 		firmware_type = SPSS_FW_TYPE_NONE;
+ 	}
+ 	iounmap(spss_emul_type_reg);
++end:
+ 
+ 	/* PIL-SPSS area */
+ 	np = of_parse_phandle(node, "pil-mem", 0);
+-- 
+2.48.1
+

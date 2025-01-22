@@ -1,0 +1,24 @@
+From dfa5f7a8674ef438a6f7f134ed6745c9e23b8416 Mon Sep 17 00:00:00 2001
+From: MrArtemSid <artem.sid.key@gmail.com>
+Date: Sun, 5 Nov 2023 13:59:45 +0400
+Subject: [PATCH 046/175] defconfig: sdm845-perf: Enable QCA_CLD_WLAN
+
+---
+ arch/arm64/configs/vendor/sdm845-perf_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/vendor/sdm845-perf_defconfig b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+index 0cb57b11babb..1c911008c7d6 100644
+--- a/arch/arm64/configs/vendor/sdm845-perf_defconfig
++++ b/arch/arm64/configs/vendor/sdm845-perf_defconfig
+@@ -500,6 +500,7 @@ CONFIG_ASHMEM=y
+ CONFIG_ION=y
+ CONFIG_ION_POOL_AUTO_REFILL=y
+ CONFIG_ION_LEGACY=y
++CONFIG_QCA_CLD_WLAN=y
+ CONFIG_QPNP_REVID=y
+ CONFIG_SPS=y
+ CONFIG_SPS_SUPPORT_NDP_BAM=y
+-- 
+2.48.1
+

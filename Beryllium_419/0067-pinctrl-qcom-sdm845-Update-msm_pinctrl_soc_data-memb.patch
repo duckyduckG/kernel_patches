@@ -1,0 +1,45 @@
+From 9a679aed6f3c2a915bab07a6927aa051e4fa5f2b Mon Sep 17 00:00:00 2001
+From: Pavel Dubrova <pashadubrova@gmail.com>
+Date: Sun, 7 Nov 2021 17:03:40 +0200
+Subject: [PATCH 067/175] pinctrl: qcom: sdm845: Update msm_pinctrl_soc_data
+ members
+
+Remove n_dir_conns and dir_conn_irq_base members because they
+are not listed in the msm_pinctrl_soc_data structure and not
+used by the pinctrl driver.
+
+Signed-off-by: Pavel Dubrova <pashadubrova@gmail.com>
+---
+ drivers/pinctrl/qcom/pinctrl-sdm845-v2.c | 2 --
+ drivers/pinctrl/qcom/pinctrl-sdm845.c    | 2 --
+ 2 files changed, 4 deletions(-)
+
+diff --git a/drivers/pinctrl/qcom/pinctrl-sdm845-v2.c b/drivers/pinctrl/qcom/pinctrl-sdm845-v2.c
+index bc8ec394d620..955579a9ed7a 100644
+--- a/drivers/pinctrl/qcom/pinctrl-sdm845-v2.c
++++ b/drivers/pinctrl/qcom/pinctrl-sdm845-v2.c
+@@ -1780,8 +1780,6 @@ static const struct msm_pinctrl_soc_data sdm845_pinctrl = {
+ 	.ngroups = ARRAY_SIZE(sdm845_groups),
+ 	.ngpios = 150,
+ 	.dir_conn = sdm845_dir_conn,
+-	.n_dir_conns = ARRAY_SIZE(sdm845_dir_conn),
+-	.dir_conn_irq_base = 216,
+ };
+ 
+ static int sdm845_pinctrl_probe(struct platform_device *pdev)
+diff --git a/drivers/pinctrl/qcom/pinctrl-sdm845.c b/drivers/pinctrl/qcom/pinctrl-sdm845.c
+index ee5bd19c2618..d846ea88f87c 100644
+--- a/drivers/pinctrl/qcom/pinctrl-sdm845.c
++++ b/drivers/pinctrl/qcom/pinctrl-sdm845.c
+@@ -1748,8 +1748,6 @@ static const struct msm_pinctrl_soc_data sdm845_pinctrl = {
+ 	.ngroups = ARRAY_SIZE(sdm845_groups),
+ 	.ngpios = 150,
+ 	.dir_conn = sdm845_dir_conn,
+-	.n_dir_conns = ARRAY_SIZE(sdm845_dir_conn),
+-	.dir_conn_irq_base = 216,
+ };
+ 
+ static int sdm845_pinctrl_probe(struct platform_device *pdev)
+-- 
+2.48.1
+

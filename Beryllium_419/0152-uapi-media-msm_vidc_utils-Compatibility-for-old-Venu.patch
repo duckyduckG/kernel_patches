@@ -1,0 +1,57 @@
+From 486d61b4cfa2ec5c73fd7840dd1fbe5c2a327977 Mon Sep 17 00:00:00 2001
+From: AngeloGioacchino Del Regno <kholk11@gmail.com>
+Date: Wed, 27 Nov 2019 13:13:07 +0100
+Subject: [PATCH 152/175] uapi: media: msm_vidc_utils: Compatibility for old
+ Venus MISR struct
+
+Some targets need to use a different structure for the MISR
+informations, since that goes back and forth to the Venus
+firmware, which is old on these targets and obviously cannot
+understand a different struct when sending/receiving packed
+data.
+---
+ include/uapi/media/msm_vidc_utils.h | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/include/uapi/media/msm_vidc_utils.h b/include/uapi/media/msm_vidc_utils.h
+index 67e1289a9cbb..c7a304add779 100644
+--- a/include/uapi/media/msm_vidc_utils.h
++++ b/include/uapi/media/msm_vidc_utils.h
+@@ -4,6 +4,10 @@
+ 
+ #include <linux/types.h>
+ 
++#if defined(CONFIG_ARCH_SDM845)
++#define VENUS_USES_LEGACY_MISR_INFO
++#endif
++
+ #define MSM_VIDC_HAL_INTERLACE_COLOR_FORMAT_NV12	0x2
+ #define MSM_VIDC_HAL_INTERLACE_COLOR_FORMAT_NV12_UBWC	0x8002
+ #define MSM_VIDC_EXTRADATA_FRAME_QP_ADV 0x1
+@@ -67,6 +71,14 @@ struct msm_vidc_input_crop_payload {
+ 	unsigned int height;
+ };
+ 
++#ifdef VENUS_USES_LEGACY_MISR_INFO
++struct msm_vidc_misr_info {
++	unsigned int misr_dpb_luma;
++	unsigned int misr_dpb_chroma;
++	unsigned int misr_opb_luma;
++	unsigned int misr_opb_chroma;
++};
++#else
+ struct msm_vidc_misr_info {
+ 	unsigned int misr_set;
+ 	unsigned int misr_dpb_luma[8];
+@@ -74,6 +86,8 @@ struct msm_vidc_misr_info {
+ 	unsigned int misr_opb_luma[8];
+ 	unsigned int misr_opb_chroma[8];
+ };
++#endif
++
+ struct msm_vidc_output_crop_payload {
+ 	unsigned int size;
+ 	unsigned int version;
+-- 
+2.48.1
+

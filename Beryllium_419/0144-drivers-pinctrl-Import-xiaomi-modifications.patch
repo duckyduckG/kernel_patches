@@ -1,0 +1,27 @@
+From 0d2a90166a16dfe655ea6c22d961725dbc6861f2 Mon Sep 17 00:00:00 2001
+From: tanz3 <3222839916@qq.com>
+Date: Thu, 20 Jul 2023 02:49:32 -0400
+Subject: [PATCH 144/175] drivers: pinctrl: Import xiaomi modifications * From
+ dipper-q-oss
+
+Signed-off-by: tanz3 <3222839916@qq.com>
+---
+ drivers/pinctrl/qcom/pinctrl-sdm845.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/qcom/pinctrl-sdm845.c b/drivers/pinctrl/qcom/pinctrl-sdm845.c
+index d846ea88f87c..1239530634a4 100644
+--- a/drivers/pinctrl/qcom/pinctrl-sdm845.c
++++ b/drivers/pinctrl/qcom/pinctrl-sdm845.c
+@@ -1663,7 +1663,7 @@ static struct msm_dir_conn sdm845_dir_conn[] = {
+ 	{24, 517},
+ 	{26, 518},
+ 	{30, 519},
+-	{31, 632},
++	{31, 639},
+ 	{32, 521},
+ 	{34, 522},
+ 	{36, 523},
+-- 
+2.48.1
+
