@@ -1,0 +1,27 @@
+From 0fcac30498f3083614f87d746c6990d4962132f5 Mon Sep 17 00:00:00 2001
+From: Ramii Ahmed <ramy@ahmedramy.com>
+Date: Fri, 11 Aug 2023 05:58:49 +0000
+Subject: [PATCH 112/157] arch: arm64: dts: panel: Enable Qsync minimum refresh
+ rate
+
+Change-Id: I4c210110adb1fe592ad7124d5a465be9bcaa54cd
+---
+ .../boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi  | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+index 0e27af92f440..02c0989d13b2 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+@@ -51,7 +51,7 @@
+ 			17000 15500 30000 8000 3000>;
+ 		qcom,mdss-dsi-panel-peak-brightness = <4200000>;
+ 		qcom,mdss-dsi-panel-blackness-level = <3230>;
+-		/* qcom,mdss-dsi-qsync-min-refresh-rate = <60>; */
++		qcom,mdss-dsi-qsync-min-refresh-rate = <60>;
+ 		qcom,mdss-dsi-pan-enable-dynamic-fps;
+ 		qcom,mdss-dsi-pan-fps-update =
+ 				"dfps_immediate_porch_mode_vfp";
+-- 
+2.48.1
+

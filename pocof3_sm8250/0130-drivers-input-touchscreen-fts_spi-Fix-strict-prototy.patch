@@ -1,0 +1,59 @@
+From d7e3b6123f4dffbcea246d90d3d07c23c97fee93 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sat, 16 Mar 2024 23:48:45 +0100
+Subject: [PATCH 130/157] drivers: input: touchscreen: fts_spi: Fix
+ strict-prototypes error
+
+Change-Id: Id5878da5cc7557f27efde4e0fb162167b21afc85
+---
+ drivers/input/touchscreen/fts_spi/fts.c           | 2 +-
+ drivers/input/touchscreen/fts_spi/fts_lib/ftsIO.c | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/input/touchscreen/fts_spi/fts.c b/drivers/input/touchscreen/fts_spi/fts.c
+index d8ffd3c5fefc..6f7acaa8954a 100644
+--- a/drivers/input/touchscreen/fts_spi/fts.c
++++ b/drivers/input/touchscreen/fts_spi/fts.c
+@@ -7351,7 +7351,7 @@ static int fts_write_charge_status(int status)
+ 	return res;
+ }
+ 
+-static int fts_get_charging_status()
++static int fts_get_charging_status(void)
+ {
+ 	struct power_supply *usb_psy;
+ 	struct power_supply *dc_psy;
+diff --git a/drivers/input/touchscreen/fts_spi/fts_lib/ftsIO.c b/drivers/input/touchscreen/fts_spi/fts_lib/ftsIO.c
+index 1af5e0abff88..823b9ea257d4 100644
+--- a/drivers/input/touchscreen/fts_spi/fts_lib/ftsIO.c
++++ b/drivers/input/touchscreen/fts_spi/fts_lib/ftsIO.c
+@@ -101,7 +101,7 @@ int changeSAD(u8 sad)
+ * Retrieve the pointer to the device struct of the IC
+ * @return a the device struct pointer if client was previously set or NULL in all the other cases
+ */
+-struct device *getDev()
++struct device *getDev(void)
+ {
+ 	if (client != NULL)
+ 		return &(getClient()->dev);
+@@ -114,7 +114,7 @@ struct device *getDev()
+ * Retrieve the pointer of the i2c_client struct representing the IC as i2c slave
+ * @return client if it was previously set or NULL in all the other cases
+ */
+-struct i2c_client *getClient()
++struct i2c_client *getClient(void)
+ {
+ 	if (client != NULL)
+ 		return (struct i2c_client *)client;
+@@ -126,7 +126,7 @@ struct i2c_client *getClient()
+ * Retrieve the pointer of the spi_device struct representing the IC as spi slave
+ * @return client if it was previously set or NULL in all the other cases
+ */
+-struct spi_device *getClient()
++struct spi_device *getClient(void)
+ {
+ 	if (client != NULL)
+ 		return (struct spi_device *)client;
+-- 
+2.48.1
+

@@ -1,0 +1,40 @@
+From 80ebe765e91d83c93bf01b43353fa61dde671017 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Sat, 5 Aug 2023 03:10:29 +0200
+Subject: [PATCH 116/157] drivers: esoc: Honor BOOT_FAIL_ACTION_DEF value
+
+ * This value is supposed to be used to choose what to do when
+   the modem restart fails, so let's actually make things behave
+   that way.
+
+Change-Id: I4a206694c8c056abf89ec89a42b99d4da4d5aabf
+---
+ drivers/esoc/esoc-mdm-drv.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/esoc/esoc-mdm-drv.c b/drivers/esoc/esoc-mdm-drv.c
+index 5301be93d38f..6bb74a86e67e 100644
+--- a/drivers/esoc/esoc-mdm-drv.c
++++ b/drivers/esoc/esoc-mdm-drv.c
+@@ -71,6 +71,9 @@ int esoc_set_boot_fail_action(struct esoc_clink *esoc_clink, u32 action)
+ 		return -EINVAL;
+ 	}
+ 
++	if (action == BOOT_FAIL_ACTION_PANIC)
++		action = BOOT_FAIL_ACTION_DEF;
++
+ 	if (!mdm_drv) {
+ 		esoc_mdm_log("esoc-mdm driver not present\n");
+ 		return -EAGAIN;
+@@ -389,7 +392,7 @@ static int mdm_handle_boot_fail(struct esoc_clink *esoc_clink, u8 *pon_trial)
+ 	if (*pon_trial == atomic_read(&mdm_drv->n_pon_tries)) {
+ 		esoc_mdm_log("Reached max. number of boot trials\n");
+ 		atomic_set(&mdm_drv->boot_fail_action,
+-					BOOT_FAIL_ACTION_PANIC);
++					BOOT_FAIL_ACTION_DEF);
+ 	}
+ 
+ 	switch (atomic_read(&mdm_drv->boot_fail_action)) {
+-- 
+2.48.1
+

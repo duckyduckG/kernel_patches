@@ -1,0 +1,166 @@
+From 85e79752f9105c795708b351573e361ad84149c9 Mon Sep 17 00:00:00 2001
+From: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Date: Sat, 24 Jul 2021 09:37:26 +0200
+Subject: [PATCH 104/157] Revert "usb: dwc3: Ensure blocking_sync waits until
+ host mode starts or stops"
+
+This reverts commit 7bb30153e71e4922cbe8ca5c74a5e94c3bef9e53.
+
+Change-Id: I464d05957445e3b9903a3c41627587fd7d4b4ad1
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+---
+ drivers/usb/dwc3/dwc3-msm.c    | 50 ++++++++++++++++++++--------------
+ drivers/usb/pd/policy_engine.c | 11 ++------
+ 2 files changed, 32 insertions(+), 29 deletions(-)
+
+diff --git a/drivers/usb/dwc3/dwc3-msm.c b/drivers/usb/dwc3/dwc3-msm.c
+index fcdfdd945355..e0bcde9bdb97 100644
+--- a/drivers/usb/dwc3/dwc3-msm.c
++++ b/drivers/usb/dwc3/dwc3-msm.c
+@@ -54,7 +54,6 @@ module_param(bc12_compliance, bool, 0644);
+ MODULE_PARM_DESC(bc12_compliance, "Disable sending dp pulse for CDP");
+ 
+ #define SDP_CONNETION_CHECK_TIME 10000 /* in ms */
+-#define EXTCON_SYNC_EVENT_TIMEOUT_MS 1500 /* in ms */
+ 
+ /* time out to wait for USB cable status notification (in ms)*/
+ #define SM_INIT_TIMEOUT 30000
+@@ -4647,40 +4646,47 @@ static int dwc3_otg_start_peripheral(struct dwc3_msm *mdwc, int on)
+ 	return 0;
+ }
+ 
+-/**
+- * dwc3_usb_blocking_sync - Waits until event is completed or maximum upto 1.5
+- * secs.
+- *
+- * @host_enable_event: Event can be start usb host or stop usb host.
+- */
+ static int dwc3_usb_blocking_sync(struct notifier_block *nb,
+-				unsigned long host_enable_event, void *ptr)
++				unsigned long event, void *ptr)
+ {
+ 	struct dwc3 *dwc;
+ 	struct extcon_dev *edev = ptr;
+ 	struct extcon_nb *enb = container_of(nb, struct extcon_nb,
+ 						blocking_sync_nb);
+ 	struct dwc3_msm *mdwc = enb->mdwc;
+-	unsigned long timeout_ms = jiffies +
+-			msecs_to_jiffies(EXTCON_SYNC_EVENT_TIMEOUT_MS);
++	int ret = 0;
+ 
+ 	if (!edev || !mdwc)
+ 		return NOTIFY_DONE;
+ 
+ 	dwc = platform_get_drvdata(mdwc->dwc3);
++
+ 	dbg_event(0xFF, "fw_blocksync", 0);
++	flush_work(&mdwc->resume_work);
++	drain_workqueue(mdwc->sm_usb_wq);
+ 
+-	do {
+-		if (mdwc->drd_state == (host_enable_event ? DRD_STATE_HOST
+-					: DRD_STATE_IDLE))
+-			break;
+-		msleep(50);
+-	} while (time_before(jiffies, timeout_ms));
++	if (!mdwc->in_host_mode && !mdwc->in_device_mode) {
++		dbg_event(0xFF, "lpm_state", atomic_read(&dwc->in_lpm));
++
++		/*
++		 * stop host mode functionality performs autosuspend with mdwc
++		 * device, and it may take sometime to call PM runtime suspend.
++		 * Hence call pm_runtime_suspend() API to invoke PM runtime
++		 * suspend immediately to put USB controller and PHYs into
++		 * suspend.
++		 */
++		ret = pm_runtime_suspend(mdwc->dev);
++		dbg_event(0xFF, "pm_runtime_sus", ret);
+ 
+-	if (!time_before(jiffies, timeout_ms))
+-		dev_err(mdwc->dev, "TIMEOUT when changing the state\n");
++		/*
++		 * If mdwc device is already suspended, pm_runtime_suspend() API
++		 * returns 1, which is not error. Overwrite with zero if it is.
++		 */
++		if (ret > 0)
++			ret = 0;
++	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int get_psy_type(struct dwc3_msm *mdwc)
+@@ -4901,6 +4907,8 @@ static void dwc3_otg_sm_work(struct work_struct *w)
+ 			mdwc->vbus_retry_count = 0;
+ 			work = 1;
+ 		} else {
++			mdwc->drd_state = DRD_STATE_HOST;
++
+ 			ret = dwc3_otg_start_host(mdwc, 1);
+ 			if ((ret == -EPROBE_DEFER) &&
+ 						mdwc->vbus_retry_count < 3) {
+@@ -4908,15 +4916,15 @@ static void dwc3_otg_sm_work(struct work_struct *w)
+ 				 * Get regulator failed as regulator driver is
+ 				 * not up yet. Will try to start host after 1sec
+ 				 */
++				mdwc->drd_state = DRD_STATE_HOST_IDLE;
+ 				dev_dbg(mdwc->dev, "Unable to get vbus regulator. Retrying...\n");
+ 				delay = VBUS_REG_CHECK_DELAY;
+ 				work = 1;
+ 				mdwc->vbus_retry_count++;
+ 			} else if (ret) {
+ 				dev_err(mdwc->dev, "unable to start host\n");
++				mdwc->drd_state = DRD_STATE_HOST_IDLE;
+ 				goto ret;
+-			} else {
+-				mdwc->drd_state = DRD_STATE_HOST;
+ 			}
+ 		}
+ 		break;
+diff --git a/drivers/usb/pd/policy_engine.c b/drivers/usb/pd/policy_engine.c
+index 4038d7645171..34d48cf81555 100644
+--- a/drivers/usb/pd/policy_engine.c
++++ b/drivers/usb/pd/policy_engine.c
+@@ -349,10 +349,6 @@ static void *usbpd_ipc_log;
+ #define ID_HDR_PRODUCT_AMA	5
+ #define ID_HDR_PRODUCT_VPD	6
+ 
+-/* params for usb_blocking_sync */
+-#define STOP_USB_HOST		0
+-#define START_USB_HOST		1
+-
+ #define PD_MIN_SINK_CURRENT	900
+ 
+ #define PD_VBUS_MAX_VOLTAGE_LIMIT		9000000
+@@ -625,7 +621,7 @@ static inline void start_usb_host(struct usbpd *pd, bool ss)
+ 	extcon_set_state_sync(pd->extcon, EXTCON_USB_HOST, 1);
+ 
+ 	/* blocks until USB host is completely started */
+-	ret = extcon_blocking_sync(pd->extcon, EXTCON_USB_HOST, START_USB_HOST);
++	ret = extcon_blocking_sync(pd->extcon, EXTCON_USB_HOST, 1);
+ 	if (ret) {
+ 		usbpd_err(&pd->dev, "err(%d) starting host", ret);
+ 		return;
+@@ -761,7 +757,7 @@ static int usbpd_release_ss_lane(struct usbpd *pd,
+ 	stop_usb_host(pd);
+ 
+ 	/* blocks until USB host is completely stopped */
+-	ret = extcon_blocking_sync(pd->extcon, EXTCON_USB_HOST, STOP_USB_HOST);
++	ret = extcon_blocking_sync(pd->extcon, EXTCON_USB_HOST, 0);
+ 	if (ret) {
+ 		usbpd_err(&pd->dev, "err(%d) stopping host", ret);
+ 		goto err_exit;
+@@ -2191,8 +2187,7 @@ static void dr_swap(struct usbpd *pd)
+ 		typec_set_data_role(pd->typec_port, TYPEC_HOST);
+ 
+ 		/* ensure host is started before allowing DP */
+-		extcon_blocking_sync(pd->extcon, EXTCON_USB_HOST,
+-					START_USB_HOST);
++		extcon_blocking_sync(pd->extcon, EXTCON_USB_HOST, 0);
+ 
+ 		usbpd_send_svdm(pd, USBPD_SID, USBPD_SVDM_DISCOVER_IDENTITY,
+ 				SVDM_CMD_TYPE_INITIATOR, 0, NULL, 0);
+-- 
+2.48.1
+

@@ -1,0 +1,79 @@
+From fe02d9b4ad45ed885c10f90ade803e042d7a3552 Mon Sep 17 00:00:00 2001
+From: Kazuki H <kazukih0205@gmail.com>
+Date: Sun, 24 Mar 2024 18:20:27 +0900
+Subject: [PATCH 149/157] fixup! drivers: bq2597x: Remove floating point
+ arithmetics
+
+Change-Id: Ic52be19e44698951e9f08fec32c3b18cc80c114e
+---
+ drivers/power/supply/ti/bq2597x_charger_dagu.c  | 7 ++-----
+ drivers/power/supply/ti/bq2597x_charger_munch.c | 7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/power/supply/ti/bq2597x_charger_dagu.c b/drivers/power/supply/ti/bq2597x_charger_dagu.c
+index 0b3ad25d6898..3baa1d0db24b 100644
+--- a/drivers/power/supply/ti/bq2597x_charger_dagu.c
++++ b/drivers/power/supply/ti/bq2597x_charger_dagu.c
+@@ -34,7 +34,6 @@
+ #include <linux/debugfs.h>
+ #include <linux/bitops.h>
+ #include <linux/math64.h>
+-#include <asm/neon.h>
+ #include "bq25970_reg.h"
+ /*#include "bq2597x.h"*/
+ 
+@@ -57,7 +56,7 @@ enum {
+ 	ADC_MAX_NUM,
+ };
+ 
+-static float sc8551_adc_lsb[] = {
++static int sc8551_adc_lsb[] = {
+ 	[ADC_IBUS] = SC8551_IBUS_ADC_LSB,  [ADC_VBUS] = SC8551_VBUS_ADC_LSB,
+ 	[ADC_VAC] = SC8551_VAC_ADC_LSB,	   [ADC_VOUT] = SC8551_VOUT_ADC_LSB,
+ 	[ADC_VBAT] = SC8551_VBAT_ADC_LSB,  [ADC_IBAT] = SC8551_IBAT_ADC_LSB,
+@@ -1120,9 +1119,7 @@ static int bq2597x_get_adc_data(struct bq2597x *bq, int channel, int *result)
+ 		*result = t;
+ 
+ 		if (bq->chip_vendor == SC8551) {
+-			kernel_neon_begin();
+-			*result = (int)(t * sc8551_adc_lsb[channel]);
+-			kernel_neon_end();
++			*result = (u64)t * (u64)sc8551_adc_lsb[channel] / 10000000;
+ 		}
+ 	}
+ 
+diff --git a/drivers/power/supply/ti/bq2597x_charger_munch.c b/drivers/power/supply/ti/bq2597x_charger_munch.c
+index 4eee30188972..9a49f967b5ca 100644
+--- a/drivers/power/supply/ti/bq2597x_charger_munch.c
++++ b/drivers/power/supply/ti/bq2597x_charger_munch.c
+@@ -34,7 +34,6 @@
+ #include <linux/debugfs.h>
+ #include <linux/bitops.h>
+ #include <linux/math64.h>
+-#include <asm/neon.h>
+ #include "bq25970_reg.h"
+ /*#include "bq2597x.h"*/
+ 
+@@ -57,7 +56,7 @@ enum {
+ 	ADC_MAX_NUM,
+ };
+ 
+-static float sc8551_adc_lsb[] = {
++static int sc8551_adc_lsb[] = {
+ 	[ADC_IBUS] = SC8551_IBUS_ADC_LSB,  [ADC_VBUS] = SC8551_VBUS_ADC_LSB,
+ 	[ADC_VAC] = SC8551_VAC_ADC_LSB,	   [ADC_VOUT] = SC8551_VOUT_ADC_LSB,
+ 	[ADC_VBAT] = SC8551_VBAT_ADC_LSB,  [ADC_IBAT] = SC8551_IBAT_ADC_LSB,
+@@ -1110,9 +1109,7 @@ static int bq2597x_get_adc_data(struct bq2597x *bq, int channel, int *result)
+ 		*result = t;
+ 
+ 		if (bq->chip_vendor == SC8551) {
+-			kernel_neon_begin();
+-			*result = (int)(t * sc8551_adc_lsb[channel]);
+-			kernel_neon_end();
++			*result = (u64)t * (u64)sc8551_adc_lsb[channel] / 10000000;
+ 		}
+ 	}
+ 
+-- 
+2.48.1
+

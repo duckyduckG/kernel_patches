@@ -1,0 +1,52 @@
+From d0d0d12329a8285194fb3aa4abb82db797758ad2 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sun, 5 Mar 2023 21:34:15 +0100
+Subject: [PATCH 079/157] techpack: audio: tfa98xx: Make it build with debugfs
+ disabled
+
+Change-Id: I0f6f1733176a9a12ecd4a8859b709adbb62ffe44
+---
+ .../audio/asoc/codecs/tfa98xx/src/tfa98xx.c   | 20 +++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/techpack/audio/asoc/codecs/tfa98xx/src/tfa98xx.c b/techpack/audio/asoc/codecs/tfa98xx/src/tfa98xx.c
+index 996cabee0abe..3a2178e1e078 100644
+--- a/techpack/audio/asoc/codecs/tfa98xx/src/tfa98xx.c
++++ b/techpack/audio/asoc/codecs/tfa98xx/src/tfa98xx.c
+@@ -448,6 +448,16 @@ static void tfa98xx_inputdev_unregister(struct tfa98xx *tfa98xx)
+ 	__tfa98xx_inputdev_check_register(tfa98xx, true);
+ }
+ 
++#ifdef TFA_NON_DSP_SOLUTION
++extern int send_tfa_cal_apr(void *buf, int cmd_size, bool bRead);
++#else
++int send_tfa_cal_apr(void *buf, int cmd_size, bool bRead)
++{
++	pr_info("this function is empty!!!\n");
++	return 0;
++}
++#endif
++
+ #ifdef CONFIG_DEBUG_FS
+ /* OTC reporting
+  * Returns the MTP0 OTC bit value
+@@ -809,16 +819,6 @@ static ssize_t tfa98xx_dbgfs_fw_state_get(struct file *file,
+ 	return simple_read_from_buffer(user_buf, count, ppos, str, strlen(str));
+ }
+ 
+-#ifdef TFA_NON_DSP_SOLUTION
+-extern int send_tfa_cal_apr(void *buf, int cmd_size, bool bRead);
+-#else
+-int send_tfa_cal_apr(void *buf, int cmd_size, bool bRead)
+-{
+-	pr_info("this function is empty!!!\n");
+-	return 0;
+-}
+-#endif
+-
+ static ssize_t tfa98xx_dbgfs_rpc_read(struct file *file, char __user *user_buf,
+ 				      size_t count, loff_t *ppos)
+ {
+-- 
+2.48.1
+

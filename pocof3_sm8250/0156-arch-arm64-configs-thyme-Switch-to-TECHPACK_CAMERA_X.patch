@@ -1,0 +1,26 @@
+From 58a0ded1feacdb849bfa40d8876b30a25b2932be Mon Sep 17 00:00:00 2001
+From: przekichane <przekichane@icloud.com>
+Date: Mon, 9 Dec 2024 16:44:41 +0800
+Subject: [PATCH 156/157] arch: arm64: configs: thyme: Switch to
+ TECHPACK_CAMERA_XIAOMI_CAS
+
+Without this, the camera doesn't work.
+
+Change-Id: I0b557c461c748b5d7397fa79d066abad93bdef39
+---
+ arch/arm64/configs/vendor/xiaomi/thyme.config | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/thyme.config b/arch/arm64/configs/vendor/xiaomi/thyme.config
+index 32385dd31395..0958b01b0adc 100644
+--- a/arch/arm64/configs/vendor/xiaomi/thyme.config
++++ b/arch/arm64/configs/vendor/xiaomi/thyme.config
+@@ -29,4 +29,4 @@ CONFIG_US_PROXIMITY=y
+ CONFIG_INPUT_AW8697_HAPTIC=y
+ 
+ # Camera
+-CONFIG_TECHPACK_CAMERA_XIAOMI=y
++CONFIG_TECHPACK_CAMERA_XIAOMI_CAS=y
+-- 
+2.48.1
+

@@ -1,0 +1,26 @@
+From 0b967da514b28aef10da76ffe79e9d2320e35606 Mon Sep 17 00:00:00 2001
+From: przekichane <przekichane@icloud.com>
+Date: Sat, 6 Jul 2024 01:57:50 +0200
+Subject: [PATCH 144/157] arch: arm64: configs: cmi: Switch to
+ TECHPACK_CAMERA_XIAOMI_CAS
+
+Without this, the camera doesn't work.
+
+Change-Id: Ia58f2b767b108fd81bdd1a88b673a2347b3b6da4
+---
+ arch/arm64/configs/vendor/xiaomi/cmi.config | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/cmi.config b/arch/arm64/configs/vendor/xiaomi/cmi.config
+index 818d6963e5e6..9a08b615a273 100644
+--- a/arch/arm64/configs/vendor/xiaomi/cmi.config
++++ b/arch/arm64/configs/vendor/xiaomi/cmi.config
+@@ -27,4 +27,4 @@ CONFIG_US_PROXIMITY=y
+ CONFIG_INPUT_AW8697_HAPTIC=y
+ 
+ # Camera
+-CONFIG_TECHPACK_CAMERA_XIAOMI=y
++CONFIG_TECHPACK_CAMERA_XIAOMI_CAS=y
+-- 
+2.48.1
+

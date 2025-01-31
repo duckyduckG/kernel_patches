@@ -1,0 +1,28 @@
+From f7168ba9449a356acb66579dbc583c2303f39155 Mon Sep 17 00:00:00 2001
+From: Yumi Yukimura <me.cafebabe@gmail.com>
+Date: Sun, 11 Feb 2024 22:36:30 +0800
+Subject: [PATCH 135/157] ARM: dts: msm: kona: Ignore SSR failure for modem
+
+* This lets the SSR driver not to trigger kernel panic
+  when the modem subsystem fails to power up.
+
+Change-Id: I9b50fd6a21b85465d40ef2d1edc4f242ae24b055
+---
+ arch/arm64/boot/dts/vendor/qcom/kona.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/kona.dtsi b/arch/arm64/boot/dts/vendor/qcom/kona.dtsi
+index 0f656709152d..5dade343a732 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/kona.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/kona.dtsi
+@@ -2427,6 +2427,7 @@
+ 		qcom,support-shutdown;
+ 		qcom,pil-force-shutdown;
+ 		qcom,esoc-skip-restart-for-mdm-crash;
++		qcom,ignore-ssr-failure;
+ 		pinctrl-names = "mdm_active", "mdm_suspend";
+ 		pinctrl-0 = <&ap2mdm_active &mdm2ap_active>;
+ 		pinctrl-1 = <&ap2mdm_sleep &mdm2ap_sleep>;
+-- 
+2.48.1
+

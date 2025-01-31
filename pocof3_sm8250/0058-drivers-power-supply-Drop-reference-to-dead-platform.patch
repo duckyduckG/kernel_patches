@@ -1,0 +1,54 @@
+From be43d29ce7b86ddb9b278194732b5d8b98bb4dd9 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sun, 5 Mar 2023 16:55:06 +0100
+Subject: [PATCH 058/157] drivers: power: supply: Drop reference to dead
+ platforms
+
+Change-Id: Id81d81b06a02e4172018b0f42efc455805409e0a
+---
+ drivers/power/supply/nuvolta/rx1619.c   | 5 +----
+ drivers/power/supply/renesas/idtp9415.c | 5 -----
+ 2 files changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/drivers/power/supply/nuvolta/rx1619.c b/drivers/power/supply/nuvolta/rx1619.c
+index f5ae147b654a..7204b35ee771 100644
+--- a/drivers/power/supply/nuvolta/rx1619.c
++++ b/drivers/power/supply/nuvolta/rx1619.c
+@@ -5173,16 +5173,13 @@ static struct i2c_driver rx1619_driver = {
+ static int __init rx1619_init(void)
+ {
+ 	int ret;
+-	uint32_t hw_version = 0;
+ #ifdef CONFIG_RX1619_REMOVE
+ 	return 0;
+ #endif
+-	hw_version = get_hw_version_platform();
+-	printk("rx1619: hw version: %d\n", hw_version);
+ 
+ #ifndef CONFIG_RX_ON_URD
+ 	printk("is_nvt_rx flag is:%d\n", is_nvt_rx);
+-	if (!is_nvt_rx && (hw_version != HARDWARE_PLATFORM_SKULD))
++	if (!is_nvt_rx)
+ 		return 0;
+ #endif
+ 
+diff --git a/drivers/power/supply/renesas/idtp9415.c b/drivers/power/supply/renesas/idtp9415.c
+index 825b23357d8d..8cb09b4ae34c 100644
+--- a/drivers/power/supply/renesas/idtp9415.c
++++ b/drivers/power/supply/renesas/idtp9415.c
+@@ -5242,12 +5242,7 @@ static struct i2c_driver idtp9220_driver = {
+ static int __init idt_init(void)
+ {
+ 	int ret;
+-	uint32_t hw_version = 0;
+ 
+-	hw_version = get_hw_version_platform();
+-	printk("idtp9415: hw version: %d\n", hw_version);
+-	if (hw_version == HARDWARE_PLATFORM_SKULD)
+-		return 0;
+ #ifndef CONFIG_RX1619_REMOVE
+ 	printk("is_idt_rx flag is:%d\n", is_idt_rx);
+ #endif
+-- 
+2.48.1
+

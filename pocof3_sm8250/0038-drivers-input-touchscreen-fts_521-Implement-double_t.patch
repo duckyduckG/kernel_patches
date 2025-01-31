@@ -1,0 +1,74 @@
+From 82cf02cc7bd26eb02adc7e42e4b0f043f022ee8e Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Mon, 30 Jan 2023 23:14:18 +0100
+Subject: [PATCH 038/157] drivers: input: touchscreen: fts_521: Implement
+ double_tap node
+
+Change-Id: I219ef6b0305649690594e5e053a0c4ce4b719ef6
+---
+ drivers/input/touchscreen/fts_521/fts.c | 35 +++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/drivers/input/touchscreen/fts_521/fts.c b/drivers/input/touchscreen/fts_521/fts.c
+index 71205a8c1b4a..e8a385dae961 100644
+--- a/drivers/input/touchscreen/fts_521/fts.c
++++ b/drivers/input/touchscreen/fts_521/fts.c
+@@ -84,6 +84,9 @@
+ #include "fts_lib/ftsTime.h"
+ #include "fts_lib/ftsTool.h"
+ #include <linux/power_supply.h>
++#if defined(GESTURE_MODE) && defined(CONFIG_TOUCHSCREEN_COMMON)
++#include <linux/input/tp_common.h>
++#endif
+ 
+ /**
+  * Event handler installer helpers
+@@ -504,6 +507,34 @@ static ssize_t fts_feature_enable_show(struct device *dev,
+ }
+ #else
+ 
++#if defined(GESTURE_MODE) && defined(CONFIG_TOUCHSCREEN_COMMON)
++static ssize_t double_tap_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", fts_info->gesture_enabled);
++}
++
++static ssize_t double_tap_store(struct kobject *kobj,
++				struct kobj_attribute *attr, const char *buf,
++				size_t count)
++{
++	int rc, val;
++
++	rc = kstrtoint(buf, 10, &val);
++	if (rc)
++		return -EINVAL;
++
++	fts_info->gesture_enabled = !!val;
++	schedule_work(&fts_info->switch_mode_work);
++	return count;
++}
++
++static struct tp_common_ops double_tap_ops = {
++	.show = double_tap_show,
++	.store = double_tap_store,
++};
++#endif
++
+ #ifdef GRIP_MODE
+ /**
+  * File node to set the grip mode
+@@ -8179,6 +8210,10 @@ static int fts_probe(struct spi_device *client)
+ 	mutex_init(&gestureMask_mutex);
+ #endif
+ 
++#if defined(GESTURE_MODE) && defined(CONFIG_TOUCHSCREEN_COMMON)
++	tp_common_set_double_tap_ops(&double_tap_ops);
++#endif
++
+ 	spin_lock_init(&fts_int);
+ 
+ 	/* register the multi-touch input device */
+-- 
+2.48.1
+

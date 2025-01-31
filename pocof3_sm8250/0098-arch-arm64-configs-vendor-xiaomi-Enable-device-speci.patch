@@ -1,0 +1,157 @@
+From d4865dda83e6ebfd2d09f9a8e457a97cd0a41705 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Mon, 1 May 2023 21:15:41 +0200
+Subject: [PATCH 098/157] arch: arm64: configs: vendor: xiaomi: Enable
+ device-specific camera configs
+
+Change-Id: I254ed8a999f476ff089e1a481e565961098d00b3
+---
+ arch/arm64/configs/vendor/xiaomi/alioth.config | 3 +++
+ arch/arm64/configs/vendor/xiaomi/apollo.config | 3 +++
+ arch/arm64/configs/vendor/xiaomi/cas.config    | 3 +++
+ arch/arm64/configs/vendor/xiaomi/cmi.config    | 3 +++
+ arch/arm64/configs/vendor/xiaomi/dagu.config   | 3 +++
+ arch/arm64/configs/vendor/xiaomi/elish.config  | 3 +++
+ arch/arm64/configs/vendor/xiaomi/enuma.config  | 3 +++
+ arch/arm64/configs/vendor/xiaomi/lmi.config    | 3 +++
+ arch/arm64/configs/vendor/xiaomi/munch.config  | 3 +++
+ arch/arm64/configs/vendor/xiaomi/psyche.config | 3 +++
+ arch/arm64/configs/vendor/xiaomi/thyme.config  | 3 +++
+ arch/arm64/configs/vendor/xiaomi/umi.config    | 3 +++
+ 12 files changed, 36 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/alioth.config b/arch/arm64/configs/vendor/xiaomi/alioth.config
+index f3eb4a8be165..2d1f93ed6b09 100644
+--- a/arch/arm64/configs/vendor/xiaomi/alioth.config
++++ b/arch/arm64/configs/vendor/xiaomi/alioth.config
+@@ -18,3 +18,6 @@ CONFIG_ONEWIRE_GPIO=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/apollo.config b/arch/arm64/configs/vendor/xiaomi/apollo.config
+index 6a487d8f9f08..062bf484d328 100644
+--- a/arch/arm64/configs/vendor/xiaomi/apollo.config
++++ b/arch/arm64/configs/vendor/xiaomi/apollo.config
+@@ -17,3 +17,6 @@ CONFIG_ONEWIRE_GPIO=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/cas.config b/arch/arm64/configs/vendor/xiaomi/cas.config
+index 8f9b0919b32a..05eb027fd7fd 100644
+--- a/arch/arm64/configs/vendor/xiaomi/cas.config
++++ b/arch/arm64/configs/vendor/xiaomi/cas.config
+@@ -27,3 +27,6 @@ CONFIG_HL6111R=n
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI_CAS=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/cmi.config b/arch/arm64/configs/vendor/xiaomi/cmi.config
+index ba89e2f6becc..91a529d352d4 100644
+--- a/arch/arm64/configs/vendor/xiaomi/cmi.config
++++ b/arch/arm64/configs/vendor/xiaomi/cmi.config
+@@ -22,3 +22,6 @@ CONFIG_HL6111R=n
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/dagu.config b/arch/arm64/configs/vendor/xiaomi/dagu.config
+index 29a484231d88..2e699c0fc1ac 100644
+--- a/arch/arm64/configs/vendor/xiaomi/dagu.config
++++ b/arch/arm64/configs/vendor/xiaomi/dagu.config
+@@ -21,3 +21,6 @@ CONFIG_DUAL_BQ2597X=y
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
+ CONFIG_INPUT_AW8697_HAPTIC_DAGU=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI_TABLET=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/elish.config b/arch/arm64/configs/vendor/xiaomi/elish.config
+index 3d990a7d2a7a..a0a71c2da7fb 100644
+--- a/arch/arm64/configs/vendor/xiaomi/elish.config
++++ b/arch/arm64/configs/vendor/xiaomi/elish.config
+@@ -21,3 +21,6 @@ CONFIG_DUAL_BQ2597X=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI_TABLET=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/enuma.config b/arch/arm64/configs/vendor/xiaomi/enuma.config
+index 2b32cc6754f0..cffebc8d7964 100644
+--- a/arch/arm64/configs/vendor/xiaomi/enuma.config
++++ b/arch/arm64/configs/vendor/xiaomi/enuma.config
+@@ -19,3 +19,6 @@ CONFIG_DUAL_BQ2597X=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI_TABLET=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/lmi.config b/arch/arm64/configs/vendor/xiaomi/lmi.config
+index 951406f24d53..aa6169e97cae 100644
+--- a/arch/arm64/configs/vendor/xiaomi/lmi.config
++++ b/arch/arm64/configs/vendor/xiaomi/lmi.config
+@@ -17,3 +17,6 @@ CONFIG_ONEWIRE_GPIO=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/munch.config b/arch/arm64/configs/vendor/xiaomi/munch.config
+index f7232da0a14d..b471c3c5f988 100644
+--- a/arch/arm64/configs/vendor/xiaomi/munch.config
++++ b/arch/arm64/configs/vendor/xiaomi/munch.config
+@@ -20,3 +20,6 @@ CONFIG_FUEL_GAUGE_BQ27Z561_MUNCH=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW86927_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/psyche.config b/arch/arm64/configs/vendor/xiaomi/psyche.config
+index 923afc0bdcdd..2755fb4a8c96 100644
+--- a/arch/arm64/configs/vendor/xiaomi/psyche.config
++++ b/arch/arm64/configs/vendor/xiaomi/psyche.config
+@@ -19,3 +19,6 @@ CONFIG_FUEL_GAUGE_BQ27Z561_PSYCHE=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/thyme.config b/arch/arm64/configs/vendor/xiaomi/thyme.config
+index b22eadf598a7..cb177611e52d 100644
+--- a/arch/arm64/configs/vendor/xiaomi/thyme.config
++++ b/arch/arm64/configs/vendor/xiaomi/thyme.config
+@@ -24,3 +24,6 @@ CONFIG_BATT_VERIFY_BY_DS28E16=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/umi.config b/arch/arm64/configs/vendor/xiaomi/umi.config
+index 2229c6d81c73..abc84c7c9d04 100644
+--- a/arch/arm64/configs/vendor/xiaomi/umi.config
++++ b/arch/arm64/configs/vendor/xiaomi/umi.config
+@@ -24,3 +24,6 @@ CONFIG_BATT_VERIFY_BY_DS28E16=y
+ 
+ # Vibrator
+ CONFIG_INPUT_AW8697_HAPTIC=y
++
++# Camera
++CONFIG_TECHPACK_CAMERA_XIAOMI=y
+-- 
+2.48.1
+

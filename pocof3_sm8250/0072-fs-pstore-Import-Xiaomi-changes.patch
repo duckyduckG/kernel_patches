@@ -1,0 +1,215 @@
+From 8adcd958fc8e3b214a9b7553922310d63369b5c7 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 16 Nov 2022 16:54:28 +0100
+Subject: [PATCH 072/157] fs: pstore: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: If6d86762184691172874e351c8532b9da84ee880
+---
+ fs/pstore/Kconfig          |  8 +++++++
+ fs/pstore/inode.c          | 40 ++++++++++++++++++++++++++++++++++
+ fs/pstore/ram.c            | 44 ++++++++++++++++++++++++++++++++++++++
+ fs/pstore/ram_core.c       |  5 +++++
+ include/linux/pstore_ram.h |  5 +++++
+ 5 files changed, 102 insertions(+)
+
+diff --git a/fs/pstore/Kconfig b/fs/pstore/Kconfig
+index d5fb6d95d4d4..5f83e5adea16 100644
+--- a/fs/pstore/Kconfig
++++ b/fs/pstore/Kconfig
+@@ -154,3 +154,11 @@ config PSTORE_RAM
+ 	  "ramoops.ko".
+ 
+ 	  For more information, see Documentation/admin-guide/ramoops.rst.
++
++config PSTORE_LAST_KMSG
++	bool "export /proc/last_kmsg"
++	default n
++	depends on PSTORE
++	help
++	  When the option is enabled, pstore will export a proc filesystem
++	  interface /proc/last_kmsg.
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index 6f51c6d7b965..fe6e94027c39 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -36,6 +36,9 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/uaccess.h>
++#ifdef CONFIG_PSTORE_LAST_KMSG
++#include <linux/proc_fs.h>
++#endif
+ 
+ #include "internal.h"
+ 
+@@ -297,6 +300,25 @@ bool pstore_is_mounted(void)
+ 	return pstore_sb != NULL;
+ }
+ 
++#ifdef CONFIG_PSTORE_LAST_KMSG
++
++static char *console_buffer;
++static ssize_t console_bufsize;
++
++static ssize_t last_kmsg_read(struct file *file, char __user *buf,
++		size_t len, loff_t *offset)
++{
++	return simple_read_from_buffer(buf, len, offset,
++			console_buffer, console_bufsize);
++}
++
++static const struct file_operations last_kmsg_fops = {
++	.owner          = THIS_MODULE,
++	.read           = last_kmsg_read,
++	.llseek         = default_llseek,
++};
++#endif
++
+ /*
+  * Make a regular file in the root directory of our file system.
+  * Load it up with "size" bytes of data from "buf".
+@@ -403,6 +425,13 @@ int pstore_mkfile(struct dentry *root, struct pstore_record *record)
+ 	list_add(&private->list, &allpstore);
+ 	spin_unlock_irqrestore(&allpstore_lock, flags);
+ 
++#ifdef CONFIG_PSTORE_LAST_KMSG
++	if (record->type == PSTORE_TYPE_CONSOLE) {
++		console_buffer = private->record->buf;
++		console_bufsize = size;
++	}
++#endif
++
+ 	return 0;
+ 
+ fail_private:
+@@ -488,6 +517,9 @@ static struct file_system_type pstore_fs_type = {
+ int __init pstore_init_fs(void)
+ {
+ 	int err;
++#ifdef CONFIG_PSTORE_LAST_KMSG
++	struct proc_dir_entry *last_kmsg_entry = NULL;
++#endif
+ 
+ 	/* Create a convenient mount point for people to access pstore */
+ 	err = sysfs_create_mount_point(fs_kobj, "pstore");
+@@ -498,6 +530,14 @@ int __init pstore_init_fs(void)
+ 	if (err < 0)
+ 		sysfs_remove_mount_point(fs_kobj, "pstore");
+ 
++#ifdef CONFIG_PSTORE_LAST_KMSG
++	last_kmsg_entry = proc_create_data("last_kmsg", S_IFREG | S_IRUGO,
++			NULL, &last_kmsg_fops, NULL);
++	if (!last_kmsg_entry) {
++		pr_err("Failed to create last_kmsg\n");
++		goto out;
++	}
++#endif
+ out:
+ 	return err;
+ }
+diff --git a/fs/pstore/ram.c b/fs/pstore/ram.c
+index 33294dee7d7f..853ea84727ef 100644
+--- a/fs/pstore/ram.c
++++ b/fs/pstore/ram.c
+@@ -35,6 +35,7 @@
+ #include <linux/pstore_ram.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/memblock.h>
+ 
+ #define RAMOOPS_KERNMSG_HDR "===="
+ #define MIN_MEM_SIZE 4096UL
+@@ -969,6 +970,49 @@ static void __init ramoops_register_dummy(void)
+ 	}
+ }
+ 
++struct ramoops_platform_data ramoops_data;
++
++static struct platform_device ramoops_dev  = {
++	.name = "ramoops",
++	.dev = {
++		.platform_data = &ramoops_data,
++	},
++};
++
++static int __init ramoops_memreserve(char *p)
++{
++	unsigned long size;
++
++	if (!p)
++		return 1;
++
++	size = memparse(p, &p) & PAGE_MASK;
++	ramoops_data.mem_size = size;
++	ramoops_data.mem_address = 0xB0000000;
++	ramoops_data.console_size = size / 2;
++	ramoops_data.pmsg_size = size / 2;
++	ramoops_data.dump_oops = 1;
++
++	pr_info("msm_reserve_ramoops_memory addr=%llx,size=%lx\n",
++		ramoops_data.mem_address, ramoops_data.mem_size);
++	pr_info("msm_reserve_ramoops_memory record_size=%lx,ftrace_size=%lx\n",
++		ramoops_data.record_size, ramoops_data.ftrace_size);
++
++	memblock_reserve(ramoops_data.mem_address, ramoops_data.mem_size);
++
++	return 0;
++}
++early_param("ramoops_memreserve", ramoops_memreserve);
++
++static int __init msm_register_ramoops_device(void)
++{
++	pr_info("msm_register_ramoops_device\n");
++	if (platform_device_register(&ramoops_dev))
++		pr_info("Unable to register ramoops platform device\n");
++	return 0;
++}
++core_initcall(msm_register_ramoops_device);
++
+ static int __init ramoops_init(void)
+ {
+ 	int ret;
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index 60dff7180412..7c515fc61601 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -38,6 +38,7 @@ struct persistent_ram_buffer {
+ 
+ #define PERSISTENT_RAM_SIG (0x43474244) /* DBGC */
+ 
++struct pmsg_start_t pmsg_start;
+ static inline size_t buffer_size(struct persistent_ram_zone *prz)
+ {
+ 	return atomic_read(&prz->buffer->size);
+@@ -358,6 +359,10 @@ int notrace persistent_ram_write_user(struct persistent_ram_zone *prz,
+ 
+ 	start = buffer_start_add(prz, c);
+ 
++	spin_lock(&pmsg_start.lock);
++	pmsg_start.start = start;
++	spin_unlock(&pmsg_start.lock);
++
+ 	rem = prz->buffer_size - start;
+ 	if (unlikely(rem < c)) {
+ 		ret = persistent_ram_update_user(prz, s, start, rem);
+diff --git a/include/linux/pstore_ram.h b/include/linux/pstore_ram.h
+index e6d226464838..e8ac4fc101ea 100644
+--- a/include/linux/pstore_ram.h
++++ b/include/linux/pstore_ram.h
+@@ -63,6 +63,11 @@ struct persistent_ram_zone {
+ 	size_t old_log_size;
+ };
+ 
++struct pmsg_start_t {
++	size_t start;
++	spinlock_t lock;
++};
++
+ struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
+ 			u32 sig, struct persistent_ram_ecc_info *ecc_info,
+ 			unsigned int memtype, u32 flags);
+-- 
+2.48.1
+

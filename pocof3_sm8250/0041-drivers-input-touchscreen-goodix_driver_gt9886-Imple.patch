@@ -1,0 +1,78 @@
+From b5ca151062a3ec49506cf54526eb1b093352dd1a Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Mon, 30 Jan 2023 23:28:21 +0100
+Subject: [PATCH 041/157] drivers: input: touchscreen: goodix_driver_gt9886:
+ Implement double_tap node
+
+Change-Id: I35ed3cfb78548ab93f1ff3ba2e22e0e0d1d00003
+---
+ .../goodix_driver_gt9886/goodix_ts_core.c     | 39 +++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c b/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c
+index 0e0221ba052e..ecac53c12338 100644
+--- a/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c
++++ b/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c
+@@ -37,6 +37,11 @@
+ #include <linux/input/mt.h>
+ #define INPUT_TYPE_B_PROTOCOL
+ #endif
++
++#ifdef CONFIG_TOUCHSCREEN_COMMON
++#include <linux/input/tp_common.h>
++#endif
++
+ #include <linux/input/touch_common_info.h>
+ #include "../xiaomi/xiaomi_touch.h"
+ 
+@@ -876,6 +881,36 @@ static ssize_t goodix_ts_reg_rw_store(struct device *dev,
+ 	return -EINVAL;
+ }
+ 
++#ifdef CONFIG_TOUCHSCREEN_COMMON
++static ssize_t double_tap_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", goodix_core_data->double_wakeup);
++}
++
++static ssize_t double_tap_store(struct kobject *kobj,
++				struct kobj_attribute *attr, const char *buf,
++				size_t count)
++{
++	int rc, val;
++
++	rc = kstrtoint(buf, 10, &val);
++	if (rc)
++		return -EINVAL;
++
++	goodix_core_data->double_wakeup = !!val;
++	queue_work(goodix_core_data->touch_feature_wq,
++		   &goodix_core_data->cmd_update_work);
++
++	return count;
++}
++
++static struct tp_common_ops double_tap_ops = {
++	.show = double_tap_show,
++	.store = double_tap_store,
++};
++#endif
++
+ static DEVICE_ATTR(extmod_info, S_IRUGO, goodix_ts_extmod_show, NULL);
+ static DEVICE_ATTR(driver_info, S_IRUGO, goodix_ts_driver_info_show, NULL);
+ static DEVICE_ATTR(chip_info, S_IRUGO, goodix_ts_chip_info_show, NULL);
+@@ -2311,6 +2346,10 @@ int goodix_ts_stage2_init(struct goodix_ts_core *core_data)
+ 	/*create sysfs files*/
+ 	goodix_ts_sysfs_init(core_data);
+ 
++#ifdef CONFIG_TOUCHSCREEN_COMMON
++	tp_common_set_double_tap_ops(&double_tap_ops);
++#endif
++
+ 	/* esd protector */
+ 	goodix_ts_esd_init(core_data);
+ 	return 0;
+-- 
+2.48.1
+

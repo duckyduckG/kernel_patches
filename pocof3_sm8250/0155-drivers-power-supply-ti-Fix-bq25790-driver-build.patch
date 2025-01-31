@@ -1,0 +1,32 @@
+From 83b521195d8dac18ae5de2f228e333332101291b Mon Sep 17 00:00:00 2001
+From: Nanhumly <admin@warbler.cc>
+Date: Wed, 14 Aug 2024 04:55:22 +0000
+Subject: [PATCH 155/157] drivers: power: supply: ti: Fix bq25790 driver build
+
+* Missing in d14354fb62b9c411d4896c03b8581b158e25637e.
+
+Change-Id: I9e830109711769cd272d91980a231ac2ac801e80
+---
+ drivers/power/supply/ti/Kconfig | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/power/supply/ti/Kconfig b/drivers/power/supply/ti/Kconfig
+index e4643e1cbee4..47af34ea7227 100755
+--- a/drivers/power/supply/ti/Kconfig
++++ b/drivers/power/supply/ti/Kconfig
+@@ -26,6 +26,12 @@ config PD_POLICY_MANAGER_PSYCHE
+ 	help
+ 	  Say Y to include TI PD policy manager.
+ 
++config CHARGER_BQ25790
++	tristate "TI BQ25790 battery charger driver"
++	depends on I2C
++	help
++	  Say Y to enable support for TI bq2588x charger driver
++
+ config BQ2597X_CHARGE_PUMP
+ 	tristate "BQ2597X power supply framework based driver"
+ 	depends on I2C
+-- 
+2.48.1
+

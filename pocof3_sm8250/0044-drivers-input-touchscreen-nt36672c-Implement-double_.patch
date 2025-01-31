@@ -1,0 +1,74 @@
+From 05257703f2b23ce86125477f9bd6b514cb31e346 Mon Sep 17 00:00:00 2001
+From: Erfan Abdi <erfangplus@gmail.com>
+Date: Sat, 7 Mar 2020 03:09:00 +0330
+Subject: [PATCH 044/157] drivers: input: touchscreen: nt36672c: Implement
+ double_tap node
+
+Change-Id: I1ff68f35ed5b0c21f993ef339ffc3df111c60e74
+---
+ drivers/input/touchscreen/nt36672c/nt36xxx.c | 35 ++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/drivers/input/touchscreen/nt36672c/nt36xxx.c b/drivers/input/touchscreen/nt36672c/nt36xxx.c
+index 5c9262d98f11..4528503116a4 100644
+--- a/drivers/input/touchscreen/nt36672c/nt36xxx.c
++++ b/drivers/input/touchscreen/nt36672c/nt36xxx.c
+@@ -45,6 +45,10 @@
+ #include <linux/jiffies.h>
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
+ 
++#if WAKEUP_GESTURE && defined(CONFIG_TOUCHSCREEN_COMMON)
++#include <linux/input/tp_common.h>
++#endif
++
+ #if NVT_TOUCH_ESD_PROTECT
+ static struct delayed_work nvt_esd_check_work;
+ static struct workqueue_struct *nvt_esd_check_wq;
+@@ -115,6 +119,33 @@ const uint16_t gesture_key_array[] = {
+ };
+ #endif
+ 
++#if WAKEUP_GESTURE && defined(CONFIG_TOUCHSCREEN_COMMON)
++static ssize_t double_tap_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", ts->db_wakeup);
++}
++
++static ssize_t double_tap_store(struct kobject *kobj,
++				struct kobj_attribute *attr, const char *buf,
++				size_t count)
++{
++	int rc, val;
++
++	rc = kstrtoint(buf, 10, &val);
++	if (rc)
++		return -EINVAL;
++
++	ts->db_wakeup = !!val;
++	return count;
++}
++
++static struct tp_common_ops double_tap_ops = {
++	.show = double_tap_show,
++	.store = double_tap_store,
++};
++#endif
++
+ #ifdef CONFIG_MTK_SPI
+ const struct mt_chip_conf spi_ctrdata = {
+ 	.setuptime = 25,
+@@ -2674,6 +2705,10 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
+ 	}
+ #endif
+ 
++#if WAKEUP_GESTURE && defined(CONFIG_TOUCHSCREEN_COMMON)
++	tp_common_set_double_tap_ops(&double_tap_ops);
++#endif
++
+ 	sprintf(ts->phys, "input/ts");
+ 	ts->input_dev->name = NVT_TS_NAME;
+ 	ts->input_dev->phys = ts->phys;
+-- 
+2.48.1
+

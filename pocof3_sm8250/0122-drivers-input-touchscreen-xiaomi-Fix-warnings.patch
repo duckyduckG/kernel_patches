@@ -1,0 +1,32 @@
+From 93e7e30a1be90c3614d58d6a7970250b18a401ac Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sat, 16 Mar 2024 22:12:06 +0100
+Subject: [PATCH 122/157] drivers: input: touchscreen: xiaomi: Fix warnings
+
+Change-Id: I85fb05a68fd9c38196804fdaff84ff24f0c0dcda
+---
+ drivers/input/touchscreen/xiaomi/xiaomi_touch.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/touchscreen/xiaomi/xiaomi_touch.c b/drivers/input/touchscreen/xiaomi/xiaomi_touch.c
+index 70e87cb5e756..6b15dd035ef4 100644
+--- a/drivers/input/touchscreen/xiaomi/xiaomi_touch.c
++++ b/drivers/input/touchscreen/xiaomi/xiaomi_touch.c
+@@ -152,12 +152,12 @@ struct xiaomi_touch *xiaomi_touch_dev_get(int minor)
+ 		return NULL;
+ }
+ 
+-struct class *get_xiaomi_touch_class()
++struct class *get_xiaomi_touch_class(void)
+ {
+ 	return xiaomi_touch_dev.class;
+ }
+ 
+-struct device *get_xiaomi_touch_dev()
++struct device *get_xiaomi_touch_dev(void)
+ {
+ 	return xiaomi_touch_dev.dev;
+ }
+-- 
+2.48.1
+

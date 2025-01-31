@@ -1,0 +1,333 @@
+From db364c8999567f6bc7bb9c55055d80e13d1136e3 Mon Sep 17 00:00:00 2001
+From: Dyneteve <dyneteve@hentaios.com>
+Date: Tue, 11 May 2021 07:42:48 +0000
+Subject: [PATCH 018/157] arch: arm64: boot: dts: vendor: Correct panel
+ physical dimensions reporting
+
+Change-Id: I24ab94b5a587d255cce3fa6d55c4813d3602b16f
+---
+ .../boot/dts/vendor/qcom/dsi-panel-j11-38-08-0a-fhd-cmd.dtsi  | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi  | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi    | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi  | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-j1u-42-02-0b-dsc-cmd.dtsi  | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-j2-38-0c-0a-dsc-cmd.dtsi   | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-j2-42-02-0b-dsc-cmd.dtsi   | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j2-mp-42-02-0b-dsc-cmd.dtsi     | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j2-p1-42-02-0b-dsc-cmd.dtsi     | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j2-p2-1-38-0c-0a-dsc-cmd.dtsi   | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j2-p2-1-42-02-0b-dsc-cmd.dtsi   | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0a-dsc-cmd.dtsi    | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0b-dsc-cmd.dtsi    | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi     | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-k81-35-02-0b-video.dtsi    | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-k81-42-02-0a-video.dtsi    | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-l11r-38-08-0a-dsc-cmd.dtsi | 4 ++--
+ .../dts/vendor/qcom/dsi-panel-l3a-mp-42-02-0a-dsc-cmd.dtsi    | 4 ++--
+ .../boot/dts/vendor/qcom/dsi-panel-l81a-42-04-0a-video.dtsi   | 4 ++--
+ 20 files changed, 40 insertions(+), 40 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j11-38-08-0a-fhd-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j11-38-08-0a-fhd-cmd.dtsi
+index 41a284a516f2..2e82f30a1031 100755
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j11-38-08-0a-fhd-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j11-38-08-0a-fhd-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <695>;
+-		qcom,mdss-pan-physical-height-dimension = <1545>;
++		qcom,mdss-pan-physical-width-dimension = <70>;
++		qcom,mdss-pan-physical-height-dimension = <155>;
+ 
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi
+index 49a3232605dc..5bb4822855ba 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi
+index 800e12b70ee9..a43103b30563 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi
+index 9a640e73beb0..ba8bf8c0a873 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1u-42-02-0b-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1u-42-02-0b-dsc-cmd.dtsi
+index 5aba21aa8af8..58f462699a51 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1u-42-02-0b-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1u-42-02-0b-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-38-0c-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-38-0c-0a-dsc-cmd.dtsi
+index a037de5480d6..b80e92e5ae9a 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-38-0c-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-38-0c-0a-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <0 1>, <1 6>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-42-02-0b-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-42-02-0b-dsc-cmd.dtsi
+index a7082b0f40f1..b3741a5ed1b0 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-42-02-0b-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-42-02-0b-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-mp-42-02-0b-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-mp-42-02-0b-dsc-cmd.dtsi
+index 4b7fc9319c70..4f5d5709420e 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-mp-42-02-0b-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-mp-42-02-0b-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p1-42-02-0b-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p1-42-02-0b-dsc-cmd.dtsi
+index 89dbb981aeb3..34fd786b395f 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p1-42-02-0b-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p1-42-02-0b-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-38-0c-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-38-0c-0a-dsc-cmd.dtsi
+index 94fa1ed947ee..dc49c84dd367 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-38-0c-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-38-0c-0a-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <0 1>, <1 6>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-42-02-0b-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-42-02-0b-dsc-cmd.dtsi
+index bd0ee8bbd201..0842f1085d8d 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-42-02-0b-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2-p2-1-42-02-0b-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0a-dsc-cmd.dtsi
+index fba7667f513f..94cbf4204689 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0a-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0b-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0b-dsc-cmd.dtsi
+index bb5cc7e15d56..972bea07215b 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0b-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j2s-mp-42-02-0b-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <710>;
+-		qcom,mdss-pan-physical-height-dimension = <1537>;
++		qcom,mdss-pan-physical-width-dimension = <71>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+index 5bc5d57a23fe..4e268cffb8b2 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+@@ -41,8 +41,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 2>, <0 10>, <1 5>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <695>;
+-		qcom,mdss-pan-physical-height-dimension = <1544>;
++		qcom,mdss-pan-physical-width-dimension = <70>;
++		qcom,mdss-pan-physical-height-dimension = <154>;
+ 		qcom,mdss-dsi-tx-eot-append;
+ 		qcom,bl-update-flag = "delay_until_first_frame";
+ 		qcom,disp-panel-offon-mode-enabled;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi
+index a037d9943dd9..38e0c4c83ca2 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <0 10>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <695>;
+-		qcom,mdss-pan-physical-height-dimension = <1546>;
++		qcom,mdss-pan-physical-width-dimension = <70>;
++		qcom,mdss-pan-physical-height-dimension = <155>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-35-02-0b-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-35-02-0b-video.dtsi
+index 1f842c4a97ce..06da5ae71946 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-35-02-0b-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-35-02-0b-video.dtsi
+@@ -42,8 +42,8 @@
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <0 12>, <1 12>, <0 12>, <1 12>;
+ 		qcom,adjust-timer-wakeup-ms = <1>;
+-		qcom,mdss-pan-physical-width-dimension = <1474>;
+-		qcom,mdss-pan-physical-height-dimension = <2359>;
++		qcom,mdss-pan-physical-width-dimension = <147>;
++		qcom,mdss-pan-physical-height-dimension = <236>;
+ 		qcom,mdss-dsi-panel-mode-gpio-state = "invalid";
+ 		qcom,mdss-dsi-tx-eot-append;
+ 		qcom,mdss-dsi-rx-eot-ignore;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-42-02-0a-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-42-02-0a-video.dtsi
+index 1515b29af3b7..e37a3006fc3a 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-42-02-0a-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-k81-42-02-0a-video.dtsi
+@@ -42,8 +42,8 @@
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <0 12>, <1 12>, <0 12>, <1 12>;
+ 		qcom,adjust-timer-wakeup-ms = <1>;
+-		qcom,mdss-pan-physical-width-dimension = <1474>;
+-		qcom,mdss-pan-physical-height-dimension = <2359>;
++		qcom,mdss-pan-physical-width-dimension = <147>;
++		qcom,mdss-pan-physical-height-dimension = <236>;
+ 		qcom,mdss-dsi-panel-mode-gpio-state = "invalid";
+ 		qcom,mdss-dsi-tx-eot-append;
+ 		qcom,mdss-dsi-rx-eot-ignore;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l11r-38-08-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l11r-38-08-0a-dsc-cmd.dtsi
+index bd93c79787b2..ac3af3245698 100755
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l11r-38-08-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l11r-38-08-0a-dsc-cmd.dtsi
+@@ -24,8 +24,8 @@
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <0 12>, <1 10>;
+ 		qcom,mdss-dsi-reset-powerdown-delay = <10>;
+-		qcom,mdss-pan-physical-width-dimension = <695>;
+-		qcom,mdss-pan-physical-height-dimension = <1546>;
++		qcom,mdss-pan-physical-width-dimension = <70>;
++		qcom,mdss-pan-physical-height-dimension = <155>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l3a-mp-42-02-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l3a-mp-42-02-0a-dsc-cmd.dtsi
+index 8791430175ef..65ecbb39ddcd 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l3a-mp-42-02-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l3a-mp-42-02-0a-dsc-cmd.dtsi
+@@ -23,8 +23,8 @@
+ 		qcom,mdss-dsi-dma-trigger = "trigger_sw";
+ 		qcom,mdss-dsi-mdp-trigger = "none";
+ 		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
+-		qcom,mdss-pan-physical-width-dimension = <654>;
+-		qcom,mdss-pan-physical-height-dimension = <1454>;
++		qcom,mdss-pan-physical-width-dimension = <65>;
++		qcom,mdss-pan-physical-height-dimension = <145>;
+ 		qcom,mdss-dsi-te-pin-select = <1>;
+ 		qcom,mdss-dsi-wr-mem-start = <0x2c>;
+ 		qcom,mdss-dsi-wr-mem-continue = <0x3c>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l81a-42-04-0a-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l81a-42-04-0a-video.dtsi
+index 5d795b44075e..25fed626615c 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l81a-42-04-0a-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-l81a-42-04-0a-video.dtsi
+@@ -44,8 +44,8 @@
+         qcom,mdss-dsi-mdp-trigger = "none";
+         qcom,mdss-dsi-reset-sequence = <0 55>, <1 55>, <0 55>, <1 55>;
+         qcom,adjust-timer-wakeup-ms = <1>;
+-        qcom,mdss-pan-physical-width-dimension = <1662>;
+-        qcom,mdss-pan-physical-height-dimension = <2660>;
++        qcom,mdss-pan-physical-width-dimension = <166>;
++        qcom,mdss-pan-physical-height-dimension = <266>;
+         qcom,mdss-dsi-panel-mode-gpio-state = "invalid";
+         qcom,mdss-dsi-tx-eot-append;
+         qcom,mdss-dsi-rx-eot-ignore;
+-- 
+2.48.1
+

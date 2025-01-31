@@ -1,0 +1,24 @@
+From 69386d958081e291d5c8f0f6b2538e44ed117969 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Sat, 29 Feb 2020 11:15:26 +0100
+Subject: [PATCH 010/157] arch: arm64: configs: xiaomi: Enable
+ CONFIG_BUILD_ARM64_DT_OVERLAY
+
+Change-Id: I25959ef7eec025a5506cb6de863c09555a1dd4ce
+---
+ arch/arm64/configs/vendor/xiaomi/sm8250-common.config | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+index 7eb0728c21fe..dcf776941cb1 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
++++ b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+@@ -1,2 +1,5 @@
+ # Kernel
+ CONFIG_LOCALVERSION="-lineageos"
++
++# DTBO
++CONFIG_BUILD_ARM64_DT_OVERLAY=y
+-- 
+2.48.1
+

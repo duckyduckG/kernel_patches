@@ -1,0 +1,35 @@
+From a8c0b9f5ce2656386dd26ff0f034728a0bfff82a Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 15 Nov 2022 15:59:23 +0100
+Subject: [PATCH 048/157] drivers: mfd: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: I9f8c042c849ffdb870aa280df88efa3c9a3b61b0
+---
+ drivers/mfd/qcom-i2c-pmic.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/mfd/qcom-i2c-pmic.c b/drivers/mfd/qcom-i2c-pmic.c
+index 8c9c24987a57..270f67ef2de3 100644
+--- a/drivers/mfd/qcom-i2c-pmic.c
++++ b/drivers/mfd/qcom-i2c-pmic.c
+@@ -486,9 +486,15 @@ static int i2c_pmic_read(struct regmap *map, unsigned int reg, void *val,
+ {
+ 	int rc, retries = 0;
+ 
++#ifdef CONFIG_I2C_RETRY
++	do {
++		rc = regmap_bulk_read(map, reg, val, val_count);
++	} while (rc < 0 && retries++ < MAX_I2C_RETRIES);
++#else
+ 	do {
+ 		rc = regmap_bulk_read(map, reg, val, val_count);
+ 	} while (rc == -ENOTCONN && retries++ < MAX_I2C_RETRIES);
++#endif
+ 
+ 	if (retries > 1)
+ 		pr_err("i2c_pmic_read failed for %d retries, rc = %d\n",
+-- 
+2.48.1
+

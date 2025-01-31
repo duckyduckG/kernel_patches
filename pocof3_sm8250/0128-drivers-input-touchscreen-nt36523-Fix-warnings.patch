@@ -1,0 +1,35 @@
+From 79d40b9577550764ed073b74545c6624ad791240 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sat, 16 Mar 2024 23:21:44 +0100
+Subject: [PATCH 128/157] drivers: input: touchscreen: nt36523: Fix warnings
+
+Change-Id: Ie85c9b4ae38b62124430108a6a2cfa959ae42162
+---
+ drivers/input/touchscreen/nt36523/nt36xxx.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nt36523/nt36xxx.c b/drivers/input/touchscreen/nt36523/nt36xxx.c
+index 3d8af83e96ce..7a7f4b1af24b 100644
+--- a/drivers/input/touchscreen/nt36523/nt36xxx.c
++++ b/drivers/input/touchscreen/nt36523/nt36xxx.c
+@@ -1144,7 +1144,7 @@ void nvt_ts_wakeup_gesture_report(uint8_t gesture_id, uint8_t *data)
+ 
+ #endif
+ 
+-static void release_pen_event()
++static void release_pen_event(void)
+ {
+ 	if (ts && ts->pen_input_dev) {
+ 		input_report_abs(ts->pen_input_dev, ABS_X, 0);
+@@ -2387,7 +2387,7 @@ static void nvt_pen_charge_state_change_work(struct work_struct *work)
+ 	disable_pen_input_device(ts->pen_is_charge);
+ }
+ 
+-static void nvt_set_gesture_mode()
++static void nvt_set_gesture_mode(void)
+ {
+ 	NVT_LOG("%s double click wakeup", ts->db_wakeup ? "ENABLE" : "DISABLE");
+ 	if (ts->ic_state <= NVT_IC_SUSPEND_OUT && ts->ic_state != NVT_IC_INIT) {
+-- 
+2.48.1
+

@@ -1,0 +1,61 @@
+From 5ffc526106ce37b80c60dd4ccef835ac8e5949da Mon Sep 17 00:00:00 2001
+From: me-cafebabe <me_cafebabe@hotmail.com>
+Date: Fri, 20 May 2022 18:06:58 +0800
+Subject: [PATCH 140/157] input: touchscreen: fts_521: Register fod_status node
+
+Change-Id: I79d6db6eef4cdaf0e2404d05b4b7e4855c2b16fe
+---
+ drivers/input/touchscreen/fts_521/fts.c | 30 +++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/drivers/input/touchscreen/fts_521/fts.c b/drivers/input/touchscreen/fts_521/fts.c
+index b097a6439887..19c557e260a7 100644
+--- a/drivers/input/touchscreen/fts_521/fts.c
++++ b/drivers/input/touchscreen/fts_521/fts.c
+@@ -6185,6 +6185,33 @@ static int fts_set_fod_status(int value)
+ 	return res;
+ }
+ 
++#if defined(GESTURE_MODE) && defined(CONFIG_TOUCHSCREEN_COMMON) && defined(CONFIG_TOUCHSCREEN_FOD)
++static ssize_t fod_status_show(struct kobject *kobj,
++                               struct kobj_attribute *attr, char *buf)
++{
++    return sprintf(buf, "%d\n", fts_info->fod_status);
++}
++
++static ssize_t fod_status_store(struct kobject *kobj,
++                                struct kobj_attribute *attr, const char *buf,
++                                size_t count)
++{
++    int rc, val;
++
++    rc = kstrtoint(buf, 10, &val);
++    if (rc)
++    return -EINVAL;
++
++    fts_set_fod_status(val);
++    return count;
++}
++
++static struct tp_common_ops fod_status_ops = {
++    .show = fod_status_show,
++    .store = fod_status_store
++};
++#endif
++
+ static int fts_set_aod_status(int value)
+ {
+ 	fts_info->aod_status = value;
+@@ -8212,6 +8239,9 @@ static int fts_probe(struct spi_device *client)
+ 
+ #if defined(GESTURE_MODE) && defined(CONFIG_TOUCHSCREEN_COMMON)
+ 	tp_common_set_double_tap_ops(&double_tap_ops);
++#ifdef CONFIG_TOUCHSCREEN_FOD
++	tp_common_set_fod_status_ops(&fod_status_ops);
++#endif
+ #endif
+ 
+ 	spin_lock_init(&fts_int);
+-- 
+2.48.1
+

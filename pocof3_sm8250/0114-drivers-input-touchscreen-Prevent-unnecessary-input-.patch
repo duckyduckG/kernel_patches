@@ -1,0 +1,67 @@
+From c34e28da2c22be0a983b331f5ace8d054cc815be Mon Sep 17 00:00:00 2001
+From: Dyneteve <32036579+Dyneteve@users.noreply.github.com>
+Date: Thu, 22 Apr 2021 19:41:24 +0000
+Subject: [PATCH 114/157] drivers: input: touchscreen: Prevent unnecessary
+ input sync
+
+* Disable the IRQ boost for touch as this only causes garbage data to be spammed & disable accidental touches as this doesn't work properly on AOSP & takes false positives causing alot of issues like lack of inertia in chrome scrolling & gestures not working correctly on launcher
+
+Change-Id: I83591a483f4a10aa57c27692acc388a0618ffef9
+---
+ drivers/input/touchscreen/nt36672c/nt36xxx.c    | 4 +++-
+ drivers/input/touchscreen/xiaomi/xiaomi_touch.c | 2 ++
+ drivers/input/touchscreen/xiaomi/xiaomi_touch.h | 2 +-
+ 3 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nt36672c/nt36xxx.c b/drivers/input/touchscreen/nt36672c/nt36xxx.c
+index 4528503116a4..7cf0cdd67436 100644
+--- a/drivers/input/touchscreen/nt36672c/nt36xxx.c
++++ b/drivers/input/touchscreen/nt36672c/nt36xxx.c
+@@ -91,8 +91,10 @@ static int32_t nvt_ts_resume(struct device *dev);
+ extern int dsi_panel_lockdown_info_read(unsigned char *plockdowninfo);
+ extern void dsi_panel_doubleclick_enable(bool on);
+ static int32_t nvt_check_palm(uint8_t input_id, uint8_t *data);
++#if XIAOMI_ROI
+ extern void xiaomi_touch_send_btn_tap_key(int status);
+-uint32_t ENG_RST_ADDR = 0x7FFF80;
++#endif
++uint32_t ENG_RST_ADDR  = 0x7FFF80;
+ uint32_t SWRST_N8_ADDR = 0; /* read from dtsi */
+ uint32_t SPI_RD_FAST_ADDR = 0; /* read from dtsi */
+ 
+diff --git a/drivers/input/touchscreen/xiaomi/xiaomi_touch.c b/drivers/input/touchscreen/xiaomi/xiaomi_touch.c
+index 0a8003e4d873..70e87cb5e756 100644
+--- a/drivers/input/touchscreen/xiaomi/xiaomi_touch.c
++++ b/drivers/input/touchscreen/xiaomi/xiaomi_touch.c
+@@ -550,6 +550,7 @@ static int xiaomi_touch_parse_dt(struct device *dev,
+ 	return 0;
+ }
+ 
++#if XIAOMI_ROI
+ void xiaomi_touch_send_btn_tap_key(int status)
+ {
+ 	if (xiaomi_touch_dev.key_input_dev) {
+@@ -566,6 +567,7 @@ void xiaomi_touch_send_btn_tap_key(int status)
+ 	}
+ }
+ EXPORT_SYMBOL(xiaomi_touch_send_btn_tap_key);
++#endif
+ 
+ static int xiaomi_touch_probe(struct platform_device *pdev)
+ {
+diff --git a/drivers/input/touchscreen/xiaomi/xiaomi_touch.h b/drivers/input/touchscreen/xiaomi/xiaomi_touch.h
+index ebcd4f54cb19..42a4547ff9c3 100644
+--- a/drivers/input/touchscreen/xiaomi/xiaomi_touch.h
++++ b/drivers/input/touchscreen/xiaomi/xiaomi_touch.h
+@@ -65,7 +65,7 @@ extern int mi_log_level;
+ 			pr_err(fmt, ##args);                                   \
+ 	} while (0)
+ 
+-#define XIAOMI_ROI 1
++#define XIAOMI_ROI	0
+ 
+ #if XIAOMI_ROI
+ #define DIFF_SENSE_NODE 7
+-- 
+2.48.1
+

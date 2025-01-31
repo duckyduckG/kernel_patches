@@ -1,0 +1,109 @@
+From 3bce28eddbb060258f680328ae38c930d7dceb6c Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Fri, 18 Nov 2022 16:20:21 +0100
+Subject: [PATCH 015/157] arch: arm64: configs: xiaomi: Enable device-specific
+ platform
+
+Change-Id: Ic9bc1c3b7cba4f5a7ca02d9a07eebb26f87c2f4e
+---
+ arch/arm64/configs/vendor/xiaomi/alioth.config | 2 ++
+ arch/arm64/configs/vendor/xiaomi/apollo.config | 2 ++
+ arch/arm64/configs/vendor/xiaomi/cas.config    | 2 ++
+ arch/arm64/configs/vendor/xiaomi/cmi.config    | 2 ++
+ arch/arm64/configs/vendor/xiaomi/dagu.config   | 2 ++
+ arch/arm64/configs/vendor/xiaomi/elish.config  | 2 ++
+ arch/arm64/configs/vendor/xiaomi/enuma.config  | 2 ++
+ arch/arm64/configs/vendor/xiaomi/lmi.config    | 2 ++
+ arch/arm64/configs/vendor/xiaomi/munch.config  | 2 ++
+ arch/arm64/configs/vendor/xiaomi/psyche.config | 2 ++
+ arch/arm64/configs/vendor/xiaomi/thyme.config  | 2 ++
+ arch/arm64/configs/vendor/xiaomi/umi.config    | 2 ++
+ 12 files changed, 24 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/alioth.config b/arch/arm64/configs/vendor/xiaomi/alioth.config
+index e69de29bb2d1..09375f7711cf 100644
+--- a/arch/arm64/configs/vendor/xiaomi/alioth.config
++++ b/arch/arm64/configs/vendor/xiaomi/alioth.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_ALIOTH=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/apollo.config b/arch/arm64/configs/vendor/xiaomi/apollo.config
+index e69de29bb2d1..c045e8b11807 100644
+--- a/arch/arm64/configs/vendor/xiaomi/apollo.config
++++ b/arch/arm64/configs/vendor/xiaomi/apollo.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_APOLLO=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/cas.config b/arch/arm64/configs/vendor/xiaomi/cas.config
+index e69de29bb2d1..39b8f269b367 100644
+--- a/arch/arm64/configs/vendor/xiaomi/cas.config
++++ b/arch/arm64/configs/vendor/xiaomi/cas.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_CAS=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/cmi.config b/arch/arm64/configs/vendor/xiaomi/cmi.config
+index e69de29bb2d1..bce9f3d476f6 100644
+--- a/arch/arm64/configs/vendor/xiaomi/cmi.config
++++ b/arch/arm64/configs/vendor/xiaomi/cmi.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_CMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/dagu.config b/arch/arm64/configs/vendor/xiaomi/dagu.config
+index e69de29bb2d1..1f7130543020 100644
+--- a/arch/arm64/configs/vendor/xiaomi/dagu.config
++++ b/arch/arm64/configs/vendor/xiaomi/dagu.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_DAGU=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/elish.config b/arch/arm64/configs/vendor/xiaomi/elish.config
+index e69de29bb2d1..0107f6843c12 100644
+--- a/arch/arm64/configs/vendor/xiaomi/elish.config
++++ b/arch/arm64/configs/vendor/xiaomi/elish.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_ELISH=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/enuma.config b/arch/arm64/configs/vendor/xiaomi/enuma.config
+index e69de29bb2d1..ea0d80bb54a3 100644
+--- a/arch/arm64/configs/vendor/xiaomi/enuma.config
++++ b/arch/arm64/configs/vendor/xiaomi/enuma.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_ENUMA=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/lmi.config b/arch/arm64/configs/vendor/xiaomi/lmi.config
+index e69de29bb2d1..bb280dd83fa5 100644
+--- a/arch/arm64/configs/vendor/xiaomi/lmi.config
++++ b/arch/arm64/configs/vendor/xiaomi/lmi.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_LMI=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/munch.config b/arch/arm64/configs/vendor/xiaomi/munch.config
+index e69de29bb2d1..e3d7dee2326d 100644
+--- a/arch/arm64/configs/vendor/xiaomi/munch.config
++++ b/arch/arm64/configs/vendor/xiaomi/munch.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_MUNCH=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/psyche.config b/arch/arm64/configs/vendor/xiaomi/psyche.config
+index e69de29bb2d1..cd2fe8add927 100644
+--- a/arch/arm64/configs/vendor/xiaomi/psyche.config
++++ b/arch/arm64/configs/vendor/xiaomi/psyche.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_PSYCHE=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/thyme.config b/arch/arm64/configs/vendor/xiaomi/thyme.config
+index e69de29bb2d1..0a0d0ca3927a 100644
+--- a/arch/arm64/configs/vendor/xiaomi/thyme.config
++++ b/arch/arm64/configs/vendor/xiaomi/thyme.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_THYME=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/umi.config b/arch/arm64/configs/vendor/xiaomi/umi.config
+index e69de29bb2d1..14cfc0ca9eba 100644
+--- a/arch/arm64/configs/vendor/xiaomi/umi.config
++++ b/arch/arm64/configs/vendor/xiaomi/umi.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_UMI=y
+-- 
+2.48.1
+

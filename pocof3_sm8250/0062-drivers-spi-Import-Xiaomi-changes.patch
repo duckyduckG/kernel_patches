@@ -1,0 +1,28 @@
+From 75fddd9212c747b545e925ed71aac331db1913ba Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 15 Nov 2022 17:19:16 +0100
+Subject: [PATCH 062/157] drivers: spi: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: I22c075367716e1f94736d40955a58123cc788d37
+---
+ drivers/spi/spi-geni-qcom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi-geni-qcom.c b/drivers/spi/spi-geni-qcom.c
+index 6b2fcc8ce50f..ca2a21d9b421 100644
+--- a/drivers/spi/spi-geni-qcom.c
++++ b/drivers/spi/spi-geni-qcom.c
+@@ -21,7 +21,7 @@
+ #include <linux/pinctrl/consumer.h>
+ 
+ #define SPI_NUM_CHIPSELECT	(4)
+-#define SPI_XFER_TIMEOUT_MS	(250)
++#define SPI_XFER_TIMEOUT_MS	(1500)
+ #define SPI_AUTO_SUSPEND_DELAY	(250)
+ /* SPI SE specific registers */
+ #define SE_SPI_CPHA		(0x224)
+-- 
+2.48.1
+

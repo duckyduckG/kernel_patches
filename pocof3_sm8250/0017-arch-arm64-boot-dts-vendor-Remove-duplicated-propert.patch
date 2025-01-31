@@ -1,0 +1,41 @@
+From dadd335a0198112cba0617cbfa7145d01c3aabe8 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 22 Nov 2022 22:44:47 +0100
+Subject: [PATCH 017/157] arch: arm64: boot: dts: vendor: Remove duplicated
+ properties in pm8150b_charger
+
+Change-Id: I859c39b97389da425333fccbd912435fb37d667a
+---
+ arch/arm64/boot/dts/vendor/qcom/munch-sm8250.dtsi  | 2 --
+ arch/arm64/boot/dts/vendor/qcom/psyche-sm8250.dtsi | 2 --
+ 2 files changed, 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/munch-sm8250.dtsi b/arch/arm64/boot/dts/vendor/qcom/munch-sm8250.dtsi
+index d9bb3563586e..4d62a01bab0e 100755
+--- a/arch/arm64/boot/dts/vendor/qcom/munch-sm8250.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/munch-sm8250.dtsi
+@@ -550,8 +550,6 @@ And public attribution of xiaomi platforms(like L11R and so and)
+ 	qcom,chg-warm-th= <480>;
+ 	qcom,chg-cool-th= <150>;
+ 	//qcom,suspend-input-on-debug-batt;
+-	pinctrl-names = "default", "smb5_active", "smb5_suspend";
+-	pinctrl-0 = <&vbus_disable_suspend>;
+ 	qcom,usbpd-phandle = <&pm8150b_pdphy>;
+ 	qcom,battery-data = <&umi_batterydata>;
+ 	//mi,fcc-batt-unverify-ua = <2000000>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/psyche-sm8250.dtsi b/arch/arm64/boot/dts/vendor/qcom/psyche-sm8250.dtsi
+index 5a0fc72bf1cf..d33ac56e051e 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/psyche-sm8250.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/psyche-sm8250.dtsi
+@@ -414,8 +414,6 @@ And public attribution of xiaomi platforms(like L3A and so and)
+ 	qcom,chg-warm-th= <480>;
+ 	qcom,chg-cool-th= <150>;
+ 	//qcom,suspend-input-on-debug-batt;
+-	pinctrl-names = "default", "smb5_active", "smb5_suspend";
+-	pinctrl-0 = <&vbus_disable_suspend>;
+ 	qcom,usbpd-phandle = <&pm8150b_pdphy>;
+ 	qcom,battery-data = <&psyche_batterydata>;
+ 	//mi,fcc-batt-unverify-ua = <2000000>;
+-- 
+2.48.1
+

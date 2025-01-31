@@ -1,0 +1,44 @@
+From f23ac5e487ac03ff231d8b5c8e103d7419d19737 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 15 Nov 2022 15:01:35 +0100
+Subject: [PATCH 020/157] drivers: cpufreq: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: I0258503f550dd097acfff28fa2177f3fabdab6eb
+---
+ drivers/cpufreq/cpufreq.c         | 4 ----
+ drivers/cpufreq/qcom-cpufreq-hw.c | 2 ++
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index b050316480fc..1691d786587e 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -2266,10 +2266,6 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+ 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+ 			CPUFREQ_ADJUST, new_policy);
+ 
+-	/* adjust if necessary - hardware incompatibility */
+-	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+-			CPUFREQ_INCOMPATIBLE, new_policy);
+-
+ 	/*
+ 	 * verify the cpu speed can be set within this limit, which might be
+ 	 * different to the first one
+diff --git a/drivers/cpufreq/qcom-cpufreq-hw.c b/drivers/cpufreq/qcom-cpufreq-hw.c
+index e1f1331fb763..20ee8c5fa8cc 100644
+--- a/drivers/cpufreq/qcom-cpufreq-hw.c
++++ b/drivers/cpufreq/qcom-cpufreq-hw.c
+@@ -151,6 +151,8 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c,
+ 			freq = policy->cpuinfo.max_freq;
+ 	}
+ 
++	freq = U32_MAX;   //Fix me! This is WA here！
++
+ 	sched_update_cpu_freq_min_max(&c->related_cpus, 0, freq);
+ 	trace_dcvsh_freq(cpumask_first(&c->related_cpus), freq);
+ 	c->dcvsh_freq_limit = freq;
+-- 
+2.48.1
+

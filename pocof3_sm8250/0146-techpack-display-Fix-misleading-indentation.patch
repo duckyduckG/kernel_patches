@@ -1,0 +1,39 @@
+From 8431e60de25d68644d3f505486a33b399f3aa2dd Mon Sep 17 00:00:00 2001
+From: althafvly <althafvly@gmail.com>
+Date: Sat, 24 Aug 2024 09:28:52 +0530
+Subject: [PATCH 146/157] techpack: display: Fix misleading indentation
+
+Change-Id: I6e5924323d8d4047c1740e8b1eeaf78c4a8f7821
+---
+ techpack/display/msm/dsi/dsi_panel.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_panel.c b/techpack/display/msm/dsi/dsi_panel.c
+index 43005cce8758..ea694f27354b 100644
+--- a/techpack/display/msm/dsi/dsi_panel.c
++++ b/techpack/display/msm/dsi/dsi_panel.c
+@@ -534,14 +534,15 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
+ 			if (gpio_is_valid(panel->reset_config.reset_gpio))
+ 				gpio_set_value(panel->reset_config.reset_gpio, 0);
+ 
+-				if (gpio_is_valid(panel->reset_config.tp_reset_gpio) && !panel->reset_gpio_always_on
+-					&& panel->mi_cfg.panel_id == 0x4C38314100420400){
+-					rc=gpio_direction_output(panel->reset_config.tp_reset_gpio, 0);
+-					if (rc){
+-							DSI_ERR("unable to set direction for gpio [%d]\n",
++			if (gpio_is_valid(panel->reset_config.tp_reset_gpio) &&
++				!panel->reset_gpio_always_on &&
++				panel->mi_cfg.panel_id == 0x4C38314100420400) {
++				rc = gpio_direction_output(panel->reset_config.tp_reset_gpio, 0);
++				if (rc) {
++					DSI_ERR("unable to set direction for gpio [%d]\n",
+ 							panel->reset_config.tp_reset_gpio);
+-					}
+ 				}
++			}
+ 		}
+ 	} else {
+ 		if (gpio_is_valid(panel->reset_config.reset_gpio) &&
+-- 
+2.48.1
+

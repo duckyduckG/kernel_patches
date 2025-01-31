@@ -1,0 +1,44 @@
+From e826bcf82322df6c4689777ea75d247a97cbcc15 Mon Sep 17 00:00:00 2001
+From: Pig <pig.priv@gmail.com>
+Date: Tue, 18 Aug 2020 16:07:41 +0200
+Subject: [PATCH 090/157] uapi: sde_drm: Define FOD_PRESSED_LAYER_ZORDER
+
+Change-Id: I5b25d19fab3a2901948d639c785165e70786f4ab
+---
+ include/uapi/drm/sde_drm.h           | 6 ++++++
+ techpack/display/msm/sde/sde_plane.c | 4 ++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/include/uapi/drm/sde_drm.h b/include/uapi/drm/sde_drm.h
+index 029393041408..5aae512709aa 100644
+--- a/include/uapi/drm/sde_drm.h
++++ b/include/uapi/drm/sde_drm.h
+@@ -501,4 +501,10 @@ struct sde_drm_roi_v1 {
+  * Implementation may be platform and base-format specific.
+  */
+ #define DRM_FORMAT_MOD_QCOM_FSC_TILE       fourcc_mod_code(QCOM, 0x10)
++
++/**
++ * sde fod dim layer
++ */
++#define FOD_PRESSED_LAYER_ZORDER 0x20000000u
++
+ #endif /* _SDE_DRM_H_ */
+diff --git a/techpack/display/msm/sde/sde_plane.c b/techpack/display/msm/sde/sde_plane.c
+index c258a38fa172..e223473378e6 100644
+--- a/techpack/display/msm/sde/sde_plane.c
++++ b/techpack/display/msm/sde/sde_plane.c
+@@ -4026,8 +4026,8 @@ static int sde_plane_atomic_set_property(struct drm_plane *plane,
+ 		idx = msm_property_index(&psde->property_info,
+ 				property);
+ 		if (idx == PLANE_PROP_ZPOS) {
+-			if (val & 0x20000000u) {
+-				val &= ~0x20000000u;
++			if (val & FOD_PRESSED_LAYER_ZORDER) {
++				val &= ~FOD_PRESSED_LAYER_ZORDER;
+ 				fod_val = 1;
+ 			}
+ 
+-- 
+2.48.1
+

@@ -1,0 +1,28 @@
+From 00bb714bd6895675d4fc6a3cc4a43b891bada237 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 16 Nov 2022 16:27:32 +0100
+Subject: [PATCH 064/157] drivers: thermal: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: Ibb1b4b31227879a7afe0dd912374fc1e546531ee
+---
+ drivers/thermal/cpu_cooling.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 21dd93beda93..0b25e182e95b 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -126,7 +126,7 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
+ 	unsigned long clipped_freq = ULONG_MAX, floor_freq = 0;
+ 	struct cpufreq_cooling_device *cpufreq_cdev;
+ 
+-	if (event != CPUFREQ_INCOMPATIBLE)
++	if (event != CPUFREQ_ADJUST)
+ 		return NOTIFY_DONE;
+ 
+ 	mutex_lock(&cooling_list_lock);
+-- 
+2.48.1
+

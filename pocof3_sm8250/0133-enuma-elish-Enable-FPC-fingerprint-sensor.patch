@@ -1,0 +1,41 @@
+From 5ac21cad97c31c14f6eca1e43478a117496848a8 Mon Sep 17 00:00:00 2001
+From: Isaac Chen <tingyi364@gmail.com>
+Date: Mon, 26 Feb 2024 10:08:29 +0800
+Subject: [PATCH 133/157] enuma/elish: Enable FPC fingerprint sensor
+
+ * Xiaomi forgets to release its code and enable it in config.
+
+Change-Id: Iae340ae3ab4734dcd69486d77aa63b0024349c34
+Signed-off-by: Isaac Chen <tingyi364@gmail.com>
+---
+ arch/arm64/configs/vendor/xiaomi/elish.config | 1 +
+ arch/arm64/configs/vendor/xiaomi/enuma.config | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/elish.config b/arch/arm64/configs/vendor/xiaomi/elish.config
+index d2cd308fc6c0..f15c47a43876 100644
+--- a/arch/arm64/configs/vendor/xiaomi/elish.config
++++ b/arch/arm64/configs/vendor/xiaomi/elish.config
+@@ -9,6 +9,7 @@ CONFIG_TOUCHSCREEN_SUPPORT_NEW_GAME_MODE=y
+ # Fingerprint
+ CONFIG_INPUT_FINGERPRINT=y
+ CONFIG_FINGERPRINT_GOODIX=y
++CONFIG_FINGERPRINT_FPC=y
+ 
+ # Power
+ CONFIG_IDT_P9418=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/enuma.config b/arch/arm64/configs/vendor/xiaomi/enuma.config
+index cffebc8d7964..3bb55ef0f3a3 100644
+--- a/arch/arm64/configs/vendor/xiaomi/enuma.config
++++ b/arch/arm64/configs/vendor/xiaomi/enuma.config
+@@ -9,6 +9,7 @@ CONFIG_TOUCHSCREEN_SUPPORT_NEW_GAME_MODE=y
+ # Fingerprint
+ CONFIG_INPUT_FINGERPRINT=y
+ CONFIG_FINGERPRINT_GOODIX=y
++CONFIG_FINGERPRINT_FPC=y
+ 
+ # Power
+ CONFIG_IDT_P9418=y
+-- 
+2.48.1
+

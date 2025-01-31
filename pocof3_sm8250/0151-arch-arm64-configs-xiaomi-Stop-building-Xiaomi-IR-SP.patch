@@ -1,0 +1,26 @@
+From 38dae67fea2a7f05b2863a9a7ffb08b62cd822db Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sun, 18 Aug 2024 23:11:16 +0200
+Subject: [PATCH 151/157] arch: arm64: configs: xiaomi: Stop building Xiaomi IR
+ SPI driver
+
+Change-Id: I63a8ec655adacb0c805e0e374fc4b73df7b59ade
+---
+ arch/arm64/configs/vendor/xiaomi/sm8250-common.config | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+index 07ed6b63fdcf..a25a821a345d 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
++++ b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+@@ -55,7 +55,6 @@ CONFIG_RC_CORE=y
+ CONFIG_LIRC=y
+ CONFIG_RC_DECODERS=y
+ CONFIG_RC_DEVICES=y
+-CONFIG_IR_SPI_MI=y
+ 
+ # Keyboard
+ CONFIG_INPUT_XIAOMI_KEYBOARD=y
+-- 
+2.48.1
+

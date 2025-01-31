@@ -1,0 +1,25 @@
+From b9aa362724d678b30dd46cb407a49022cd717c71 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sun, 18 Aug 2024 23:22:28 +0200
+Subject: [PATCH 153/157] arch: arm64: configs: xiaomi: Enable IR SPI driver
+
+Change-Id: Ic3847f01a898d6ca39d138bcbc9bdbea38556ab7
+---
+ arch/arm64/configs/vendor/xiaomi/sm8250-common.config | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+index a25a821a345d..6537e89174bc 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
++++ b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+@@ -55,6 +55,7 @@ CONFIG_RC_CORE=y
+ CONFIG_LIRC=y
+ CONFIG_RC_DECODERS=y
+ CONFIG_RC_DEVICES=y
++CONFIG_IR_SPI=y
+ 
+ # Keyboard
+ CONFIG_INPUT_XIAOMI_KEYBOARD=y
+-- 
+2.48.1
+

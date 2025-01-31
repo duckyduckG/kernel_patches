@@ -1,0 +1,31 @@
+From 243835032c0c1fe496b50a8b564e202ab1c62b4d Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Fri, 18 Nov 2022 16:17:44 +0100
+Subject: [PATCH 012/157] arch: arm64: configs: xiaomi: Disable DebugFS
+
+Change-Id: I27494cd512ca5c058751463f6e6dd01aa2fb9752
+---
+ arch/arm64/configs/vendor/xiaomi/sm8250-common.config | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+index 434b631b3fbe..2b4c0b474a8f 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
++++ b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+@@ -7,3 +7,13 @@ CONFIG_BUILD_ARM64_DT_OVERLAY=y
+ # QCACLD
+ CONFIG_QCA_CLD_WLAN=y
+ CONFIG_QCA_CLD_WLAN_PROFILE="qca6390"
++
++# DebugFS
++CONFIG_DEBUG_FS=n
++CONFIG_MSM_TZ_LOG=n
++CONFIG_CMA_DEBUGFS=n
++CONFIG_REGMAP_ALLOW_WRITE_DEBUGFS=n
++CONFIG_IPA_UT=n
++CONFIG_IOMMU_TESTS=n
++CONFIG_IOMMU_TESTS=n
++CONFIG_QMP_DEBUGFS_CLIENT=n
+-- 
+2.48.1
+

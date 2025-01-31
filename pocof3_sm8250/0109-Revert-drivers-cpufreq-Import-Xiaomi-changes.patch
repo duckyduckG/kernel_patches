@@ -1,0 +1,44 @@
+From fc1f0bcf48fcf6ab852932575a04ae8dfafac052 Mon Sep 17 00:00:00 2001
+From: althafvly <althafvly@gmail.com>
+Date: Fri, 30 Jun 2023 00:01:06 +0530
+Subject: [PATCH 109/157] Revert "drivers: cpufreq: Import Xiaomi changes"
+
+This reverts commit f23ac5e487ac03ff231d8b5c8e103d7419d19737.
+
+Change-Id: Ic509ab5af077928397832b36fed1eab8232cd7b7
+---
+ drivers/cpufreq/cpufreq.c         | 4 ++++
+ drivers/cpufreq/qcom-cpufreq-hw.c | 2 --
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 1691d786587e..b050316480fc 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -2266,6 +2266,10 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+ 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
+ 			CPUFREQ_ADJUST, new_policy);
+ 
++	/* adjust if necessary - hardware incompatibility */
++	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
++			CPUFREQ_INCOMPATIBLE, new_policy);
++
+ 	/*
+ 	 * verify the cpu speed can be set within this limit, which might be
+ 	 * different to the first one
+diff --git a/drivers/cpufreq/qcom-cpufreq-hw.c b/drivers/cpufreq/qcom-cpufreq-hw.c
+index 20ee8c5fa8cc..e1f1331fb763 100644
+--- a/drivers/cpufreq/qcom-cpufreq-hw.c
++++ b/drivers/cpufreq/qcom-cpufreq-hw.c
+@@ -151,8 +151,6 @@ static unsigned long limits_mitigation_notify(struct cpufreq_qcom *c,
+ 			freq = policy->cpuinfo.max_freq;
+ 	}
+ 
+-	freq = U32_MAX;   //Fix me! This is WA here！
+-
+ 	sched_update_cpu_freq_min_max(&c->related_cpus, 0, freq);
+ 	trace_dcvsh_freq(cpumask_first(&c->related_cpus), freq);
+ 	c->dcvsh_freq_limit = freq;
+-- 
+2.48.1
+

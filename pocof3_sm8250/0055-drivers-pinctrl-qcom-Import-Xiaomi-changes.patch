@@ -1,0 +1,37 @@
+From 82d5fe68fe4a2b06174482c5899cf3c1d5f2b245 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 15 Nov 2022 16:32:44 +0100
+Subject: [PATCH 055/157] drivers: pinctrl: qcom: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: I8dd90e6b9dc93d9b3488e5ace8ae1a4514cdcb4f
+---
+ drivers/pinctrl/qcom/pinctrl-msm.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+index f8ce0eac1ae8..37d1f6291404 100644
+--- a/drivers/pinctrl/qcom/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -571,8 +571,16 @@ static void msm_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ 	unsigned gpio = chip->base;
+ 	unsigned i;
+ 
+-	for (i = 0; i < chip->ngpio; i++, gpio++)
++	for (i = 0; i < chip->ngpio; i++, gpio++) {
++		/**
++		 * bypass NFC SPI GPIO: 28-31 is NFC SE SPI
++		 * bypass FP SPI GPIO: 40-43 is FP SPI
++		 */
++		if ((i >= 28 && i <= 31) || (i >= 40 && i <= 43)) {
++			continue;
++		}
+ 		msm_gpio_dbg_show_one(s, NULL, chip, i, gpio);
++	}
+ }
+ 
+ #else
+-- 
+2.48.1
+

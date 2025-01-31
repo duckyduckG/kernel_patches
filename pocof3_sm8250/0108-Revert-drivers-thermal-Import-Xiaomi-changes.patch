@@ -1,0 +1,28 @@
+From 0d99c033fcc3a37a3a217385576f7a6de23e999b Mon Sep 17 00:00:00 2001
+From: althafvly <althafvly@gmail.com>
+Date: Thu, 29 Jun 2023 23:35:52 +0530
+Subject: [PATCH 108/157] Revert "drivers: thermal: Import Xiaomi changes"
+
+This reverts commit 00bb714bd6895675d4fc6a3cc4a43b891bada237.
+
+Change-Id: I0c99605928e7f3bca5cc389d3a6be424e870b082
+---
+ drivers/thermal/cpu_cooling.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 0b25e182e95b..21dd93beda93 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -126,7 +126,7 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
+ 	unsigned long clipped_freq = ULONG_MAX, floor_freq = 0;
+ 	struct cpufreq_cooling_device *cpufreq_cdev;
+ 
+-	if (event != CPUFREQ_ADJUST)
++	if (event != CPUFREQ_INCOMPATIBLE)
+ 		return NOTIFY_DONE;
+ 
+ 	mutex_lock(&cooling_list_lock);
+-- 
+2.48.1
+

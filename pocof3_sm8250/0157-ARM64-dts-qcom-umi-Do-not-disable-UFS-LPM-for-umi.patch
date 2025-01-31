@@ -1,0 +1,39 @@
+From e55ee586823a4f2bbf2aad4ae7cb21592e190777 Mon Sep 17 00:00:00 2001
+From: Yumi Yukimura <me.cafebabe@gmail.com>
+Date: Wed, 23 Oct 2024 19:43:47 +0800
+Subject: [PATCH 157/157] ARM64: dts: qcom: umi: Do not disable UFS LPM for umi
+
+It's actually only used for factory build (not shipping build).
+
+Although the property exists, but Xiaomi has made the code ignoring
+this property [1] in shipping builds.
+
+Thanks to the commit [2] for pointing it out.
+
+[1]: https://github.com/MiCode/Xiaomi_Kernel_OpenSource/blob/umi-q-oss/drivers/scsi/ufs/ufs-qcom.c#L2109
+[2]: https://review.lineageos.org/c/LineageOS/android_kernel_xiaomi_sm8250/+/395199
+
+Change-Id: I64524f425500784daec6e34eda2184b28ec069dd
+---
+ arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi b/arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi
+index da02cc8b5c1a..aae03f7dab69 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/umi-sm8250.dtsi
+@@ -7,9 +7,11 @@ And public attribution of xiaomi platforms(like J2 and so and)
+ #include "xiaomi-sm8250-common.dtsi"
+ #include "umi-audio-overlay.dtsi"
+ 
++/*
+ &ufshc_mem {
+ 	qcom,disable-lpm;
+ };
++*/
+ 
+ &qupv3_se15_i2c {
+ 	status = "ok";
+-- 
+2.48.1
+

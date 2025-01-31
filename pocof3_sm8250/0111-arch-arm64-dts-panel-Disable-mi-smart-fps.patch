@@ -1,0 +1,69 @@
+From 89335cc65cc46b900bdd43f1c8980376136b365c Mon Sep 17 00:00:00 2001
+From: Ramii Ahmed <ramy@ahmedramy.com>
+Date: Fri, 11 Aug 2023 05:57:50 +0000
+Subject: [PATCH 111/157] arch: arm64: dts: panel: Disable mi smart fps
+
+* it intereferes with aosp's surfaceflinger refresh rate implementation
+
+Change-Id: I38f198795bf2b12636366123f218f09da1e0bcd5
+---
+ .../boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi    | 2 --
+ .../boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi | 2 --
+ .../dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi    | 2 --
+ .../boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi  | 1 -
+ 4 files changed, 7 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi
+index 5bb4822855ba..eb150786eb97 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-dsc-cmd.dtsi
+@@ -366,8 +366,6 @@
+ 	mi,mdss-panel-delay-after-fod-hbm-off;
+ 	mi,mdss-panel-delay-after-fod-hbm-on;
+ 
+-	mi,mdss-dsi-pan-enable-smart-fps;
+-	mi,mdss-dsi-smart-fps-max_framerate = <120>;
+ 	mi,mdss-dsi-panel-hbm-brightness = <1>;
+ 	mi,mdss-dsi-panel-max-brightness-clone = <6143>;
+ 	mi,mdss-dsi-dimlayer-brightness-alpha-lut-item-count = <21>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi
+index a43103b30563..ac7172cfadcf 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-mp-dsc-cmd.dtsi
+@@ -359,8 +359,6 @@
+ 	mi,mdss-panel-delay-after-fod-hbm-off;
+ 	mi,mdss-panel-delay-after-fod-hbm-on;
+ 
+-	mi,mdss-dsi-pan-enable-smart-fps;
+-	mi,mdss-dsi-smart-fps-max_framerate = <120>;
+ 	mi,mdss-dsi-panel-hbm-brightness = <1>;
+ 	mi,mdss-dsi-panel-max-brightness-clone = <6143>;
+ 	mi,mdss-dsi-dimlayer-brightness-alpha-lut-item-count = <21>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi
+index ba8bf8c0a873..5ce3556118f0 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j1s-42-02-0a-p1-1-dsc-cmd.dtsi
+@@ -365,8 +365,6 @@
+ 	mi,mdss-panel-delay-after-fod-hbm-off;
+ 	mi,mdss-panel-delay-after-fod-hbm-on;
+ 
+-	mi,mdss-dsi-pan-enable-smart-fps;
+-	mi,mdss-dsi-smart-fps-max_framerate = <120>;
+ 	mi,mdss-dsi-panel-hbm-brightness = <1>;
+ 	mi,mdss-dsi-panel-max-brightness-clone = <6143>;
+ 	mi,mdss-dsi-dimlayer-brightness-alpha-lut-item-count = <21>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+index 4e268cffb8b2..0e27af92f440 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+@@ -228,7 +228,6 @@
+ 	mi,esd-err-irq-gpio = <&tlmm 51 0x2002>; /* trig-flags: falling-0x0002 rasing-0x0001*/
+ 	mi,mdss-dsi-panel-xy-coordinate = <0x6 0x18>;
+ 	mi,mdss-dsi-panel-max-luminance = <0x6 0x4>;
+-	mi,mdss-dsi-pan-enable-smart-fps;
+ 	mi,mdss-dsi-panel-max-brightness-clone = <8191>;
+ 
+ 	qcom,mdss-dsi-display-timings {
+-- 
+2.48.1
+

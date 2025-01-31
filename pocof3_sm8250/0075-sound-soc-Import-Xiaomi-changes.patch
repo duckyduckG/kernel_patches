@@ -1,0 +1,28 @@
+From 6b9e4a0d18886b575044d2b6013f93b3072e04c9 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 16 Nov 2022 16:57:40 +0100
+Subject: [PATCH 075/157] sound: soc: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: I6a0f0d89d45ae66d1c2e3820e5106ad000bd1d60
+---
+ sound/soc/soc-pcm.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
+index f2da3a371d17..61342559cd06 100644
+--- a/sound/soc/soc-pcm.c
++++ b/sound/soc/soc-pcm.c
+@@ -40,6 +40,8 @@ static const struct snd_pcm_hardware no_host_hardware = {
+ 				  SNDRV_PCM_INFO_PAUSE |
+ 				  SNDRV_PCM_INFO_RESUME,
+ 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
++				  SNDRV_PCM_FMTBIT_S24_LE |
++				  SNDRV_PCM_FMTBIT_S24_3LE |
+ 				  SNDRV_PCM_FMTBIT_S32_LE,
+ 	.period_bytes_min	= PAGE_SIZE >> 2,
+ 	.period_bytes_max	= PAGE_SIZE >> 1,
+-- 
+2.48.1
+

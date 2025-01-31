@@ -1,0 +1,24 @@
+From 13cc2fd35d61c0f3966a5bdd5aa5d40916d43730 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bart=C5=82omiej=20Rudecki?= <przekichane@icloud.com>
+Date: Sun, 11 Feb 2024 00:35:42 +0100
+Subject: [PATCH 142/157] arch: arm64: configs: umi: Switch to
+ TECHPACK_CAMERA_XIAOMI_CAS
+
+Change-Id: I7bb31072b8528928853a164647476464ce881c43
+---
+ arch/arm64/configs/vendor/xiaomi/umi.config | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/umi.config b/arch/arm64/configs/vendor/xiaomi/umi.config
+index abc84c7c9d04..2d6a5f4e39c3 100644
+--- a/arch/arm64/configs/vendor/xiaomi/umi.config
++++ b/arch/arm64/configs/vendor/xiaomi/umi.config
+@@ -26,4 +26,4 @@ CONFIG_BATT_VERIFY_BY_DS28E16=y
+ CONFIG_INPUT_AW8697_HAPTIC=y
+ 
+ # Camera
+-CONFIG_TECHPACK_CAMERA_XIAOMI=y
++CONFIG_TECHPACK_CAMERA_XIAOMI_CAS=y
+-- 
+2.48.1
+

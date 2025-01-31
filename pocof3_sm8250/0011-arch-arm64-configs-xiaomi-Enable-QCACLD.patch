@@ -1,0 +1,25 @@
+From bd9032cf5139371ee52bb071af27cd8a08f9696c Mon Sep 17 00:00:00 2001
+From: Luca Stefani <luca.stefani.ge1@gmail.com>
+Date: Sat, 1 Aug 2020 08:52:53 +0200
+Subject: [PATCH 011/157] arch: arm64: configs: xiaomi: Enable QCACLD
+
+Change-Id: I22b3d3adf31c95a91275d0c795403b4097201430
+---
+ arch/arm64/configs/vendor/xiaomi/sm8250-common.config | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+index dcf776941cb1..434b631b3fbe 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
++++ b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+@@ -3,3 +3,7 @@ CONFIG_LOCALVERSION="-lineageos"
+ 
+ # DTBO
+ CONFIG_BUILD_ARM64_DT_OVERLAY=y
++
++# QCACLD
++CONFIG_QCA_CLD_WLAN=y
++CONFIG_QCA_CLD_WLAN_PROFILE="qca6390"
+-- 
+2.48.1
+

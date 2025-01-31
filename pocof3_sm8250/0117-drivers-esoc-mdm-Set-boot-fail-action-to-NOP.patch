@@ -1,0 +1,32 @@
+From d8aeb954db62ee6178bfd365f0700cf527bad03d Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Sat, 5 Aug 2023 03:11:38 +0200
+Subject: [PATCH 117/157] drivers: esoc: mdm: Set boot fail action to NOP
+
+ * This is useful since it should allow preventing a kernel panic
+   and a full system restart when the modem fails to bootup
+
+Change-Id: I5f653c15e6f31b1a96cf4f9c8c17089289c82505
+---
+ drivers/esoc/esoc-mdm-drv.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/esoc/esoc-mdm-drv.c b/drivers/esoc/esoc-mdm-drv.c
+index 6bb74a86e67e..b046a479e983 100644
+--- a/drivers/esoc/esoc-mdm-drv.c
++++ b/drivers/esoc/esoc-mdm-drv.c
+@@ -17,7 +17,11 @@
+ 
+ #define ESOC_MAX_PON_TRIES	5
+ 
++#ifdef CONFIG_MACH_XIAOMI_SM8250
++#define BOOT_FAIL_ACTION_DEF BOOT_FAIL_ACTION_NOP
++#else
+ #define BOOT_FAIL_ACTION_DEF BOOT_FAIL_ACTION_PANIC
++#endif
+ 
+ enum esoc_pon_state {
+ 	PON_INIT,
+-- 
+2.48.1
+

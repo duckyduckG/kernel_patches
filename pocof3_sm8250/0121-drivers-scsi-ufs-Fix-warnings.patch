@@ -1,0 +1,43 @@
+From 6c58397492f10fae23f264eeaebf55c5281225a2 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sat, 16 Mar 2024 22:11:17 +0100
+Subject: [PATCH 121/157] drivers: scsi: ufs: Fix warnings
+
+Change-Id: Ia1e70e9a7adf3f01f2f37d1e0f7e21db397f9b74
+---
+ drivers/scsi/ufs/ufshcd.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/scsi/ufs/ufshcd.c b/drivers/scsi/ufs/ufshcd.c
+index 39ec40d42e75..710461904e42 100644
+--- a/drivers/scsi/ufs/ufshcd.c
++++ b/drivers/scsi/ufs/ufshcd.c
+@@ -8507,9 +8507,15 @@ static int ufs_get_device_desc(struct ufs_hba *hba,
+ {
+ 	int err;
+ 	size_t buff_len;
++#ifdef CONFIG_MACH_XIAOMI_SM8250
++	u8 model_index;
++#else
+ 	u8 model_index, lun;
++#endif
+ 	u8 *desc_buf;
++#ifndef CONFIG_MACH_XIAOMI_SM8250
+ 	u32 d_lu_wb_buf_alloc;
++#endif
+ 
+ 	buff_len = max_t(size_t, hba->desc_size.dev_desc,
+ 			 QUERY_DESC_MAX_SIZE + 1);
+@@ -8578,7 +8584,9 @@ static int ufs_get_device_desc(struct ufs_hba *hba,
+ 	}
+ 	*/
+ 
++#ifndef CONFIG_MACH_XIAOMI_SM8250
+ skip_unit_desc:
++#endif
+ 	/* Zero-pad entire buffer for string termination. */
+ 	memset(desc_buf, 0, buff_len);
+ 
+-- 
+2.48.1
+

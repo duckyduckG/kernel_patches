@@ -1,0 +1,45 @@
+From 98298c461f3910917a0778afbb8af0dafc76ead5 Mon Sep 17 00:00:00 2001
+From: Yumi Yukimura <me.cafebabe@gmail.com>
+Date: Wed, 7 Feb 2024 23:58:26 +0800
+Subject: [PATCH 125/157] drivers: input: touchscreen: goodix_driver_gt9886:
+ Fix strict-prototypes error
+
+Change-Id: I433ce50e1f8602608980fa1a9118166a86448b3f
+---
+ .../input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c b/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c
+index ecac53c12338..71e953438dbe 100644
+--- a/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c
++++ b/drivers/input/touchscreen/goodix_driver_gt9886/goodix_ts_core.c
+@@ -3126,7 +3126,7 @@ int goodix_palm_sensor_write(int value)
+ 	return ret;
+ }
+ 
+-static u8 goodix_panel_color_read()
++static u8 goodix_panel_color_read(void)
+ {
+ 	if (!goodix_core_data)
+ 		return 0;
+@@ -3134,7 +3134,7 @@ static u8 goodix_panel_color_read()
+ 	return goodix_core_data->lockdown_info[2];
+ }
+ 
+-static u8 goodix_panel_vendor_read()
++static u8 goodix_panel_vendor_read(void)
+ {
+ 	if (!goodix_core_data)
+ 		return 0;
+@@ -3142,7 +3142,7 @@ static u8 goodix_panel_vendor_read()
+ 	return goodix_core_data->lockdown_info[0];
+ }
+ 
+-static u8 goodix_panel_display_read()
++static u8 goodix_panel_display_read(void)
+ {
+ 	if (!goodix_core_data)
+ 		return 0;
+-- 
+2.48.1
+

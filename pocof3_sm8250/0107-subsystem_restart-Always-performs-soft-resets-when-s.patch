@@ -1,0 +1,50 @@
+From 642ac3700cd0a3308530002d8e7dcaa5105a6531 Mon Sep 17 00:00:00 2001
+From: LibXZR <xzr467706992@163.com>
+Date: Sun, 23 May 2021 23:33:22 +0800
+Subject: [PATCH 107/157] subsystem_restart: Always performs soft resets when
+ subsystems crash
+
+* Oneplus is using a dirty list and userspace nodes to override restart_level
+for some subsystems. Why not just ignore all RESET_SOC and use a soft reset
+instead? Nobody wanna to see their device goes randomly reboot sometimes.
+
+* Note that commit 578bed2 is also needed to fix broken irq free when soft
+reset the modem.
+
+Signed-off-by: LibXZR <xzr467706992@163.com>
+Signed-off-by: UtsavBalar1231 <utsavbalar1231@gmail.com>
+
+Change-Id: I53a2b78c6529e8459c6baacaba3f8c8dcaf0c387
+(cherry picked from commit b29471c8fa15fffe46bdc6c5d69294b02edba1fa)
+---
+ drivers/soc/qcom/subsystem_restart.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
+
+diff --git a/drivers/soc/qcom/subsystem_restart.c b/drivers/soc/qcom/subsystem_restart.c
+index 2479632e103b..31c4f156c005 100644
+--- a/drivers/soc/qcom/subsystem_restart.c
++++ b/drivers/soc/qcom/subsystem_restart.c
+@@ -1245,19 +1245,8 @@ int subsystem_restart_dev(struct subsys_device *dev)
+ 		return 0;
+ 	}
+ 
+-	switch (dev->restart_level) {
++	__subsystem_restart_dev(dev);
+ 
+-	case RESET_SUBSYS_COUPLED:
+-		__subsystem_restart_dev(dev);
+-		break;
+-	case RESET_SOC:
+-		__pm_stay_awake(dev->ssr_wlock);
+-		schedule_work(&dev->device_restart_work);
+-		return 0;
+-	default:
+-		panic("subsys-restart: Unknown restart level!\n");
+-		break;
+-	}
+ 	module_put(dev->owner);
+ 	put_device(&dev->dev);
+ 
+-- 
+2.48.1
+

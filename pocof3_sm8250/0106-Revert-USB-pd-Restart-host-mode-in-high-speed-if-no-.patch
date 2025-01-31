@@ -1,0 +1,97 @@
+From 2b232b8645e4c47808d8f28faf91a263fd8fd2fc Mon Sep 17 00:00:00 2001
+From: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Date: Sat, 24 Jul 2021 09:36:46 +0200
+Subject: [PATCH 106/157] Revert "USB: pd: Restart host mode in high speed if
+ no usb3 & dp concurrency"
+
+This reverts commit 91eff369179e552778dea61bd653b2e7f04c7f61.
+
+Change-Id: I4d5286a4466a1af2d027dd0802b01a7d28726cbc
+---
+ drivers/usb/pd/policy_engine.c | 29 +----------------------------
+ 1 file changed, 1 insertion(+), 28 deletions(-)
+
+diff --git a/drivers/usb/pd/policy_engine.c b/drivers/usb/pd/policy_engine.c
+index 321e0612ed5d..385ce3b5e7fe 100644
+--- a/drivers/usb/pd/policy_engine.c
++++ b/drivers/usb/pd/policy_engine.c
+@@ -1,6 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+- * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+  */
+ 
+ #include <linux/completion.h>
+@@ -390,7 +390,6 @@ struct usbpd {
+ 	struct workqueue_struct	*wq;
+ 	struct work_struct	sm_work;
+ 	struct work_struct	start_periph_work;
+-	struct work_struct	restart_host_work;
+ 	struct work_struct	disable_active_work;
+ 	struct delayed_work	src_check_work;
+ 	struct work_struct	pdo_work;
+@@ -421,7 +420,6 @@ struct usbpd {
+ 	bool			peer_usb_comm;
+ 	bool			peer_pr_swap;
+ 	bool			peer_dr_swap;
+-	bool			no_usb3dp_concurrency;
+ 
+ 	u32			sink_caps[7];
+ 	int			num_sink_caps;
+@@ -684,26 +682,6 @@ static void start_usb_peripheral_work(struct work_struct *w)
+ 	}
+ }
+ 
+-static void restart_usb_host_work(struct work_struct *w)
+-{
+-	struct usbpd *pd = container_of(w, struct usbpd, restart_host_work);
+-	int ret;
+-
+-	if (!pd->no_usb3dp_concurrency)
+-		return;
+-
+-	stop_usb_host(pd);
+-
+-	/* blocks until USB host is completely stopped */
+-	ret = extcon_blocking_sync(pd->extcon, EXTCON_USB_HOST, STOP_USB_HOST);
+-	if (ret) {
+-		usbpd_err(&pd->dev, "err(%d) stopping host", ret);
+-		return;
+-	}
+-
+-	start_usb_host(pd, false);
+-}
+-
+ static void usbpd_disable_cp(struct usbpd *pd)
+ {
+ 	queue_work(pd->wq, &pd->disable_active_work);
+@@ -1826,7 +1804,6 @@ static void handle_vdm_rx(struct usbpd *pd, struct rx_msg *rx_msg)
+ 
+ 		/* Set to USB and DP cocurrency mode */
+ 		extcon_blocking_sync(pd->extcon, EXTCON_DISP_DP, 2);
+-		queue_work(pd->wq, &pd->restart_host_work);
+ 	}
+ 
+ 	/* if it's a supported SVID, pass the message to the handler */
+@@ -5873,7 +5850,6 @@ struct usbpd *usbpd_create(struct device *parent)
+ 	}
+ 	INIT_WORK(&pd->sm_work, usbpd_sm);
+ 	INIT_WORK(&pd->start_periph_work, start_usb_peripheral_work);
+-	INIT_WORK(&pd->restart_host_work, restart_usb_host_work);
+ 	INIT_WORK(&pd->pdo_work, usbpd_pdo_workfunc);
+ 	INIT_DELAYED_WORK(&pd->src_check_work, source_check_workfunc);
+ 	INIT_DELAYED_WORK(&pd->fixed_pdo_work, usbpd_fixed_pdo_workfunc);
+@@ -5958,9 +5934,6 @@ struct usbpd *usbpd_create(struct device *parent)
+ 	extcon_set_property_capability(pd->extcon, EXTCON_USB_HOST,
+ 			EXTCON_PROP_USB_SS);
+ 
+-	if (device_property_read_bool(parent, "qcom,no-usb3-dp-concurrency"))
+-		pd->no_usb3dp_concurrency = true;
+-
+ 	pd->num_sink_caps = device_property_read_u32_array(parent,
+ 			"qcom,default-sink-caps", NULL, 0);
+ 
+-- 
+2.48.1
+

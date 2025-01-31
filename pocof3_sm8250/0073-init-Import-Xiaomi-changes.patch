@@ -1,0 +1,28 @@
+From f85bb0d96fa65c89565efb805d9ea425a3f5c315 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 16 Nov 2022 16:56:49 +0100
+Subject: [PATCH 073/157] init: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: Ie57594945415224a78d94fe18cb999c3d1186f9a
+---
+ init/do_mounts.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index d707f12be6e7..b21fdfa5855c 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -241,6 +241,8 @@ dev_t name_to_dev_t(const char *name)
+ 
+ 	if (strlen(name) > 31)
+ 		goto fail;
++	if (strnstr(name, "block", strlen(name)))
++		name += 6;
+ 	strcpy(s, name);
+ 	for (p = s; *p; p++)
+ 		if (*p == '/')
+-- 
+2.48.1
+

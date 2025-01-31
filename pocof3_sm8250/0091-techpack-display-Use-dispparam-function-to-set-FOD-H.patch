@@ -1,0 +1,53 @@
+From 60a58371afc34ea2e83abfa5a5a11101e17b5739 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Thu, 24 Nov 2022 01:06:08 +0100
+Subject: [PATCH 091/157] techpack: display: Use dispparam function to set FOD
+ HBM state
+
+* This let us easily use local HBM when available
+
+Change-Id: I701bb83505041f901c37a690abfed4a370542896
+---
+ techpack/display/msm/dsi/dsi_panel.c     | 10 ++--------
+ techpack/display/msm/sde/sde_connector.c |  2 --
+ 2 files changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/techpack/display/msm/dsi/dsi_panel.c b/techpack/display/msm/dsi/dsi_panel.c
+index 126f1324b0e8..43005cce8758 100644
+--- a/techpack/display/msm/dsi/dsi_panel.c
++++ b/techpack/display/msm/dsi/dsi_panel.c
+@@ -912,15 +912,9 @@ int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status)
+ 	int rc = 0;
+ 
+ 	if (status) {
+-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_HBM_FOD_ON);
+-		if (rc)
+-			pr_err("[%s] failed to send DSI_CMD_SET_MI_HBM_FOD_ON cmd, rc=%d\n",
+-					panel->name, rc);
++		dsi_panel_set_disp_param(panel, DISPPARAM_HBM_FOD_ON);
+ 	} else {
+-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_HBM_FOD_OFF);
+-		if (rc)
+-			pr_err("[%s] failed to send DSI_CMD_SET_MI_HBM_FOD_OFF cmd, rc=%d\n",
+-					panel->name, rc);
++		dsi_panel_set_disp_param(panel, DISPPARAM_HBM_FOD_OFF);
+ 	}
+ 
+ 	return rc;
+diff --git a/techpack/display/msm/sde/sde_connector.c b/techpack/display/msm/sde/sde_connector.c
+index 8d6412c2b581..ec8ae94eaa78 100644
+--- a/techpack/display/msm/sde/sde_connector.c
++++ b/techpack/display/msm/sde/sde_connector.c
+@@ -802,9 +802,7 @@ void sde_connector_update_fod_hbm(struct drm_connector *connector)
+ 	if (atomic_xchg(&effective_status, status) == status)
+ 		return;
+ 
+-	mutex_lock(&display->panel->panel_lock);
+ 	dsi_panel_set_fod_hbm(display->panel, status);
+-	mutex_unlock(&display->panel->panel_lock);
+ 	dsi_display_set_fod_ui(display, status);
+ }
+ 
+-- 
+2.48.1
+

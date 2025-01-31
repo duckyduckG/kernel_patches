@@ -1,0 +1,35 @@
+From a8d62cc9c06ecf8e3828f1e6d5ebc05bfb3c8e3e Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sat, 16 Mar 2024 23:21:15 +0100
+Subject: [PATCH 127/157] drivers: input: touchscreen: hxchipset: Fix warnings
+
+Change-Id: I5765ff7f5fd3cdd9af0980d0b310818a586a49f1
+---
+ drivers/input/touchscreen/hxchipset/himax_common.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/touchscreen/hxchipset/himax_common.c b/drivers/input/touchscreen/hxchipset/himax_common.c
+index 9960f22b9264..ded8e1b9daa3 100644
+--- a/drivers/input/touchscreen/hxchipset/himax_common.c
++++ b/drivers/input/touchscreen/hxchipset/himax_common.c
+@@ -989,7 +989,7 @@ static ssize_t pen_connect_strategy_show(struct device *dev,
+ 
+ static DEVICE_ATTR_RO(pen_connect_strategy);
+ 
+-static int sysfs_node_init()
++static int sysfs_node_init(void)
+ {
+ 	int ret = 0;
+ 	sys_class = class_create(THIS_MODULE, HIMAX_SYS_NODE);
+@@ -3650,7 +3650,7 @@ static void himax_tp_mode_recovery(void)
+ 	I("exit %s\n", __func__);
+ }
+ 
+-static void himax_reg_init()
++static void himax_reg_init(void)
+ {
+ 	int ret = -1;
+ 	uint8_t i = 0;
+-- 
+2.48.1
+

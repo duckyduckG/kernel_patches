@@ -1,0 +1,54 @@
+From f6840cb9c8d56827e289ec0b080ef8818c40547c Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Sat, 16 Mar 2024 22:09:48 +0100
+Subject: [PATCH 119/157] techpack: camera-xiaomi*: Fix warnings
+
+Change-Id: I3d81000b784ce2df594a05dc97856e9ca99a86e6
+---
+ .../camera-xiaomi-cas/drivers/cam_req_mgr/cam_req_mgr_util.c    | 2 +-
+ .../camera-xiaomi-tablet/drivers/cam_req_mgr/cam_req_mgr_util.c | 2 +-
+ techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c   | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/techpack/camera-xiaomi-cas/drivers/cam_req_mgr/cam_req_mgr_util.c b/techpack/camera-xiaomi-cas/drivers/cam_req_mgr/cam_req_mgr_util.c
+index 5ffb737ef88d..e12c0ffed36c 100644
+--- a/techpack/camera-xiaomi-cas/drivers/cam_req_mgr/cam_req_mgr_util.c
++++ b/techpack/camera-xiaomi-cas/drivers/cam_req_mgr/cam_req_mgr_util.c
+@@ -18,7 +18,7 @@
+ static struct cam_req_mgr_util_hdl_tbl *hdl_tbl;
+ static DEFINE_SPINLOCK(hdl_tbl_lock);
+ 
+-static hdl_count = 0;
++static int hdl_count = 0;
+ int cam_req_mgr_util_init(void)
+ {
+ 	int rc = 0;
+diff --git a/techpack/camera-xiaomi-tablet/drivers/cam_req_mgr/cam_req_mgr_util.c b/techpack/camera-xiaomi-tablet/drivers/cam_req_mgr/cam_req_mgr_util.c
+index 5ffb737ef88d..e12c0ffed36c 100644
+--- a/techpack/camera-xiaomi-tablet/drivers/cam_req_mgr/cam_req_mgr_util.c
++++ b/techpack/camera-xiaomi-tablet/drivers/cam_req_mgr/cam_req_mgr_util.c
+@@ -18,7 +18,7 @@
+ static struct cam_req_mgr_util_hdl_tbl *hdl_tbl;
+ static DEFINE_SPINLOCK(hdl_tbl_lock);
+ 
+-static hdl_count = 0;
++static int hdl_count = 0;
+ int cam_req_mgr_util_init(void)
+ {
+ 	int rc = 0;
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c
+index 5ffb737ef88d..e12c0ffed36c 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c
+@@ -18,7 +18,7 @@
+ static struct cam_req_mgr_util_hdl_tbl *hdl_tbl;
+ static DEFINE_SPINLOCK(hdl_tbl_lock);
+ 
+-static hdl_count = 0;
++static int hdl_count = 0;
+ int cam_req_mgr_util_init(void)
+ {
+ 	int rc = 0;
+-- 
+2.48.1
+

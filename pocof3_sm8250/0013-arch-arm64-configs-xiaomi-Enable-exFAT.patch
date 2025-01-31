@@ -1,0 +1,24 @@
+From 62c81154cd2e49558a14141c9b32d616347edaab Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 13 Dec 2022 21:25:24 +0100
+Subject: [PATCH 013/157] arch: arm64: configs: xiaomi: Enable exFAT
+
+Change-Id: I3f0a1f9e44dbd30399550e9acf2ac8dfe5b466ab
+---
+ arch/arm64/configs/vendor/xiaomi/sm8250-common.config | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+index 2b4c0b474a8f..e64fa2cee5ad 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
++++ b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+@@ -17,3 +17,6 @@ CONFIG_IPA_UT=n
+ CONFIG_IOMMU_TESTS=n
+ CONFIG_IOMMU_TESTS=n
+ CONFIG_QMP_DEBUGFS_CLIENT=n
++
++# exFAT
++CONFIG_EXFAT_FS=y
+-- 
+2.48.1
+

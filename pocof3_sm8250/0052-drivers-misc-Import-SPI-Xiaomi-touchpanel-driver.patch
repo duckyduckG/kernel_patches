@@ -1,0 +1,319 @@
+From fef8e9539a9ad4e76cea376766cf29d0cd0f70d7 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 15 Nov 2022 16:17:23 +0100
+Subject: [PATCH 052/157] drivers: misc: Import SPI Xiaomi touchpanel driver
+
+* From dagu-s-oss
+* Run clang-format on source files
+
+Change-Id: I2e7eb87cf0e116f85dbe84dd144eea6d70434302
+---
+ drivers/misc/Kconfig          |   7 ++
+ drivers/misc/Makefile         |   1 +
+ drivers/misc/spi-xiaomi-tp.c  | 206 ++++++++++++++++++++++++++++++++++
+ include/linux/spi-xiaomi-tp.h |  53 +++++++++
+ 4 files changed, 267 insertions(+)
+ create mode 100644 drivers/misc/spi-xiaomi-tp.c
+ create mode 100644 include/linux/spi-xiaomi-tp.h
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 8a86e1ce3daf..0cfd2841e98d 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -641,6 +641,13 @@ config MOTOR_DRV8846
+ 	help
+ 	  Say Y here if you want to enable TI-drv8846 Stepper motor.
+ 
++config SPI_XIAOMI_TP
++	bool
++	depends on SPI
++	default y if TOUCHSCREEN_NT36xxx_HOSTDL_SPI
++	help
++	  Say Y if want use xiaomi touch panel.
++
+ source "drivers/misc/c2port/Kconfig"
+ source "drivers/misc/eeprom/Kconfig"
+ source "drivers/misc/cb710/Kconfig"
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index abb61317abc5..719382add18f 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -81,3 +81,4 @@ obj-$(CONFIG_KINECTICS_XR_NORDIC) += kxrctrl/
+ 
+ obj-$(CONFIG_HALL_AKM09970)	+= akm09970.o
+ obj-$(CONFIG_MOTOR_DRV8846)	+= drv8846.o
++obj-$(CONFIG_SPI_XIAOMI_TP)	+= spi-xiaomi-tp.o
+diff --git a/drivers/misc/spi-xiaomi-tp.c b/drivers/misc/spi-xiaomi-tp.c
+new file mode 100644
+index 000000000000..b8efda24ac7d
+--- /dev/null
++++ b/drivers/misc/spi-xiaomi-tp.c
+@@ -0,0 +1,206 @@
++#include <linux/spi-xiaomi-tp.h>
++
++#define DEBUG
++
++static struct ts_spi_info owner;
++
++static ssize_t ts_xsfer_state_show(struct device *dev,
++				   struct device_attribute *attr, char *buf)
++{
++	ssize_t ret;
++
++	mutex_lock(&owner.lock);
++
++	ret = snprintf(buf, PAGE_SIZE, "[%s] used:%d, tmp:%d\n", owner.name,
++		       owner.used, owner.tmp);
++
++	mutex_unlock(&owner.lock);
++
++	return ret;
++}
++
++static DEVICE_ATTR(ts_xsfer_state, S_IRUGO, ts_xsfer_state_show, NULL);
++
++/*tmporary get spi device's ownership until invoke tmp_drop_ts_xsfer()
++ *
++ *return -EBUSY others is using, -EPERM if spi device already belong to others.
++ */
++int32_t tmp_hold_ts_xsfer(struct spi_device **client)
++{
++	if (!owner.init) {
++		PDEBUG("ts_xsfer does not exist");
++		return -EINVAL;
++	}
++
++	mutex_lock(&owner.lock);
++
++	if (owner.used) {
++		PDEBUG("ts_xsfer belong to %s, can't tmporary use it\n",
++		       owner.name);
++		mutex_unlock(&owner.lock);
++		return -EPERM;
++	}
++
++	if (owner.tmp) {
++		PDEBUG("ts_xsfer is in using, others can't use it now\n");
++		mutex_unlock(&owner.lock);
++		return -EBUSY;
++	}
++
++	owner.tmp = true;
++	*client = owner.client;
++
++	mutex_unlock(&owner.lock);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(tmp_hold_ts_xsfer);
++
++/*must balance with tmp_hold_ts_xsfer*/
++void tmp_drop_ts_xsfer(void)
++{
++	if (owner.init) {
++		mutex_lock(&owner.lock);
++		owner.tmp = false;
++		mutex_unlock(&owner.lock);
++	}
++}
++EXPORT_SYMBOL_GPL(tmp_drop_ts_xsfer);
++
++/*make spi device belong to module which invoke this function
++ *-EPERM if spi device already belong to others.
++ */
++int32_t get_ts_xsfer(const char *name)
++{
++	if (!name) {
++		PDEBUG("name can't be empty\n");
++		return -EINVAL;
++	}
++
++	mutex_lock(&owner.lock);
++
++	if (owner.used) {
++		PDEBUG("ts_xsfer belong to %s, others can't get it\n",
++		       owner.name);
++		mutex_unlock(&owner.lock);
++		return -EPERM;
++	}
++	owner.used = true;
++	strlcpy(owner.name, name, NAME_MAX_LENS);
++
++	mutex_unlock(&owner.lock);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(get_ts_xsfer);
++
++void put_ts_xsfer(const char *name)
++{
++	if (name && !strncmp(name, owner.name, NAME_MAX_LENS)) {
++		mutex_lock(&owner.lock);
++		owner.used = false;
++		owner.name[0] = '\0';
++		mutex_unlock(&owner.lock);
++	} else {
++		PDEBUG("must released by owner\n");
++	}
++}
++EXPORT_SYMBOL_GPL(put_ts_xsfer);
++
++const char *get_owner_name(void)
++{
++	if (owner.name[0] == '\0')
++		return NULL;
++
++	return owner.name;
++}
++EXPORT_SYMBOL_GPL(get_owner_name);
++
++/*test weather spi device belong someone, if not get the device's ownership.
++ *name@:name of owner
++ *return NULL if device already been used.
++ */
++struct spi_device *test_then_get_spi(const char *name)
++{
++	struct spi_device *ret;
++
++	mutex_lock(&owner.lock);
++
++	if (owner.used) {
++		ret = NULL;
++	} else {
++		owner.used = true;
++		ret = owner.client;
++		if (name)
++			strlcpy(owner.name, name, NAME_MAX_LENS);
++	}
++
++	mutex_unlock(&owner.lock);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(test_then_get_spi);
++
++static int32_t ts_spi_probe(struct spi_device *client)
++{
++	int32_t ret;
++	PDEBUG("Start probe\n");
++	mutex_init(&owner.lock);
++	owner.name[0] = '\0';
++	owner.used = false;
++	owner.tmp = false;
++	owner.client = client;
++
++	ret = sysfs_create_file(&client->dev.kobj,
++				&dev_attr_ts_xsfer_state.attr);
++	if (ret < 0) {
++		PDEBUG("create sysfs failed\n");
++	}
++
++	owner.init = true;
++	PDEBUG("init ts_xsfer device successful\n");
++
++	return 0;
++}
++
++static int32_t ts_spi_remove(struct spi_device *client)
++{
++	PDEBUG("touch_xsfer will be remove, touch must stop spi xsfer\n");
++	sysfs_remove_file(&client->dev.kobj, &dev_attr_ts_xsfer_state.attr);
++
++	return 0;
++}
++
++static struct of_device_id ts_match_tbl[] = {
++	{
++		.compatible = "xiaomi,spi-for-tp",
++	},
++	{},
++};
++
++static struct spi_driver touch_spi_drv = {
++	.probe = ts_spi_probe,
++	.remove = ts_spi_remove,
++	.driver = {
++		.name = "touch_xsfer",
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(ts_match_tbl),
++	},
++};
++
++static int32_t __init touch_spi_init(void)
++{
++	PDEBUG("Start register spi for tp\n");
++	return spi_register_driver(&touch_spi_drv);
++}
++
++static void __exit touch_spi_exit(void)
++{
++	spi_unregister_driver(&touch_spi_drv);
++}
++
++module_init(touch_spi_init);
++module_exit(touch_spi_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("XIAOMI,JIANGHAO");
+diff --git a/include/linux/spi-xiaomi-tp.h b/include/linux/spi-xiaomi-tp.h
+new file mode 100644
+index 000000000000..e6c0ec4de0c8
+--- /dev/null
++++ b/include/linux/spi-xiaomi-tp.h
+@@ -0,0 +1,53 @@
++#ifndef _SPI_XIAOMI_TP_H
++#define _SPI_XIAOMI_TP_H
++
++#include <linux/module.h>
++#include <linux/spi/spi.h>
++#include <linux/mutex.h>
++#include <linux/of.h>
++#include <linux/sysfs.h>
++
++#define TP_SPI_DEBUG
++
++#define TP_TAG "[TP_SPI]: "
++
++#undef PDEBUG
++#ifdef TP_SPI_DEBUG
++#ifdef __KERNEL__
++#define PDEBUG(fmt, args...) printk(KERN_ERR TP_TAG fmt, ##args)
++#else /*NO __KERNEL__*/
++#define PDEBUG(fmt, args...) fprintf(stderr, TP_TAG fmt, ##args)
++#endif /*END __KERNEL__*/
++#else /*NO TP_SPI_DEBUG*/
++#define PDEBUG(fmt, args...)
++#endif /*END TP_SPI_DEBUG*/
++
++#undef PDEBUGG
++#define PDEBUGG(fmt, args...)
++
++#define NAME_MAX_LENS 32
++
++/*lock@:protect this struct
++ *name@:indicate who own this device
++ *used@:indicate this device has it owner
++ *tmp@:device in using but don't has it owner
++ *init&:indicate ts_xsfer already init.
++ *client@:pointer to spi device
++ */
++struct ts_spi_info {
++	struct mutex lock;
++	char name[NAME_MAX_LENS];
++	bool used;
++	bool tmp;
++	bool init;
++	struct spi_device *client;
++};
++
++extern int32_t tmp_hold_ts_xsfer(struct spi_device **client);
++extern void tmp_drop_ts_xsfer(void);
++extern int32_t get_ts_xsfer(const char *name);
++extern void put_ts_xsfer(const char *name);
++extern const char *get_owner_name(void);
++extern struct spi_device *test_then_get_spi(const char *name);
++
++#endif /*_SPI_XIAOMI_TP_H*/
+-- 
+2.48.1
+

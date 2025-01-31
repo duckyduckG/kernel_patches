@@ -1,0 +1,126 @@
+From 6eecf1f9b1d943bb250475a252f0d0b8231ed4ca Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 16 Nov 2022 16:44:39 +0100
+Subject: [PATCH 071/157] drivers: video: backlight: Import Xiaomi changes
+
+* From dagu-s-oss
+
+Change-Id: Id2ff6138d5d0e15c0cfbf72ce6c14360c56ddc45
+---
+ drivers/video/backlight/backlight.c | 47 ++++++++++++++++++++++++++---
+ include/linux/backlight.h           |  6 ++++
+ 2 files changed, 49 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/video/backlight/backlight.c b/drivers/video/backlight/backlight.c
+index 9429f42ae8da..33d2616ea244 100644
+--- a/drivers/video/backlight/backlight.c
++++ b/drivers/video/backlight/backlight.c
+@@ -119,6 +119,7 @@ static void backlight_generate_event(struct backlight_device *bd,
+ 	envp[1] = NULL;
+ 	kobject_uevent_env(&bd->dev.kobj, KOBJ_CHANGE, envp);
+ 	sysfs_notify(&bd->dev.kobj, NULL, "actual_brightness");
++	sysfs_notify(&bd->dev.kobj, NULL, "brightness");
+ }
+ 
+ static ssize_t bl_power_show(struct device *dev, struct device_attribute *attr,
+@@ -180,6 +181,12 @@ int backlight_device_set_brightness(struct backlight_device *bd,
+ 		if (brightness > bd->props.max_brightness)
+ 			rc = -EINVAL;
+ 		else {
++			if ((!bd->use_count && brightness) || (bd->use_count && !brightness)) {
++				if (!bd->use_count)
++					bd->use_count++;
++				else
++					bd->use_count--;
++			}
+ 			pr_debug("set brightness to %lu\n", brightness);
+ 			bd->props.brightness = brightness;
+ 			rc = backlight_update_status(bd);
+@@ -205,10 +212,6 @@ static ssize_t brightness_store(struct device *dev,
+ 		return rc;
+ 
+ 	bd->usr_brightness_req = brightness;
+-	brightness = (brightness <= bd->thermal_brightness_limit) ?
+-				bd->usr_brightness_req :
+-				bd->thermal_brightness_limit;
+-
+ 	rc = backlight_device_set_brightness(bd, brightness);
+ 
+ 	return rc ? rc : count;
+@@ -480,6 +483,42 @@ struct backlight_device *backlight_device_get_by_type(enum backlight_type type)
+ }
+ EXPORT_SYMBOL(backlight_device_get_by_type);
+ 
++struct backlight_device *backlight_device_get_by_type_a(enum backlight_type type)
++{
++	bool found = false;
++	struct backlight_device *bd;
++
++	mutex_lock(&backlight_dev_list_mutex);
++	list_for_each_entry(bd, &backlight_dev_list, entry) {
++		if (bd->props.type == type && !strcmp(bd->dev.kobj.name, "KTZ8866A")) {
++			found = true;
++			break;
++		}
++	}
++	mutex_unlock(&backlight_dev_list_mutex);
++
++	return found ? bd : NULL;
++}
++EXPORT_SYMBOL(backlight_device_get_by_type_a);
++
++struct backlight_device *backlight_device_get_by_type_b(enum backlight_type type)
++{
++	bool found = false;
++	struct backlight_device *bd;
++
++	mutex_lock(&backlight_dev_list_mutex);
++	list_for_each_entry(bd, &backlight_dev_list, entry) {
++		if (bd->props.type == type && !strcmp(bd->dev.kobj.name, "KTZ8866B")) {
++			found = true;
++			break;
++		}
++	}
++	mutex_unlock(&backlight_dev_list_mutex);
++
++	return found ? bd : NULL;
++}
++EXPORT_SYMBOL(backlight_device_get_by_type_b);
++
+ /**
+  * backlight_device_unregister - unregisters a backlight device object.
+  * @bd: the backlight device object to be unregistered and freed.
+diff --git a/include/linux/backlight.h b/include/linux/backlight.h
+index a5a50e784548..89402c587bef 100644
+--- a/include/linux/backlight.h
++++ b/include/linux/backlight.h
+@@ -69,6 +69,8 @@ struct backlight_ops {
+ struct backlight_properties {
+ 	/* Current User requested brightness (0 - max_brightness) */
+ 	int brightness;
++	int brightness_clone;
++	int brightness_clone_backup;
+ 	/* Maximal value for brightness (read-only) */
+ 	int max_brightness;
+ 	/* Current FB Power mode (0: full on, 1..3: power saving
+@@ -111,6 +113,8 @@ struct backlight_device {
+ 	struct thermal_cooling_device *cdev;
+ 	/* Thermally limited max brightness */
+ 	int thermal_brightness_limit;
++	/* Thermally limited max brightness clone for 8192 hbm*/
++	int thermal_brightness_clone_limit;
+ 	/* User brightness request */
+ 	int usr_brightness_req;
+ 
+@@ -189,6 +193,8 @@ extern void backlight_force_update(struct backlight_device *bd,
+ extern int backlight_register_notifier(struct notifier_block *nb);
+ extern int backlight_unregister_notifier(struct notifier_block *nb);
+ extern struct backlight_device *backlight_device_get_by_type(enum backlight_type type);
++extern struct backlight_device *backlight_device_get_by_type_a(enum backlight_type type);
++extern struct backlight_device *backlight_device_get_by_type_b(enum backlight_type type);
+ extern int backlight_device_set_brightness(struct backlight_device *bd, unsigned long brightness);
+ 
+ #define to_backlight_device(obj) container_of(obj, struct backlight_device, dev)
+-- 
+2.48.1
+

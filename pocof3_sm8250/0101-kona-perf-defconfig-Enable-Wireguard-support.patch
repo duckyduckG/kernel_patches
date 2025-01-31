@@ -1,0 +1,33 @@
+From 5aeefcc891404db9cf1374cc119e84ee7701157d Mon Sep 17 00:00:00 2001
+From: Aayush Gupta <aayushgupta219@gmail.com>
+Date: Sun, 6 Dec 2020 13:23:47 +0530
+Subject: [PATCH 101/157] kona-perf: defconfig: Enable Wireguard support
+
+Change-Id: I53ab371cdb0c50a426258bf6672b09226810161f
+---
+ arch/arm64/configs/vendor/kona-perf_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/vendor/kona-perf_defconfig b/arch/arm64/configs/vendor/kona-perf_defconfig
+index 6853fe5364ca..0afb271597b6 100644
+--- a/arch/arm64/configs/vendor/kona-perf_defconfig
++++ b/arch/arm64/configs/vendor/kona-perf_defconfig
+@@ -84,7 +84,6 @@ CONFIG_CPU_BOOST=y
+ CONFIG_CPU_FREQ_GOV_SCHEDUTIL=y
+ CONFIG_ARM_QCOM_CPUFREQ_HW=y
+ CONFIG_MSM_TZ_LOG=y
+-CONFIG_ARM64_CRYPTO=y
+ CONFIG_CRYPTO_SHA1_ARM64_CE=y
+ CONFIG_CRYPTO_SHA2_ARM64_CE=y
+ CONFIG_CRYPTO_GHASH_ARM64_CE=y
+@@ -318,6 +317,7 @@ CONFIG_DM_VERITY_FEC=y
+ CONFIG_NETDEVICES=y
+ CONFIG_BONDING=y
+ CONFIG_DUMMY=y
++CONFIG_WIREGUARD=y
+ CONFIG_TUN=y
+ CONFIG_VETH=y
+ CONFIG_AQFWD=y
+-- 
+2.48.1
+

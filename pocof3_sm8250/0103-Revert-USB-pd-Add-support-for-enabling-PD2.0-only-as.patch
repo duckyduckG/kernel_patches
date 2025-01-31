@@ -1,0 +1,63 @@
+From 7c1b1a13fe0a780da47d59d9d27e2485bd6e049a Mon Sep 17 00:00:00 2001
+From: UtsavBalar1231 <utsavbalar1231@gmail.com>
+Date: Sat, 24 Jul 2021 09:35:44 +0200
+Subject: [PATCH 103/157] Revert "USB: pd: Add support for enabling PD2.0 only
+ as source"
+
+This reverts commit 917f4c3e2716d055b84c653f562f4a3e1af15dcf.
+
+Change-Id: I56d3293cf1563eba0c2c3b68abb78f6190fbf0ec
+---
+ drivers/usb/pd/policy_engine.c | 15 ++-------------
+ 1 file changed, 2 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/usb/pd/policy_engine.c b/drivers/usb/pd/policy_engine.c
+index b1179957a01d..4038d7645171 100644
+--- a/drivers/usb/pd/policy_engine.c
++++ b/drivers/usb/pd/policy_engine.c
+@@ -426,7 +426,6 @@ struct usbpd {
+ 	bool			peer_pr_swap;
+ 	bool			peer_dr_swap;
+ 	bool			no_usb3dp_concurrency;
+-	bool			pd20_source_only;
+ 
+ 	u32			sink_caps[7];
+ 	int			num_sink_caps;
+@@ -2395,11 +2394,7 @@ static int usbpd_startup_common(struct usbpd *pd,
+ 		 * support up to PD 3.0; if peer is 2.0
+ 		 * phy_msg_received() will handle the downgrade.
+ 		 */
+-		if ((pd->pd20_source_only) &&
+-			pd->current_state == PE_SRC_STARTUP)
+-			pd->spec_rev = USBPD_REV_20;
+-		else
+-			pd->spec_rev = USBPD_REV_30;
++		pd->spec_rev = USBPD_REV_30;
+ 
+ 		if (pd->pd_phy_opened) {
+ 			pd_phy_close();
+@@ -2527,10 +2522,7 @@ static void handle_state_src_startup_wait_for_vdm_resp(struct usbpd *pd,
+ 	 * Emarker may have negotiated down to rev 2.0.
+ 	 * Reset to 3.0 to begin SOP communication with sink
+ 	 */
+-	if (pd->pd20_source_only)
+-		pd->spec_rev = USBPD_REV_20;
+-	else
+-		pd->spec_rev = USBPD_REV_30;
++	pd->spec_rev = USBPD_REV_30;
+ 
+ 	pd->current_state = PE_SRC_SEND_CAPABILITIES;
+ 	kick_sm(pd, ms);
+@@ -6038,9 +6030,6 @@ struct usbpd *usbpd_create(struct device *parent)
+ 		pd->num_sink_caps = ARRAY_SIZE(default_snk_caps);
+ 	}
+ 
+-	if (device_property_read_bool(parent, "qcom,pd-20-source-only"))
+-		pd->pd20_source_only = true;
+-
+ 	/*
+ 	 * Register a Type-C class instance (/sys/class/typec/portX).
+ 	 * Note this is different than the /sys/class/usbpd/ created above.
+-- 
+2.48.1
+

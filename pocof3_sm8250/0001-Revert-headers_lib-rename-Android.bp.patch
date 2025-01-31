@@ -1,0 +1,38 @@
+From fdd2217ee86bd3ce16a2fd018fa7d69be4b53ae1 Mon Sep 17 00:00:00 2001
+From: Prateek Sood <prsood@codeaurora.org>
+Date: Tue, 18 Feb 2020 15:29:40 +0530
+Subject: [PATCH 001/157] Revert "headers_lib: rename Android.bp"
+
+This reverts commit 3eef29d2fd23706dd90f1c148993d0f59ab3d8fc.
+---
+ .gitignore                               | 5 -----
+ Androidbp => Android.bp                  | 0
+ techpack/audio/{Androidbp => Android.bp} | 0
+ 3 files changed, 5 deletions(-)
+ rename Androidbp => Android.bp (100%)
+ rename techpack/audio/{Androidbp => Android.bp} (100%)
+
+diff --git a/.gitignore b/.gitignore
+index 90fb50a3dc5c..c62842976bdb 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -135,8 +135,3 @@ all.config
+ 
+ # fetched Android config fragments
+ kernel/configs/android-*.cfg
+-
+-#
+-#Ignoring Android.bp link file
+-#
+-Android.bp
+diff --git a/Androidbp b/Android.bp
+similarity index 100%
+rename from Androidbp
+rename to Android.bp
+diff --git a/techpack/audio/Androidbp b/techpack/audio/Android.bp
+similarity index 100%
+rename from techpack/audio/Androidbp
+rename to techpack/audio/Android.bp
+-- 
+2.48.1
+

@@ -1,0 +1,29 @@
+From ebb8a41bdab7d0f3dbafcabba2802cfeace93e6d Mon Sep 17 00:00:00 2001
+From: GuaiYiHu <guaiyihu@foxmail.com>
+Date: Thu, 13 Aug 2020 12:25:09 +0800
+Subject: [PATCH 089/157] techpack: display: msm: sde: Increase sde stage to
+ map zpos changes
+
+ * Due to zpos changes, another stage should be added. Otherwise,
+fingerprint payment won't work in some apps like Alipay and Jingdong.
+
+Change-Id: Ibbd928b6d75c17f9c6c2e8b6f72b2d17aa48eb94
+---
+ techpack/display/msm/sde/sde_hw_mdss.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/techpack/display/msm/sde/sde_hw_mdss.h b/techpack/display/msm/sde/sde_hw_mdss.h
+index 3cefb241a364..b74686979372 100644
+--- a/techpack/display/msm/sde/sde_hw_mdss.h
++++ b/techpack/display/msm/sde/sde_hw_mdss.h
+@@ -169,6 +169,7 @@ enum sde_stage {
+ 	SDE_STAGE_8,
+ 	SDE_STAGE_9,
+ 	SDE_STAGE_10,
++	SDE_STAGE_11,
+ 	SDE_STAGE_MAX
+ };
+ 
+-- 
+2.48.1
+

@@ -1,0 +1,1296 @@
+From 04b4bd9c720057795c15ec0d424d9acfb0994a41 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Tue, 2 May 2023 01:17:01 +0200
+Subject: [PATCH 097/157] techpack: camera-xiaomi: Import selected edits from
+ camera-xiaomi-tablet
+
+* Makes lmi camera work again
+
+Change-Id: I5cc59ca908999347ef6f769a2720815e45f3aa41
+---
+ .../drivers/cam_cdm/cam_cdm_hw_core.c         |  10 +-
+ .../drivers/cam_fd/fd_hw_mgr/cam_fd_hw_mgr.c  |  26 +---
+ .../icp_hw/include/cam_icp_hw_mgr_intf.h      |   2 +-
+ .../cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c       |  13 +-
+ .../isp_hw/ife_csid_hw/cam_ife_csid_core.c    |  10 ++
+ .../drivers/cam_req_mgr/cam_mem_mgr.c         |   3 +
+ .../drivers/cam_req_mgr/cam_mem_mgr.h         |   2 +-
+ .../drivers/cam_req_mgr/cam_req_mgr_core.c    | 140 ++++++++++++++++--
+ .../drivers/cam_req_mgr/cam_req_mgr_core.h    |   5 +
+ .../drivers/cam_req_mgr/cam_req_mgr_dev.c     |   2 +-
+ .../cam_req_mgr/cam_req_mgr_interface.h       |   1 +
+ .../drivers/cam_req_mgr/cam_req_mgr_util.c    |  12 +-
+ .../drivers/cam_req_mgr/cam_req_mgr_workq.c   |   2 +-
+ .../cam_actuator/cam_actuator_core.c          |   9 ++
+ .../cam_sensor_module/cam_cci/cam_cci_core.c  |  78 +++++++++-
+ .../cam_sensor_module/cam_cci/cam_cci_dev.c   |  46 ++++--
+ .../cam_sensor_module/cam_cci/cam_cci_dev.h   |   1 +
+ .../cam_sensor_module/cam_cci/cam_cci_hwreg.h |   6 +-
+ .../cam_sensor_module/cam_cci/cam_cci_soc.c   |   3 +
+ .../cam_flash/cam_flash_core.c                |  10 ++
+ .../cam_sensor_module/cam_ois/cam_ois_core.c  |   8 +
+ .../cam_res_mgr/cam_res_mgr.c                 |  17 +--
+ .../cam_sensor/cam_sensor_core.c              |  47 +++++-
+ .../drivers/cam_smmu/cam_smmu_api.c           |   4 +-
+ .../camera-xiaomi/drivers/cam_sync/cam_sync.c |   6 +
+ .../drivers/cam_sync/cam_sync_private.h       |   3 +-
+ .../drivers/cam_sync/cam_sync_util.c          |  18 ++-
+ .../drivers/cam_sync/cam_sync_util.h          |  12 ++
+ .../include/uapi/media/cam_req_mgr.h          |   4 +-
+ 29 files changed, 411 insertions(+), 89 deletions(-)
+
+diff --git a/techpack/camera-xiaomi/drivers/cam_cdm/cam_cdm_hw_core.c b/techpack/camera-xiaomi/drivers/cam_cdm/cam_cdm_hw_core.c
+index f54f9d61b55f..47c10fdabbe6 100644
+--- a/techpack/camera-xiaomi/drivers/cam_cdm/cam_cdm_hw_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_cdm/cam_cdm_hw_core.c
+@@ -665,6 +665,11 @@ irqreturn_t cam_hw_cdm_irq(int irq_num, void *data)
+ 			kfree(payload);
+ 			return IRQ_HANDLED;
+ 		}
++        if (cam_cdm_write_hw_reg(cdm_hw, CDM_IRQ_CLEAR,
++                                 payload->irq_status))
++            CAM_ERR(CAM_CDM, "Failed to Write CDM HW IRQ Clear");
++        if (cam_cdm_write_hw_reg(cdm_hw, CDM_IRQ_CLEAR_CMD, 0x01))
++            CAM_ERR(CAM_CDM, "Failed to Write CDM HW IRQ cmd");
+ 		if (payload->irq_status &
+ 			CAM_CDM_IRQ_STATUS_INFO_INLINE_IRQ_MASK) {
+ 			if (cam_cdm_read_hw_reg(cdm_hw, CDM_IRQ_USR_DATA,
+@@ -677,11 +682,6 @@ irqreturn_t cam_hw_cdm_irq(int irq_num, void *data)
+ 		payload->hw = cdm_hw;
+ 		INIT_WORK((struct work_struct *)&payload->work,
+ 			cam_hw_cdm_work);
+-		if (cam_cdm_write_hw_reg(cdm_hw, CDM_IRQ_CLEAR,
+-			payload->irq_status))
+-			CAM_ERR(CAM_CDM, "Failed to Write CDM HW IRQ Clear");
+-		if (cam_cdm_write_hw_reg(cdm_hw, CDM_IRQ_CLEAR_CMD, 0x01))
+-			CAM_ERR(CAM_CDM, "Failed to Write CDM HW IRQ cmd");
+ 		work_status = queue_work(cdm_core->work_queue, &payload->work);
+ 		if (work_status == false) {
+ 			CAM_ERR(CAM_CDM, "Failed to queue work for irq=0x%x",
+diff --git a/techpack/camera-xiaomi/drivers/cam_fd/fd_hw_mgr/cam_fd_hw_mgr.c b/techpack/camera-xiaomi/drivers/cam_fd/fd_hw_mgr/cam_fd_hw_mgr.c
+index 0439f8d1fbda..886c6d83c80d 100644
+--- a/techpack/camera-xiaomi/drivers/cam_fd/fd_hw_mgr/cam_fd_hw_mgr.c
++++ b/techpack/camera-xiaomi/drivers/cam_fd/fd_hw_mgr/cam_fd_hw_mgr.c
+@@ -855,7 +855,6 @@ static int cam_fd_mgr_util_submit_frame(void *priv, void *data)
+ 	trace_cam_submit_to_hw("FD", frame_req->request_id);
+ 
+ 	list_del_init(&frame_req->list);
+-	mutex_unlock(&hw_mgr->frame_req_mutex);
+ 
+ 	if (hw_device->hw_intf->hw_ops.start) {
+ 		start_args.hw_ctx = hw_ctx;
+@@ -871,11 +870,13 @@ static int cam_fd_mgr_util_submit_frame(void *priv, void *data)
+ 		if (rc) {
+ 			CAM_ERR(CAM_FD, "Failed in HW Start %d", rc);
+ 			mutex_unlock(&hw_device->lock);
++			mutex_unlock(&hw_mgr->frame_req_mutex);
+ 			goto put_req_into_free_list;
+ 		}
+ 	} else {
+ 		CAM_ERR(CAM_FD, "Invalid hw_ops.start");
+ 		mutex_unlock(&hw_device->lock);
++		mutex_unlock(&hw_mgr->frame_req_mutex);
+ 		rc = -EPERM;
+ 		goto put_req_into_free_list;
+ 	}
+@@ -883,30 +884,13 @@ static int cam_fd_mgr_util_submit_frame(void *priv, void *data)
+ 	hw_device->ready_to_process = false;
+ 	hw_device->cur_hw_ctx = hw_ctx;
+ 	hw_device->req_id = frame_req->request_id;
+-	mutex_unlock(&hw_device->lock);
++	list_add_tail(&frame_req->list, &hw_mgr->frame_processing_list);
+ 
+-	rc = cam_fd_mgr_util_put_frame_req(
+-		&hw_mgr->frame_processing_list, &frame_req);
+-	if (rc) {
+-		CAM_ERR(CAM_FD,
+-			"Failed in putting frame req in processing list");
+-		goto stop_unlock;
+-	}
++	mutex_unlock(&hw_device->lock);
++	mutex_unlock(&hw_mgr->frame_req_mutex);
+ 
+ 	return rc;
+ 
+-stop_unlock:
+-	if (hw_device->hw_intf->hw_ops.stop) {
+-		struct cam_fd_hw_stop_args stop_args;
+-
+-		stop_args.hw_ctx = hw_ctx;
+-		stop_args.ctx_hw_private = hw_ctx->ctx_hw_private;
+-		stop_args.hw_req_private = &frame_req->hw_req_private;
+-		if (hw_device->hw_intf->hw_ops.stop(
+-			hw_device->hw_intf->hw_priv, &stop_args,
+-			sizeof(stop_args)))
+-			CAM_ERR(CAM_FD, "Failed in HW Stop %d", rc);
+-	}
+ put_req_into_free_list:
+ 	cam_fd_mgr_util_put_frame_req(&hw_mgr->frame_free_list, &frame_req);
+ 
+diff --git a/techpack/camera-xiaomi/drivers/cam_icp/icp_hw/include/cam_icp_hw_mgr_intf.h b/techpack/camera-xiaomi/drivers/cam_icp/icp_hw/include/cam_icp_hw_mgr_intf.h
+index d87c7ef238df..2d349348bf7c 100644
+--- a/techpack/camera-xiaomi/drivers/cam_icp/icp_hw/include/cam_icp_hw_mgr_intf.h
++++ b/techpack/camera-xiaomi/drivers/cam_icp/icp_hw/include/cam_icp_hw_mgr_intf.h
+@@ -16,7 +16,7 @@
+ 
+ #define CAM_ICP_A5_BW_BYTES_VOTE 40000000
+ 
+-#define CAM_ICP_CTX_MAX          54
++#define CAM_ICP_CTX_MAX          65
+ 
+ #define CPAS_IPE1_BIT            0x2000
+ 
+diff --git a/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c b/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c
+index ff603d0e9c43..67bafac99643 100644
+--- a/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c
++++ b/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c
+@@ -3720,7 +3720,18 @@ static int cam_ife_mgr_stop_hw(void *hw_mgr_priv, void *stop_hw_args)
+ 
+ 	cam_ife_mgr_pause_hw(ctx);
+ 
+-	wait_for_completion(&ctx->config_done_complete);
++	rc = wait_for_completion_timeout(&ctx->config_done_complete,msecs_to_jiffies(300));
++	if (rc <= 0) {
++		CAM_WARN(CAM_ISP,
++    	         "config done completion timeout for last applied req_id=%llu rc=%d ctx_index %d",
++    	         ctx->applied_req_id, rc, ctx->ctx_index);
++		rc = -ETIMEDOUT;
++	} else {
++		CAM_DBG(CAM_ISP,
++		        "config done Success for req_id=%llu ctx_index %d",
++		        ctx->applied_req_id, ctx->ctx_index);
++		rc = 0;
++	}
+ 
+ 	if (stop_isp->stop_only)
+ 		goto end;
+diff --git a/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/isp_hw/ife_csid_hw/cam_ife_csid_core.c b/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/isp_hw/ife_csid_hw/cam_ife_csid_core.c
+index 62c07a5da6ea..438f98034b7c 100644
+--- a/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/isp_hw/ife_csid_hw/cam_ife_csid_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_isp/isp_hw_mgr/isp_hw/ife_csid_hw/cam_ife_csid_core.c
+@@ -3476,6 +3476,7 @@ int cam_ife_csid_start(void *hw_priv, void *start_args,
+ 	struct cam_hw_info                     *csid_hw_info;
+ 	struct cam_isp_resource_node           *res;
+ 	const struct cam_ife_csid_reg_offset   *csid_reg;
++	unsigned long                           flags;
+ 
+ 	if (!hw_priv || !start_args ||
+ 		(arg_size != sizeof(struct cam_isp_resource_node))) {
+@@ -3503,6 +3504,10 @@ int cam_ife_csid_start(void *hw_priv, void *start_args,
+ 	csid_hw->sof_irq_triggered = false;
+ 	csid_hw->irq_debug_cnt = 0;
+ 
++	spin_lock_irqsave(&csid_hw->lock_state, flags);
++	csid_hw->device_enabled = 1;
++	spin_unlock_irqrestore(&csid_hw->lock_state, flags);
++
+ 	CAM_DBG(CAM_ISP, "CSID:%d res_type :%d res_id:%d",
+ 		csid_hw->hw_intf->hw_idx, res->res_type, res->res_id);
+ 
+@@ -3551,6 +3556,7 @@ int cam_ife_csid_stop(void *hw_priv,
+ 	struct cam_csid_hw_stop_args         *csid_stop;
+ 	uint32_t  i;
+ 	uint32_t res_mask = 0;
++	unsigned long flags;
+ 
+ 	if (!hw_priv || !stop_args ||
+ 		(arg_size != sizeof(struct cam_csid_hw_stop_args))) {
+@@ -3613,6 +3619,10 @@ int cam_ife_csid_stop(void *hw_priv,
+ 		}
+ 	}
+ 
++	spin_lock_irqsave(&csid_hw->lock_state, flags);
++	csid_hw->device_enabled = 0;
++	spin_unlock_irqrestore(&csid_hw->lock_state, flags);
++
+ 	if (res_mask)
+ 		rc = cam_ife_csid_poll_stop_status(csid_hw, res_mask);
+ 
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.c b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.c
+index 36b88723afa7..e016802e40c1 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.c
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.c
+@@ -691,6 +691,9 @@ int cam_mem_mgr_alloc_and_map(struct cam_mem_mgr_alloc_cmd *cmd)
+ 	cam_mem_put_slot(idx);
+ slot_fail:
+ 	dma_buf_put(dmabuf);
++	// xiaomi add
++	fput(dmabuf->file);
++	put_unused_fd(fd);
+ 	return rc;
+ }
+ 
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.h b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.h
+index 6ce30db66fe3..c8f8f55436c3 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.h
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_mem_mgr.h
+@@ -11,7 +11,7 @@
+ #include <media/cam_req_mgr.h>
+ #include "cam_mem_mgr_api.h"
+ 
+-#define CAM_MEM_BUFQ_MAX 1024
++#define CAM_MEM_BUFQ_MAX 1536
+ 
+ /* Enum for possible mem mgr states */
+ enum cam_mem_mgr_state {
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.c b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.c
+index e84daeca87b5..3a3a711eaba5 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.c
+@@ -46,6 +46,7 @@ void cam_req_mgr_core_link_reset(struct cam_req_mgr_core_link *link)
+ 	link->initial_skip = true;
+ 	link->sof_timestamp = 0;
+ 	link->prev_sof_timestamp = 0;
++	link->last_applied_jiffies = 0;
+ }
+ 
+ void cam_req_mgr_handle_core_shutdown(void)
+@@ -518,11 +519,6 @@ static void __cam_req_mgr_validate_crm_wd_timer(
+ 	int next_frame_timeout = 0, current_frame_timeout = 0;
+ 	struct cam_req_mgr_req_queue *in_q = link->req.in_q;
+ 
+-	if (!link->watchdog) {
+-		CAM_ERR(CAM_CRM, "link %pK, watchdog %pK is NULL!", link, link->watchdog);
+-		WARN_ON(1);
+-	}
+-
+ 	idx = in_q->rd_idx;
+ 	__cam_req_mgr_dec_idx(
+ 		&idx, (link->max_delay - 1),
+@@ -1326,7 +1322,83 @@ static int __cam_req_mgr_check_sync_req_is_ready(
+ 
+ 	return 0;
+ }
++ /**
++ * __cam_req_mgr_check_peer_req_is_applied()
++ *
++ * @brief    : Check whether peer req is applied
++ * @link     : pointer to link whose input queue and req tbl are
++ *             traversed through
++ * @idx      : slot idx
++ * @return   : true means the req is applied, others not applied
++ *
++ */
++static bool __cam_req_mgr_check_peer_req_is_applied(
++	struct cam_req_mgr_core_link *link,
++	int32_t idx)
++{
++	bool applied = true;
++	int64_t req_id;
++	int sync_slot_idx = 0;
++	struct cam_req_mgr_core_link *sync_link;
++	struct cam_req_mgr_slot *slot, *sync_slot;
++	struct cam_req_mgr_req_queue *in_q;
++
++	if (idx < 0)
++		return true;
+ 
++	slot = &link->req.in_q->slot[idx];
++	req_id = slot->req_id;
++	in_q = link->req.in_q;
++
++	CAM_DBG(CAM_REQ,
++		"Check Req[%lld] idx %d req_status %d link_hdl %x is applied in peer link",
++		req_id, idx, slot->status, link->link_hdl);
++
++	if (slot->sync_mode == CAM_REQ_MGR_SYNC_MODE_NO_SYNC) {
++		applied = true;
++		goto end;
++	}
++
++	sync_link = link->sync_link;
++
++	if (!sync_link)
++		applied &= true;
++
++	in_q = sync_link->req.in_q;
++	if (!in_q) {
++		CAM_DBG(CAM_CRM, "Link hdl %x in_q is NULL",
++			sync_link->link_hdl);
++		applied &= true;
++	}
++
++	sync_slot_idx = __cam_req_mgr_find_slot_for_req(
++		sync_link->req.in_q, req_id);
++
++	if ((sync_slot_idx < 0) ||
++		(sync_slot_idx >= MAX_REQ_SLOTS)) {
++		CAM_DBG(CAM_CRM,
++			"Can't find req:%lld from peer link, idx:%d",
++			req_id, sync_slot_idx);
++		applied &= true;
++	}
++
++	sync_slot = &in_q->slot[sync_slot_idx];
++
++	if (sync_slot->status == CRM_SLOT_STATUS_REQ_APPLIED)
++		applied &= true;
++	else
++		applied &= false;
++	CAM_DBG(CAM_CRM,
++		"link:%x idx:%d status:%d applied:%d",
++		sync_link->link_hdl, sync_slot_idx, sync_slot->status, applied);
++
++end:
++	CAM_DBG(CAM_REQ,
++		"Check Req[%lld] idx %d applied:%d",
++		req_id, idx, link->link_hdl, applied);
++
++	return applied;
++}
+ /**
+  * __cam_req_mgr_process_req()
+  *
+@@ -1342,11 +1414,13 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
+ {
+ 	int                                  rc = 0, idx;
+ 	int                                  reset_step = 0;
++	bool                                 check_retry_cnt = false;
+ 	uint32_t                             trigger = trigger_data->trigger;
+ 	struct cam_req_mgr_slot             *slot = NULL;
+ 	struct cam_req_mgr_req_queue        *in_q;
+ 	struct cam_req_mgr_core_session     *session;
+ 	struct cam_req_mgr_connected_device *dev;
++	uint32_t                             max_retry = 0;
+ 
+ 	in_q = link->req.in_q;
+ 	session = (struct cam_req_mgr_core_session *)link->parent;
+@@ -1428,9 +1502,21 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
+ 
+ 			rc = __cam_req_mgr_inject_delay(link->req.l_tbl,
+ 				slot->idx);
+-			if (!rc)
+-				rc = __cam_req_mgr_check_link_is_ready(link,
+-					slot->idx, false);
++			if (!rc) {
++				if (in_q->slot[in_q->rd_idx].req_id != -1){
++					rc = __cam_req_mgr_check_peer_req_is_applied(
++						link, in_q->last_applied_idx);
++
++					if (rc)
++						rc = __cam_req_mgr_check_link_is_ready(
++							link, slot->idx, false);
++					else
++						rc = -EINVAL;
++				}
++				else
++					rc = __cam_req_mgr_check_link_is_ready(link,
++						slot->idx, false);
++			}
+ 		}
+ 
+ 		if (rc < 0) {
+@@ -1463,14 +1549,24 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
+ 		/* Apply req failed retry at next sof */
+ 		slot->status = CRM_SLOT_STATUS_REQ_PENDING;
+ 
+-		link->retry_cnt++;
+-		if (link->retry_cnt == MAXIMUM_RETRY_ATTEMPTS) {
+-			CAM_DBG(CAM_CRM,
+-				"Max retry attempts reached on link[0x%x] for req [%lld]",
+-				link->link_hdl,
+-				in_q->slot[in_q->rd_idx].req_id);
+-			__cam_req_mgr_notify_error_on_link(link, dev);
+-			link->retry_cnt = 0;
++		if (jiffies_to_msecs(jiffies - link->last_applied_jiffies) >
++			MINIMUM_WORKQUEUE_SCHED_TIME_IN_MS)
++			check_retry_cnt = true;
++
++		if ((in_q->last_applied_idx < in_q->rd_idx) &&
++			check_retry_cnt) {
++			link->retry_cnt++;
++			max_retry = MAXIMUM_RETRY_ATTEMPTS;
++			if (link->max_delay == 1)
++				max_retry++;
++			if (link->retry_cnt == max_retry) {
++				CAM_DBG(CAM_CRM,
++					"Max retry attempts (count: %d) reached on link[0x%x] for req [%lld]",
++					link->retry_cnt, link->link_hdl,
++					in_q->slot[in_q->rd_idx].req_id);
++				__cam_req_mgr_notify_error_on_link(link, dev);
++				link->retry_cnt = 0;
++			}
+ 		}
+ 	} else {
+ 		if (link->retry_cnt)
+@@ -1520,6 +1616,15 @@ static int __cam_req_mgr_process_req(struct cam_req_mgr_core_link *link,
+ 		}
+ 	}
+ 
++	/*
++	 * Only update the jiffies of last applied request
++	 * for SOF trigger, since it is used to protect from
++	 * applying fails in ISP which is triggered at SOF.
++	 * And, also don't need to do update for error case
++	 * since error case doesn't check the retry count.
++	 */
++	if (trigger == CAM_TRIGGER_POINT_SOF)
++		link->last_applied_jiffies = jiffies;
+ 	mutex_unlock(&session->lock);
+ 	return rc;
+ error:
+@@ -2505,6 +2610,8 @@ static int cam_req_mgr_process_trigger(void *priv, void *data)
+ 		if (idx >= 0) {
+ 			if (idx == in_q->last_applied_idx)
+ 				in_q->last_applied_idx = -1;
++			if (idx == in_q->rd_idx)
++				__cam_req_mgr_dec_idx(&idx, 1, in_q->num_slots);
+ 			__cam_req_mgr_reset_req_slot(link, idx);
+ 		}
+ 	}
+@@ -2712,6 +2819,7 @@ static int cam_req_mgr_cb_notify_err(
+ 	notify_err->link_hdl = err_info->link_hdl;
+ 	notify_err->dev_hdl = err_info->dev_hdl;
+ 	notify_err->error = err_info->error;
++	notify_err->trigger = err_info->trigger;
+ 	task->process_cb = &cam_req_mgr_process_error;
+ 	rc = cam_req_mgr_workq_enqueue_task(task, link, CRM_TASK_PRIORITY_0);
+ 
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.h b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.h
+index 4a691b0b622f..9c0a093dd865 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.h
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_core.h
+@@ -35,6 +35,9 @@
+ 
+ #define MAXIMUM_RETRY_ATTEMPTS 3
+ 
++#define MINIMUM_WORKQUEUE_SCHED_TIME_IN_MS 5
++
++
+ #define VERSION_1  1
+ #define VERSION_2  2
+ 
+@@ -345,6 +348,7 @@ struct cam_req_mgr_connected_device {
+  *                         as part of shutdown.
+  * @sof_timestamp_value  : SOF timestamp value
+  * @prev_sof_timestamp   : Previous SOF timestamp value
++ * @last_applied_jiffies : Record the jiffies of last applied req
+  */
+ struct cam_req_mgr_core_link {
+ 	int32_t                              link_hdl;
+@@ -375,6 +379,7 @@ struct cam_req_mgr_core_link {
+ 	bool                                 is_shutdown;
+ 	uint64_t                             sof_timestamp;
+ 	uint64_t                             prev_sof_timestamp;
++	uint64_t                             last_applied_jiffies;
+ };
+ 
+ /**
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_dev.c b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_dev.c
+index 3a4e40d44da1..e5fb7be0ff61 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_dev.c
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_dev.c
+@@ -21,7 +21,7 @@
+ #include "cam_common_util.h"
+ #include <linux/slub_def.h>
+ 
+-#define CAM_REQ_MGR_EVENT_MAX 60
++#define CAM_REQ_MGR_EVENT_MAX 120
+ 
+ static struct cam_req_mgr_device g_dev;
+ struct kmem_cache *g_cam_req_mgr_timer_cachep;
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_interface.h b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_interface.h
+index 68ab7917e947..4963d647feda 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_interface.h
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_interface.h
+@@ -240,6 +240,7 @@ struct cam_req_mgr_error_notify {
+ 	int32_t  link_hdl;
+ 	int32_t  dev_hdl;
+ 	uint64_t req_id;
++	uint32_t trigger;
+ 	enum cam_req_mgr_device_error error;
+ };
+ 
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c
+index 88b6bf079e9c..5ffb737ef88d 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_util.c
+@@ -18,6 +18,7 @@
+ static struct cam_req_mgr_util_hdl_tbl *hdl_tbl;
+ static DEFINE_SPINLOCK(hdl_tbl_lock);
+ 
++static hdl_count = 0;
+ int cam_req_mgr_util_init(void)
+ {
+ 	int rc = 0;
+@@ -52,7 +53,7 @@ int cam_req_mgr_util_init(void)
+ 		goto bitmap_alloc_fail;
+ 	}
+ 	hdl_tbl->bits = bitmap_size * BITS_PER_BYTE;
+-
++        hdl_count = 0;
+ 	return rc;
+ 
+ bitmap_alloc_fail:
+@@ -76,6 +77,7 @@ int cam_req_mgr_util_deinit(void)
+ 	hdl_tbl->bitmap = NULL;
+ 	kfree(hdl_tbl);
+ 	hdl_tbl = NULL;
++	hdl_count = 0;
+ 	spin_unlock_bh(&hdl_tbl_lock);
+ 
+ 	return 0;
+@@ -102,6 +104,7 @@ int cam_req_mgr_util_free_hdls(void)
+ 		}
+ 	}
+ 	bitmap_zero(hdl_tbl->bitmap, CAM_REQ_MGR_MAX_HANDLES_V2);
++	hdl_count = 0;
+ 	spin_unlock_bh(&hdl_tbl_lock);
+ 
+ 	return 0;
+@@ -113,11 +116,13 @@ static int32_t cam_get_free_handle_index(void)
+ 
+ 	idx = find_first_zero_bit(hdl_tbl->bitmap, hdl_tbl->bits);
+ 
+-	if (idx >= CAM_REQ_MGR_MAX_HANDLES_V2 || idx < 0)
++	if (idx >= CAM_REQ_MGR_MAX_HANDLES_V2 || idx < 0) {
++		CAM_ERR(CAM_CRM, "wuchi Hdl tbl count is %d", hdl_count);
+ 		return -ENOSR;
++	}
+ 
+ 	set_bit(idx, hdl_tbl->bitmap);
+-
++	hdl_count++;
+ 	return idx;
+ }
+ 
+@@ -313,6 +318,7 @@ static int cam_destroy_hdl(int32_t dev_hdl, int dev_hdl_type)
+ 	hdl_tbl->hdl[idx].ops   = NULL;
+ 	hdl_tbl->hdl[idx].priv  = NULL;
+ 	clear_bit(idx, hdl_tbl->bitmap);
++	hdl_count--;
+ 	spin_unlock_bh(&hdl_tbl_lock);
+ 
+ 	return 0;
+diff --git a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_workq.c b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_workq.c
+index 29d98503f305..e12ae3f78de7 100644
+--- a/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_workq.c
++++ b/techpack/camera-xiaomi/drivers/cam_req_mgr/cam_req_mgr_workq.c
+@@ -88,7 +88,7 @@ static int cam_req_mgr_process_task(struct crm_workq_task *task)
+  * cam_req_mgr_process_workq() - main loop handling
+  * @w: workqueue task pointer
+  */
+-static void cam_req_mgr_process_workq(struct work_struct *w)
++void cam_req_mgr_process_workq(struct work_struct *w)
+ {
+ 	struct cam_req_mgr_core_workq *workq = NULL;
+ 	struct crm_workq_task         *task;
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_actuator/cam_actuator_core.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_actuator/cam_actuator_core.c
+index c609b8f85015..e3f9030cacf9 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_actuator/cam_actuator_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_actuator/cam_actuator_core.c
+@@ -895,6 +895,15 @@ int32_t cam_actuator_driver_cmd(struct cam_actuator_ctrl_t *a_ctrl,
+ 			ACT_APPLY_SETTINGS_NOW) {
+ 			rc = cam_actuator_apply_settings(a_ctrl,
+ 				&a_ctrl->i2c_data.init_settings);
++			if ((rc == -EAGAIN) &&
++			(a_ctrl->io_master_info.master_type == CCI_MASTER)) {
++				CAM_WARN(CAM_ACTUATOR,
++					"CCI HW is in resetting mode:: Reapplying Init settings");
++				usleep_range(1000, 1010);
++				rc = cam_actuator_apply_settings(a_ctrl,
++					&a_ctrl->i2c_data.init_settings);
++			}
++
+ 			if (rc < 0)
+ 				CAM_ERR(CAM_ACTUATOR,
+ 					"Cannot apply Update settings");
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_core.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_core.c
+index e375a3093489..26ef931e900b 100755
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_core.c
+@@ -7,6 +7,9 @@
+ #include "cam_cci_core.h"
+ #include "cam_cci_dev.h"
+ 
++static int disable_optmz;
++module_param(disable_optmz, int, 0644);
++
+ static int32_t cam_cci_convert_type_to_num_bytes(
+ 	enum camera_sensor_i2c_type type)
+ {
+@@ -42,6 +45,9 @@ static void cam_cci_flush_queue(struct cci_device *cci_dev,
+ 	void __iomem *base = soc_info->reg_map[0].mem_base;
+ 
+ 	cam_io_w_mb(1 << master, base + CCI_HALT_REQ_ADDR);
++	if (!cci_dev->cci_master_info[master].status)
++		reinit_completion(&cci_dev->cci_master_info[master]
++			.reset_complete);
+ 	rc = wait_for_completion_timeout(
+ 		&cci_dev->cci_master_info[master].reset_complete, CCI_TIMEOUT);
+ 	if (rc < 0) {
+@@ -51,6 +57,7 @@ static void cam_cci_flush_queue(struct cci_device *cci_dev,
+ 
+ 		/* Set reset pending flag to true */
+ 		cci_dev->cci_master_info[master].reset_pending = true;
++		cci_dev->cci_master_info[master].status = 0;
+ 
+ 		/* Set proper mask to RESET CMD address based on MASTER */
+ 		if (master == MASTER_0)
+@@ -66,6 +73,7 @@ static void cam_cci_flush_queue(struct cci_device *cci_dev,
+ 			CCI_TIMEOUT);
+ 		if (rc <= 0)
+ 			CAM_ERR(CAM_CCI, "wait failed %d", rc);
++		cci_dev->cci_master_info[master].status = 0;
+ 	}
+ }
+ 
+@@ -127,8 +135,10 @@ static int32_t cam_cci_validate_queue(struct cci_device *cci_dev,
+ 			return rc;
+ 		}
+ 		rc = cci_dev->cci_master_info[master].status;
+-		if (rc < 0)
++		if (rc < 0) {
+ 			CAM_ERR(CAM_CCI, "Failed rc %d", rc);
++			cci_dev->cci_master_info[master].status = 0;
++		}
+ 	}
+ 
+ 	return rc;
+@@ -246,14 +256,16 @@ static uint32_t cam_cci_wait(struct cci_device *cci_dev,
+ 		cam_cci_dump_registers(cci_dev, master, queue);
+ #endif
+ 		CAM_ERR(CAM_CCI, "wait for queue: %d", queue);
+-		if (rc == 0)
++		if (rc == 0) {
+ 			rc = -ETIMEDOUT;
+-		cam_cci_flush_queue(cci_dev, master);
+-		return rc;
++			cam_cci_flush_queue(cci_dev, master);
++			return rc;
++		}
+ 	}
+ 	rc = cci_dev->cci_master_info[master].status;
+ 	if (rc < 0) {
+ 		CAM_ERR(CAM_CCI, "failed rc %d", rc);
++		cci_dev->cci_master_info[master].status = 0;
+ 		return rc;
+ 	}
+ 
+@@ -434,10 +446,8 @@ static int32_t cam_cci_calc_cmd_len(struct cci_device *cci_dev,
+ 	struct cam_cci_ctrl *c_ctrl, uint32_t cmd_size,
+ 	 struct cam_sensor_i2c_reg_array *i2c_cmd, uint32_t *pack)
+ {
+-#if 0 //disable I2C writing optimization due to OIS
+ 	uint8_t i;
+ 	struct cam_sensor_i2c_reg_array *cmd = i2c_cmd;
+-#endif
+ 	uint32_t len = 0;
+ 	uint8_t data_len = 0, addr_len = 0;
+ 	uint8_t pack_max_len;
+@@ -463,7 +473,8 @@ static int32_t cam_cci_calc_cmd_len(struct cci_device *cci_dev,
+ 		len = data_len + addr_len;
+ 		pack_max_len = size < (cci_dev->payload_size-len) ?
+ 			size : (cci_dev->payload_size-len);
+-#if 0 //disable I2C writing optimization due to OIS
++		/* xiaomi add a flag to disable this optimization*/
++		if ((!c_ctrl->cci_info->disable_optmz) && (!disable_optmz)) {
+ 		for (i = 0; i < pack_max_len;) {
+ 			if (cmd->delay || ((cmd - i2c_cmd) >= (cmd_size - 1)))
+ 				break;
+@@ -481,7 +492,7 @@ static int32_t cam_cci_calc_cmd_len(struct cci_device *cci_dev,
+ 			i += data_len;
+ 			cmd++;
+ 		}
+-#endif
++		}
+ 	}
+ 
+ 	if (len > cci_dev->payload_size) {
+@@ -922,6 +933,7 @@ static int32_t cam_cci_burst_read(struct v4l2_subdev *sd,
+ 	mutex_unlock(&cci_dev->cci_master_info[master].mutex);
+ 
+ 	mutex_lock(&cci_dev->cci_master_info[master].mutex_q[queue]);
++	reinit_completion(&cci_dev->cci_master_info[master].report_q[queue]);
+ 	/*
+ 	 * Call validate queue to make sure queue is empty before starting.
+ 	 * If this call fails, don't proceed with i2c_read call. This is to
+@@ -1028,6 +1040,14 @@ static int32_t cam_cci_burst_read(struct v4l2_subdev *sd,
+ 			goto rel_mutex_q;
+ 		}
+ 
++		if (cci_dev->cci_master_info[master].status) {
++			CAM_ERR(CAM_CCI, "Error with Salve: 0x%x",
++				(c_ctrl->cci_info->sid << 1));
++			rc = -EINVAL;
++			cci_dev->cci_master_info[master].status = 0;
++			goto rel_mutex_q;
++		}
++
+ 		read_words = cam_io_r_mb(base +
+ 			CCI_I2C_M0_READ_BUF_LEVEL_ADDR + master * 0x100);
+ 		if (read_words <= 0) {
+@@ -1108,6 +1128,14 @@ static int32_t cam_cci_burst_read(struct v4l2_subdev *sd,
+ 					cam_cci_flush_queue(cci_dev, master);
+ 				goto rel_mutex_q;
+ 			}
++
++			if (cci_dev->cci_master_info[master].status) {
++				CAM_ERR(CAM_CCI, "Error with Slave 0x%x",
++					(c_ctrl->cci_info->sid << 1));
++				rc = -EINVAL;
++				cci_dev->cci_master_info[master].status = 0;
++				goto rel_mutex_q;
++			}
+ 			break;
+ 		}
+ 	}
+@@ -1187,6 +1215,7 @@ static int32_t cam_cci_read(struct v4l2_subdev *sd,
+ 	mutex_unlock(&cci_dev->cci_master_info[master].mutex);
+ 
+ 	mutex_lock(&cci_dev->cci_master_info[master].mutex_q[queue]);
++	reinit_completion(&cci_dev->cci_master_info[master].report_q[queue]);
+ 	/*
+ 	 * Call validate queue to make sure queue is empty before starting.
+ 	 * If this call fails, don't proceed with i2c_read call. This is to
+@@ -1294,6 +1323,14 @@ static int32_t cam_cci_read(struct v4l2_subdev *sd,
+ 		rc = 0;
+ 	}
+ 
++	if (cci_dev->cci_master_info[master].status) {
++		CAM_ERR(CAM_CCI, "ERROR with Slave 0x%x:",
++			(c_ctrl->cci_info->sid << 1));
++		rc = -EINVAL;
++		cci_dev->cci_master_info[master].status = 0;
++		goto rel_mutex_q;
++	}
++
+ 	read_words = cam_io_r_mb(base +
+ 		CCI_I2C_M0_READ_BUF_LEVEL_ADDR + master * 0x100);
+ 	exp_words = ((read_cfg->num_byte / 4) + 1);
+@@ -1388,6 +1425,8 @@ static int32_t cam_cci_i2c_write(struct v4l2_subdev *sd,
+ 		goto ERROR;
+ 	}
+ 	mutex_unlock(&cci_dev->cci_master_info[master].mutex);
++
++	reinit_completion(&cci_dev->cci_master_info[master].report_q[queue]);
+ 	/*
+ 	 * Call validate queue to make sure queue is empty before starting.
+ 	 * If this call fails, don't proceed with i2c_write call. This is to
+@@ -1550,6 +1589,7 @@ static int32_t cam_cci_read_bytes(struct v4l2_subdev *sd,
+ 	 * THRESHOLD irq's, we reinit the threshold wait before
+ 	 * we load the burst read cmd.
+ 	 */
++	reinit_completion(&cci_dev->cci_master_info[master].rd_done);
+ 	reinit_completion(&cci_dev->cci_master_info[master].th_complete);
+ 
+ 	CAM_DBG(CAM_CCI, "Bytes to read %u", read_bytes);
+@@ -1691,8 +1731,30 @@ int32_t cam_cci_core_cfg(struct v4l2_subdev *sd,
+ {
+ 	int32_t rc = 0;
+ 	struct cci_device *cci_dev = v4l2_get_subdevdata(sd);
++	enum cci_i2c_master_t master = MASTER_MAX;
+ 	CAM_DBG(CAM_CCI, "cmd %d", cci_ctrl->cmd);
+ 
++	if (!cci_dev) {
++		CAM_ERR(CAM_CCI, "CCI_DEV IS NULL");
++		return -EINVAL;
++	}
++
++	if (!cci_ctrl) {
++		CAM_ERR(CAM_CCI, "CCI_CTRL IS NULL");
++		return -EINVAL;
++	}
++
++	master = cci_ctrl->cci_info->cci_i2c_master;
++	if (master >= MASTER_MAX) {
++		CAM_ERR(CAM_CCI, "INVALID MASTER: %d", master);
++		return -EINVAL;
++	}
++
++	if (cci_dev->cci_master_info[master].status < 0) {
++		CAM_WARN(CAM_CCI, "CCI hardware is resetting");
++		return -EAGAIN;
++	}
++
+ 	switch (cci_ctrl->cmd) {
+ 	case MSM_CCI_INIT:
+ 		mutex_lock(&cci_dev->init_mutex);
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.c
+index e52e16cb5f96..6c5c6e7bcceb 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.c
+@@ -82,7 +82,9 @@ irqreturn_t cam_cci_irq(int irq_num, void *data)
+ 				false;
+ 			if (!cci_master_info->status)
+ 				complete(&cci_master_info->reset_complete);
+-			cci_master_info->status = 0;
++
++			complete_all(&cci_master_info->rd_done);
++			complete_all(&cci_master_info->th_complete);
+ 		}
+ 		if (cci_dev->cci_master_info[MASTER_1].reset_pending == true) {
+ 			cci_master_info = &cci_dev->cci_master_info[MASTER_1];
+@@ -90,7 +92,9 @@ irqreturn_t cam_cci_irq(int irq_num, void *data)
+ 				false;
+ 			if (!cci_master_info->status)
+ 				complete(&cci_master_info->reset_complete);
+-			cci_master_info->status = 0;
++
++			complete_all(&cci_master_info->rd_done);
++			complete_all(&cci_master_info->th_complete);
+ 		}
+ 	}
+ 
+@@ -223,9 +227,18 @@ irqreturn_t cam_cci_irq(int irq_num, void *data)
+ 	}
+ 	if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_ERROR_BMSK) {
+ 		cci_dev->cci_master_info[MASTER_0].status = -EINVAL;
+-		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_NACK_ERROR_BMSK)
+-			CAM_ERR(CAM_CCI, "Base:%pK, M0 NACK ERROR: 0x%x",
++		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_Q0_NACK_ERROR_BMSK) {
++			CAM_ERR(CAM_CCI, "Base:%pK, M0_Q0 NACK ERROR: 0x%x",
++				base, irq_status0);
++			complete_all(&cci_dev->cci_master_info[MASTER_0]
++				.report_q[QUEUE_0]);
++		}
++		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_Q1_NACK_ERROR_BMSK) {
++			CAM_ERR(CAM_CCI, "Base:%pK, M0_Q1 NACK ERROR: 0x%x",
+ 				base, irq_status0);
++			complete_all(&cci_dev->cci_master_info[MASTER_0]
++			.report_q[QUEUE_1]);
++		}
+ 		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_Q0Q1_ERROR_BMSK)
+ 			CAM_ERR(CAM_CCI,
+ 			"Base:%pK, M0 QUEUE_OVER/UNDER_FLOW OR CMD ERR: 0x%x",
+@@ -234,22 +247,35 @@ irqreturn_t cam_cci_irq(int irq_num, void *data)
+ 			CAM_ERR(CAM_CCI,
+ 				"Base: %pK, M0 RD_OVER/UNDER_FLOW ERROR: 0x%x",
+ 				base, irq_status0);
+-		cam_io_w_mb(CCI_M0_HALT_REQ_RMSK, base + CCI_HALT_REQ_ADDR);
++
++		cci_dev->cci_master_info[MASTER_0].reset_pending = true;
++		cam_io_w_mb(CCI_M0_RESET_RMSK, base + CCI_RESET_CMD_ADDR);
+ 	}
+ 	if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M1_ERROR_BMSK) {
+ 		cci_dev->cci_master_info[MASTER_1].status = -EINVAL;
+-		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_NACK_ERROR_BMSK)
+-			CAM_ERR(CAM_CCI, "Base:%pK, M1 NACK ERROR: 0x%x",
++		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M1_Q0_NACK_ERROR_BMSK) {
++			CAM_ERR(CAM_CCI, "Base:%pK, M1_Q0 NACK ERROR: 0x%x",
+ 				base, irq_status0);
+-		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_Q0Q1_ERROR_BMSK)
++			complete_all(&cci_dev->cci_master_info[MASTER_1]
++			.report_q[QUEUE_0]);
++		}
++		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M1_Q1_NACK_ERROR_BMSK) {
++			CAM_ERR(CAM_CCI, "Base:%pK, M1_Q1 NACK ERROR: 0x%x",
++				base, irq_status0);
++			complete_all(&cci_dev->cci_master_info[MASTER_1]
++			.report_q[QUEUE_1]);
++		}
++		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M1_Q0Q1_ERROR_BMSK)
+ 			CAM_ERR(CAM_CCI,
+ 			"Base:%pK, M1 QUEUE_OVER_UNDER_FLOW OR CMD ERROR:0x%x",
+ 				base, irq_status0);
+-		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M0_RD_ERROR_BMSK)
++		if (irq_status0 & CCI_IRQ_STATUS_0_I2C_M1_RD_ERROR_BMSK)
+ 			CAM_ERR(CAM_CCI,
+ 				"Base:%pK, M1 RD_OVER/UNDER_FLOW ERROR: 0x%x",
+ 				base, irq_status0);
+-		cam_io_w_mb(CCI_M1_HALT_REQ_RMSK, base + CCI_HALT_REQ_ADDR);
++
++		cci_dev->cci_master_info[MASTER_1].reset_pending = true;
++		cam_io_w_mb(CCI_M1_RESET_RMSK, base + CCI_RESET_CMD_ADDR);
+ 	}
+ 
+ 	cam_io_w_mb(irq_status0, base + CCI_IRQ_CLEAR_0_ADDR);
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.h b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.h
+index d65f5e5fd271..4b09ff84b968 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.h
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_dev.h
+@@ -271,6 +271,7 @@ struct cam_sensor_cci_client {
+ 	uint16_t retries;
+ 	uint16_t id_map;
+ 	uint16_t cci_device;
++	uint16_t disable_optmz; //xiaomi add the flag to disable CCI optimization
+ };
+ 
+ struct cam_cci_ctrl {
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_hwreg.h b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_hwreg.h
+index f00b854e9533..52062eae5392 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_hwreg.h
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_hwreg.h
+@@ -54,8 +54,10 @@
+ #define CCI_IRQ_STATUS_0_I2C_M0_Q0_REPORT_BMSK                            0x10
+ #define CCI_IRQ_STATUS_0_I2C_M0_ERROR_BMSK                          0x18000EE6
+ #define CCI_IRQ_STATUS_0_I2C_M1_ERROR_BMSK                          0x60EE6000
+-#define CCI_IRQ_STATUS_0_I2C_M0_NACK_ERROR_BMSK                     0x18000000
+-#define CCI_IRQ_STATUS_0_I2C_M1_NACK_ERROR_BMSK                     0x60000000
++#define CCI_IRQ_STATUS_0_I2C_M0_Q0_NACK_ERROR_BMSK                   0x8000000
++#define CCI_IRQ_STATUS_0_I2C_M0_Q1_NACK_ERROR_BMSK                  0x10000000
++#define CCI_IRQ_STATUS_0_I2C_M1_Q0_NACK_ERROR_BMSK                  0x20000000
++#define CCI_IRQ_STATUS_0_I2C_M1_Q1_NACK_ERROR_BMSK                  0x40000000
+ #define CCI_IRQ_STATUS_0_I2C_M0_Q0Q1_ERROR_BMSK                          0xEE0
+ #define CCI_IRQ_STATUS_0_I2C_M1_Q0Q1_ERROR_BMSK                       0xEE0000
+ #define CCI_IRQ_STATUS_0_I2C_M0_RD_ERROR_BMSK                              0x6
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_soc.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_soc.c
+index 82f1c61cf8fe..ff74be5eb9f9 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_soc.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_cci/cam_cci_soc.c
+@@ -54,6 +54,7 @@ int cam_cci_init(struct v4l2_subdev *sd,
+ 				&cci_dev->cci_master_info[master].report_q[i]);
+ 			/* Set reset pending flag to true */
+ 			cci_dev->cci_master_info[master].reset_pending = true;
++			cci_dev->cci_master_info[master].status = 0;
+ 			/* Set proper mask to RESET CMD address */
+ 			if (master == MASTER_0)
+ 				cam_io_w_mb(CCI_M0_RESET_RMSK,
+@@ -67,6 +68,7 @@ int cam_cci_init(struct v4l2_subdev *sd,
+ 				CCI_TIMEOUT);
+ 			if (rc <= 0)
+ 				CAM_ERR(CAM_CCI, "wait failed %d", rc);
++			cci_dev->cci_master_info[master].status = 0;
+ 			mutex_unlock(&cci_dev->cci_master_info[master].mutex);
+ 		}
+ 		return 0;
+@@ -132,6 +134,7 @@ int cam_cci_init(struct v4l2_subdev *sd,
+ 	}
+ 
+ 	cci_dev->cci_master_info[master].reset_pending = true;
++	cci_dev->cci_master_info[master].status = 0;
+ 	cam_io_w_mb(CCI_RESET_CMD_RMSK, base +
+ 			CCI_RESET_CMD_ADDR);
+ 	cam_io_w_mb(0x1, base + CCI_RESET_CMD_ADDR);
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_flash/cam_flash_core.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_flash/cam_flash_core.c
+index f9858e1e88a0..ce5440dff75b 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_flash/cam_flash_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_flash/cam_flash_core.c
+@@ -698,6 +698,16 @@ int cam_flash_i2c_apply_setting(struct cam_flash_ctrl *fctrl,
+ 				list) {
+ 				rc = cam_sensor_util_i2c_apply_setting
+ 					(&(fctrl->io_master_info), i2c_list);
++				if ((rc == -EAGAIN) &&
++					(fctrl->io_master_info.master_type ==
++					CCI_MASTER)) {
++					CAM_WARN(CAM_FLASH,
++						"CCI HW is in reset mode: Reapplying Init settings");
++					usleep_range(1000, 1010);
++					rc = cam_sensor_util_i2c_apply_setting
++					(&(fctrl->io_master_info), i2c_list);
++				}
++
+ 				if (rc) {
+ 					CAM_ERR(CAM_FLASH,
+ 					"Failed to apply init settings: %d",
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_ois/cam_ois_core.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_ois/cam_ois_core.c
+index 4506862b35bc..4a609a324bab 100755
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_ois/cam_ois_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_ois/cam_ois_core.c
+@@ -1192,6 +1192,14 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
+ 
+ 		CAM_DBG(CAM_OIS, "apply init settings");
+ 		rc = cam_ois_apply_settings(o_ctrl, &o_ctrl->i2c_init_data);
++		if ((rc == -EAGAIN) &&
++			(o_ctrl->io_master_info.master_type == CCI_MASTER)) {
++			CAM_WARN(CAM_OIS,
++				"CCI HW is restting: Reapplying INIT settings");
++			usleep_range(1000, 1010);
++			rc = cam_ois_apply_settings(o_ctrl,
++				&o_ctrl->i2c_init_data);
++		}
+ 		if (rc < 0) {
+ 			CAM_ERR(CAM_OIS, "Cannot apply Init settings");
+ 			goto pwr_dwn;
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_res_mgr/cam_res_mgr.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_res_mgr/cam_res_mgr.c
+index c87540f7950f..34055db2863e 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_res_mgr/cam_res_mgr.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_res_mgr/cam_res_mgr.c
+@@ -377,14 +377,12 @@ static bool cam_res_mgr_gpio_is_shared(uint gpio)
+ 	bool found = false;
+ 	struct cam_res_mgr_dt *dt = &cam_res->dt;
+ 
+-	mutex_lock(&cam_res->gpio_res_lock);
+ 	for (; index < dt->num_shared_gpio; index++) {
+ 		if (gpio == dt->shared_gpio[index]) {
+ 			found = true;
+ 			break;
+ 		}
+ 	}
+-	mutex_unlock(&cam_res->gpio_res_lock);
+ 
+ 	return found;
+ }
+@@ -396,15 +394,15 @@ int cam_res_mgr_gpio_request(struct device *dev, uint gpio,
+ 	bool found = false;
+ 	struct cam_gpio_res *gpio_res = NULL;
+ 
++	mutex_lock(&cam_res->gpio_res_lock);
++
+ 	if (cam_res && cam_res->shared_gpio_enabled) {
+-		mutex_lock(&cam_res->gpio_res_lock);
+ 		list_for_each_entry(gpio_res, &cam_res->gpio_res_list, list) {
+ 			if (gpio == gpio_res->gpio) {
+ 				found = true;
+ 				break;
+ 			}
+ 		}
+-		mutex_unlock(&cam_res->gpio_res_lock);
+ 	}
+ 
+ 	/*
+@@ -433,15 +431,17 @@ int cam_res_mgr_gpio_request(struct device *dev, uint gpio,
+ 		cam_res_mgr_gpio_is_shared(gpio)) {
+ 
+ 		gpio_res = kzalloc(sizeof(struct cam_gpio_res), GFP_KERNEL);
+-		if (!gpio_res)
++		if (!gpio_res) {
++			CAM_ERR(CAM_RES, "NO MEM for cam_gpio_res");
++			mutex_unlock(&cam_res->gpio_res_lock);
+ 			return -ENOMEM;
++		}
+ 
+ 		gpio_res->gpio = gpio;
+ 		gpio_res->power_on_count = 0;
+ 		INIT_LIST_HEAD(&gpio_res->list);
+ 		INIT_LIST_HEAD(&gpio_res->dev_list);
+ 
+-		mutex_lock(&cam_res->gpio_res_lock);
+ 		rc = cam_res_mgr_add_device(dev, gpio_res);
+ 		if (rc) {
+ 			kfree(gpio_res);
+@@ -450,7 +450,6 @@ int cam_res_mgr_gpio_request(struct device *dev, uint gpio,
+ 		}
+ 
+ 		list_add_tail(&gpio_res->list, &cam_res->gpio_res_list);
+-		mutex_unlock(&cam_res->gpio_res_lock);
+ 	}
+ 
+ 	if (found && cam_res
+@@ -458,7 +457,6 @@ int cam_res_mgr_gpio_request(struct device *dev, uint gpio,
+ 		struct cam_dev_res *dev_res = NULL;
+ 
+ 		found = 0;
+-		mutex_lock(&cam_res->gpio_res_lock);
+ 		list_for_each_entry(dev_res, &gpio_res->dev_list, list) {
+ 			if (dev_res->dev == dev) {
+ 				found = 1;
+@@ -468,10 +466,9 @@ int cam_res_mgr_gpio_request(struct device *dev, uint gpio,
+ 
+ 		if (!found)
+ 			rc = cam_res_mgr_add_device(dev, gpio_res);
+-
+-		mutex_unlock(&cam_res->gpio_res_lock);
+ 	}
+ 
++	mutex_unlock(&cam_res->gpio_res_lock);
+ 	return rc;
+ }
+ EXPORT_SYMBOL(cam_res_mgr_gpio_request);
+diff --git a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_sensor/cam_sensor_core.c b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_sensor/cam_sensor_core.c
+index 78924583d54b..b003a86d41ad 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_sensor/cam_sensor_core.c
++++ b/techpack/camera-xiaomi/drivers/cam_sensor_module/cam_sensor/cam_sensor_core.c
+@@ -266,6 +266,14 @@ static int32_t cam_sensor_i2c_modes_util(
+ 	if (i2c_list->op_code == CAM_SENSOR_I2C_WRITE_RANDOM) {
+ 		rc = camera_io_dev_write(io_master_info,
+ 			&(i2c_list->i2c_settings));
++		if ((rc == -ETIMEDOUT) &&
++			(io_master_info->master_type == CCI_MASTER)) {
++			CAM_WARN(CAM_SENSOR,
++				"CCI HW is restting: Reapplying request settings");
++			usleep_range(2000, 2010);
++			rc = camera_io_dev_write(io_master_info,
++				&(i2c_list->i2c_settings));
++		}
+ 		if (rc < 0) {
+ 			CAM_ERR(CAM_SENSOR,
+ 				"Failed to random write I2C settings: %d",
+@@ -622,7 +630,7 @@ int cam_sensor_match_id(struct cam_sensor_ctrl_t *s_ctrl)
+ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
+ 	void *arg)
+ {
+-	int rc = 0;
++	int rc = 0, pkt_opcode = 0;
+ 	struct cam_control *cmd = (struct cam_control *)arg;
+ 	struct cam_sensor_power_ctrl_t *power_info =
+ 		&s_ctrl->sensordata->power_info;
+@@ -782,6 +790,26 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
+ 	}
+ 		break;
+ 	case CAM_RELEASE_DEV: {
++
++		/*STOP DEV when sensor is START DEV and RELEASE called*/
++		if (s_ctrl->sensor_state == CAM_SENSOR_START)
++		{
++			CAM_WARN(CAM_SENSOR,
++			"Unbalance Release called with out STOP: %d",
++						s_ctrl->sensor_state);
++			if (s_ctrl->i2c_data.streamoff_settings.is_settings_valid &&
++				(s_ctrl->i2c_data.streamoff_settings.request_id == 0)) {
++				rc = cam_sensor_apply_settings(s_ctrl, 0,
++					CAM_SENSOR_PACKET_OPCODE_SENSOR_STREAMOFF);
++				if (rc < 0) {
++					/*Even Stream off failure do force power down*/
++					CAM_ERR(CAM_SENSOR,
++					"cannot apply streamoff settings");
++				}
++			}
++			s_ctrl->sensor_state = CAM_SENSOR_ACQUIRE;
++		}
++
+ 		if ((s_ctrl->sensor_state == CAM_SENSOR_INIT) ||
+ 			(s_ctrl->sensor_state == CAM_SENSOR_START)) {
+ 			rc = -EINVAL;
+@@ -910,9 +938,22 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
+ 		if (s_ctrl->i2c_data.init_settings.is_settings_valid &&
+ 			(s_ctrl->i2c_data.init_settings.request_id == 0)) {
+ 
++			pkt_opcode =
++				CAM_SENSOR_PACKET_OPCODE_SENSOR_INITIAL_CONFIG;
+ 			rc = cam_sensor_apply_settings(s_ctrl, 0,
+-				CAM_SENSOR_PACKET_OPCODE_SENSOR_INITIAL_CONFIG);
+-
++				pkt_opcode);
++
++			if ((rc == -EAGAIN) &&
++			(s_ctrl->io_master_info.master_type == CCI_MASTER)) {
++				/* If CCI hardware is resetting we need to wait
++				 * for sometime before reapply
++				 */
++				CAM_WARN(CAM_SENSOR,
++					"Reapplying the Init settings due to cci hw reset");
++				usleep_range(1000, 1010);
++				rc = cam_sensor_apply_settings(s_ctrl, 0,
++					pkt_opcode);
++			}
+ 			s_ctrl->i2c_data.init_settings.request_id = -1;
+ 
+ 			if (rc < 0) {
+diff --git a/techpack/camera-xiaomi/drivers/cam_smmu/cam_smmu_api.c b/techpack/camera-xiaomi/drivers/cam_smmu/cam_smmu_api.c
+index 0e65ee75087f..4ab25ea73681 100644
+--- a/techpack/camera-xiaomi/drivers/cam_smmu/cam_smmu_api.c
++++ b/techpack/camera-xiaomi/drivers/cam_smmu/cam_smmu_api.c
+@@ -401,7 +401,7 @@ static uint32_t cam_smmu_find_closest_mapping(int idx, void *vaddr)
+ 	list_for_each_entry(mapping,
+ 			&iommu_cb_set.cb_info[idx].smmu_buf_list, list) {
+ 		start_addr = (unsigned long)mapping->paddr;
+-		end_addr = (unsigned long)mapping->paddr + mapping->len;
++		end_addr = (unsigned long)mapping->paddr + mapping->len - 1;
+ 
+ 		if (start_addr <= current_addr && current_addr <= end_addr) {
+ 			closest_mapping = mapping;
+@@ -436,7 +436,7 @@ static uint32_t cam_smmu_find_closest_mapping(int idx, void *vaddr)
+ 			closest_mapping->ion_fd, current_addr,
+ 			closest_mapping->len,
+ 			(unsigned long)closest_mapping->paddr,
+-			(unsigned long)closest_mapping->paddr + mapping->len,
++			(unsigned long)closest_mapping->paddr + mapping->len - 1,
+ 			closest_mapping->buf,
+ 			buf_handle);
+ 	} else
+diff --git a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync.c b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync.c
+index 33b14f17ceb7..9099e2a91088 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync.c
++++ b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync.c
+@@ -297,6 +297,12 @@ int cam_sync_merge(int32_t *sync_obj, uint32_t num_objs, int32_t *merged_obj)
+ 		return -EINVAL;
+ 	}
+ 
++	if (cam_sync_validate_sync_objects(sync_obj, num_objs)) {
++		CAM_ERR(CAM_SYNC,
++			"The objects passed for merge are not valid");
++		return -EINVAL;
++	}
++
+ 	if (cam_common_util_remove_duplicate_arr(sync_obj, num_objs)
+ 		!= num_objs) {
+ 		CAM_ERR(CAM_SYNC, "The obj list has duplicate fence");
+diff --git a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_private.h b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_private.h
+index e02db7647bda..29fdc799e506 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_private.h
++++ b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_private.h
+@@ -24,7 +24,8 @@
+ #endif
+ 
+ #define CAM_SYNC_OBJ_NAME_LEN           64
+-#define CAM_SYNC_MAX_OBJS               1024
++//changed by xiaomi: CMI-6335(vedio/slow motion) needs upto 1024 fences
++#define CAM_SYNC_MAX_OBJS               1792 // 1536=1024+768
+ #define CAM_SYNC_MAX_V4L2_EVENTS        200
+ #define CAM_SYNC_DEBUG_FILENAME         "cam_debug"
+ #define CAM_SYNC_DEBUG_BASEDIR          "cam"
+diff --git a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.c b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.c
+index 68d339027b95..4f91a231c128 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.c
++++ b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.c
+@@ -53,6 +53,22 @@ int cam_sync_init_row(struct sync_table_row *table,
+ 	return 0;
+ }
+ 
++int cam_sync_validate_sync_objects(uint32_t *sync_objs,
++	uint32_t num_objs)
++{
++	int i = 0;
++
++	for (i = 0; i < num_objs; i++) {
++		if (sync_objs[i] >= CAM_SYNC_MAX_OBJS) {
++			CAM_ERR(CAM_SYNC, "Invalid sync object %u",
++				sync_objs[i]);
++			return -EINVAL;
++		}
++	}
++
++	return 0;
++}
++
+ int cam_sync_init_group_object(struct sync_table_row *table,
+ 	uint32_t idx,
+ 	uint32_t *sync_objs,
+@@ -74,7 +90,7 @@ int cam_sync_init_group_object(struct sync_table_row *table,
+ 	for (i = 0; i < num_objs; i++) {
+ 		child_row = table + sync_objs[i];
+ 
+-                if (idx == sync_objs[i] || (sync_objs[i] >= CAM_SYNC_MAX_OBJS)) {
++                if (idx == sync_objs[i]) {
+                     CAM_ERR(CAM_SYNC, "invalid fence:%d should be released",
+                     sync_objs[i]);
+                     rc = -EINVAL;
+diff --git a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.h b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.h
+index e114c33c655a..ab6b40696c6d 100644
+--- a/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.h
++++ b/techpack/camera-xiaomi/drivers/cam_sync/cam_sync_util.h
+@@ -50,6 +50,18 @@ int cam_sync_init_row(struct sync_table_row *table,
+  */
+ int cam_sync_deinit_object(struct sync_table_row *table, uint32_t idx);
+ 
++/**
++ * @brief: Function to validate sync objects passed to merge
++ *
++ * @param table : Array of sync objects which will merged
++ *                    or grouped together
++ * @param idx   : Number of sync objects in the array
++ *
++ * @return Status of operation. Negative in case of error. Zero otherwise.
++ */
++int cam_sync_validate_sync_objects(uint32_t *sync_objs,
++	uint32_t num_objs);
++
+ /**
+  * @brief: Function to initialize a row in the sync table when the object is a
+  *         group object, also known as a merged sync object
+diff --git a/techpack/camera-xiaomi/include/uapi/media/cam_req_mgr.h b/techpack/camera-xiaomi/include/uapi/media/cam_req_mgr.h
+index 5bab420a7b02..2a7f54d5a428 100644
+--- a/techpack/camera-xiaomi/include/uapi/media/cam_req_mgr.h
++++ b/techpack/camera-xiaomi/include/uapi/media/cam_req_mgr.h
+@@ -41,7 +41,7 @@
+  * It includes both session and device handles
+  */
+ #define CAM_REQ_MGR_MAX_HANDLES           64
+-#define CAM_REQ_MGR_MAX_HANDLES_V2        128
++#define CAM_REQ_MGR_MAX_HANDLES_V2        182
+ #define MAX_LINKS_PER_SESSION             2
+ 
+ /* V4L event type which user space will subscribe to */
+@@ -279,7 +279,7 @@ struct cam_req_mgr_link_control {
+ #define CAM_MEM_MMU_MAX_HANDLE                  16
+ 
+ /* Maximum allowed buffers in existence */
+-#define CAM_MEM_BUFQ_MAX                        1024
++#define CAM_MEM_BUFQ_MAX                        1536
+ 
+ #define CAM_MEM_MGR_SECURE_BIT_POS              15
+ #define CAM_MEM_MGR_HDL_IDX_SIZE                15
+-- 
+2.48.1
+

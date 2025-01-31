@@ -1,0 +1,42 @@
+From fa25f60f60ffbeb6c46dce94d6d64ce96ce7c3ce Mon Sep 17 00:00:00 2001
+From: althafvly <althafvly@gmail.com>
+Date: Mon, 4 Jan 2021 18:44:42 +0530
+Subject: [PATCH 102/157] fixup! drivers: usb: Import Xiaomi changes
+
+Change-Id: Ib396cfa50e10424d040b485c53e0aa944a54df9d
+---
+ drivers/usb/pd/policy_engine.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/pd/policy_engine.c b/drivers/usb/pd/policy_engine.c
+index 100feb3c91e4..b1179957a01d 100644
+--- a/drivers/usb/pd/policy_engine.c
++++ b/drivers/usb/pd/policy_engine.c
+@@ -2395,7 +2395,11 @@ static int usbpd_startup_common(struct usbpd *pd,
+ 		 * support up to PD 3.0; if peer is 2.0
+ 		 * phy_msg_received() will handle the downgrade.
+ 		 */
+-		pd->spec_rev = USBPD_REV_30;
++		if ((pd->pd20_source_only) &&
++			pd->current_state == PE_SRC_STARTUP)
++			pd->spec_rev = USBPD_REV_20;
++		else
++			pd->spec_rev = USBPD_REV_30;
+ 
+ 		if (pd->pd_phy_opened) {
+ 			pd_phy_close();
+@@ -2523,7 +2527,10 @@ static void handle_state_src_startup_wait_for_vdm_resp(struct usbpd *pd,
+ 	 * Emarker may have negotiated down to rev 2.0.
+ 	 * Reset to 3.0 to begin SOP communication with sink
+ 	 */
+-	pd->spec_rev = USBPD_REV_30;
++	if (pd->pd20_source_only)
++		pd->spec_rev = USBPD_REV_20;
++	else
++		pd->spec_rev = USBPD_REV_30;
+ 
+ 	pd->current_state = PE_SRC_SEND_CAPABILITIES;
+ 	kick_sm(pd, ms);
+-- 
+2.48.1
+

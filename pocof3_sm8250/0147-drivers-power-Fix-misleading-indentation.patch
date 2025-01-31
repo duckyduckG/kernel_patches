@@ -1,0 +1,70 @@
+From 509ebf233a536fc1380ff836a88ea05f62776ee8 Mon Sep 17 00:00:00 2001
+From: althafvly <althafvly@gmail.com>
+Date: Sat, 24 Aug 2024 09:38:41 +0530
+Subject: [PATCH 147/157] drivers: power: Fix misleading indentation
+
+Change-Id: I9f43e382d8caf54c4b5ebc4325072d07c614d0ee
+---
+ drivers/power/supply/qcom/smb5-lib.c | 39 ++++++++++++++--------------
+ 1 file changed, 19 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/power/supply/qcom/smb5-lib.c b/drivers/power/supply/qcom/smb5-lib.c
+index 780592bb1b0f..6372dab5db18 100644
+--- a/drivers/power/supply/qcom/smb5-lib.c
++++ b/drivers/power/supply/qcom/smb5-lib.c
+@@ -3104,7 +3104,7 @@ int smblib_get_prop_batt_charge_done(struct smb_charger *chg,
+ 			if ((smblib_get_fastcharge_mode(chg) == true)
+ 				&& (pval.intval >= 98))
+ 				smblib_set_fastcharge_mode(chg, false);
+-				return 0;
++			return 0;
+ 		}
+ 
+ 		if (smblib_get_fastcharge_mode(chg) == true)
+@@ -10439,25 +10439,24 @@ static void smblib_charger_type_recheck(struct work_struct *work)
+ 	if (smblib_get_prop_dfp_mode(chg) != POWER_SUPPLY_TYPEC_NONE)
+ 		goto check_next;
+ 
+-		if (chg->typec_port && !chg->pr_swap_in_progress) {
+-
+-			/*
+-			 * Schedule the work to differentiate actual removal
+-			 * of cable and detach interrupt during role swap,
+-			 * unregister the partner only during actual cable
+-			 * removal.
+-			 */
+-			cancel_delayed_work(&chg->pr_swap_detach_work);
+-			vote(chg->awake_votable, DETACH_DETECT_VOTER, true, 0);
+-			schedule_delayed_work(&chg->pr_swap_detach_work,
+-				msecs_to_jiffies(TYPEC_DETACH_DETECT_DELAY_MS));
+-			smblib_force_dr_mode(chg, TYPEC_PORT_DRP);
+-			/*
+-			 * To handle cable removal during role
+-			 * swap failure.
+-			 */
+-			chg->typec_role_swap_failed = false;
+-		}
++	if (chg->typec_port && !chg->pr_swap_in_progress) {
++		/*
++		* Schedule the work to differentiate actual removal
++		* of cable and detach interrupt during role swap,
++		* unregister the partner only during actual cable
++		* removal.
++		*/
++		cancel_delayed_work(&chg->pr_swap_detach_work);
++		vote(chg->awake_votable, DETACH_DETECT_VOTER, true, 0);
++		schedule_delayed_work(&chg->pr_swap_detach_work,
++			msecs_to_jiffies(TYPEC_DETACH_DETECT_DELAY_MS));
++		smblib_force_dr_mode(chg, TYPEC_PORT_DRP);
++		/*
++		* To handle cable removal during role
++		* swap failure.
++		*/
++		chg->typec_role_swap_failed = false;
++	}
+ 
+ 	if (!chg->recheck_charger)
+ 		chg->precheck_charger_type = chg->real_charger_type;
+-- 
+2.48.1
+

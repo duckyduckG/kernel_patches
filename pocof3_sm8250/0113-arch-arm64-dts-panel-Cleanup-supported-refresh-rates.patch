@@ -1,0 +1,27 @@
+From 811549752304c19456b286c2df9d183a7850e969 Mon Sep 17 00:00:00 2001
+From: Ramii Ahmed <ramy@ahmedramy.com>
+Date: Fri, 11 Aug 2023 05:59:29 +0000
+Subject: [PATCH 113/157] arch: arm64: dts: panel: Cleanup supported refresh
+ rates list
+
+Change-Id: Ia5a45e034b3d456349936dc5391a43448e9a16a1
+---
+ .../boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi  | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+index 02c0989d13b2..ff549016e266 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/dsi-panel-j3s-37-02-0a-dsc-video.dtsi
+@@ -55,7 +55,7 @@
+ 		qcom,mdss-dsi-pan-enable-dynamic-fps;
+ 		qcom,mdss-dsi-pan-fps-update =
+ 				"dfps_immediate_porch_mode_vfp";
+-		qcom,dsi-supported-dfps-list = <144 120 90 60 50 48 30>;
++		qcom,dsi-supported-dfps-list = <144 120 90 60>;
+ 
+ 		qcom,mdss-dsi-display-timings {
+ 			timing@0{
+-- 
+2.48.1
+

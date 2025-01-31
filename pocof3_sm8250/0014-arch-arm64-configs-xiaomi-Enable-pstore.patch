@@ -1,0 +1,35 @@
+From 58f021123033fe1a3499950eb792969d647183cb Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Fri, 18 Nov 2022 16:18:03 +0100
+Subject: [PATCH 014/157] arch: arm64: configs: xiaomi: Enable pstore
+
+Change-Id: If88ae1427c8723ffcb374083fa0191fa2e008e4b
+---
+ .../configs/vendor/xiaomi/sm8250-common.config     | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+index e64fa2cee5ad..4db5b3b32706 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
++++ b/arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+@@ -20,3 +20,17 @@ CONFIG_QMP_DEBUGFS_CLIENT=n
+ 
+ # exFAT
+ CONFIG_EXFAT_FS=y
++
++# Persistent store
++CONFIG_PSTORE=y
++CONFIG_PSTORE_CONSOLE=y
++CONFIG_PSTORE_PMSG=y
++CONFIG_PSTORE_RAM=y
++CONFIG_CMDLINE="ramoops_memreserve=4M"
++CONFIG_CMDLINE_EXTEND=y
++CONFIG_BLK_WBT=y
++CONFIG_BLK_WBT_SQ=y
++CONFIG_MTD=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_OOPS=y
++CONFIG_MTD_BLOCK2MTD=y
+-- 
+2.48.1
+

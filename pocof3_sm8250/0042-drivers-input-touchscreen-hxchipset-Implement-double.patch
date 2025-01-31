@@ -1,0 +1,112 @@
+From f3d7c1aaa7fdf0ae8d866071455621788044be6e Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <seba@sebaubuntu.dev>
+Date: Mon, 30 Jan 2023 23:54:00 +0100
+Subject: [PATCH 042/157] drivers: input: touchscreen: hxchipset: Implement
+ double_tap node
+
+Change-Id: I792b79af1a902b8afe177b08024c43bda16eb921
+---
+ .../touchscreen/hxchipset/himax_common.c      | 37 +++++++++++++++++++
+ .../touchscreen/hxchipset/himax_ic_core.h     |  5 +++
+ .../hxchipset/himax_ic_incell_core.c          |  7 +++-
+ 3 files changed, 48 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/touchscreen/hxchipset/himax_common.c b/drivers/input/touchscreen/hxchipset/himax_common.c
+index bb9601f07bd4..9960f22b9264 100644
+--- a/drivers/input/touchscreen/hxchipset/himax_common.c
++++ b/drivers/input/touchscreen/hxchipset/himax_common.c
+@@ -20,6 +20,10 @@
+ #include <drm/drm_notifier_mi.h>
+ #endif
+ 
++#if defined(HX_SMART_WAKEUP) && defined(CONFIG_TOUCHSCREEN_COMMON)
++#include <linux/input/tp_common.h>
++#endif
++
+ #if defined(HX_PEN_DETECT_GLOBAL)
+ extern int pen_charge_state_notifier_register_client(struct notifier_block *nb);
+ extern int
+@@ -1005,6 +1009,34 @@ static int sysfs_node_init()
+ }
+ #endif
+ 
++#if defined(HX_SMART_WAKEUP) && defined(CONFIG_TOUCHSCREEN_COMMON)
++static ssize_t double_tap_show(struct kobject *kobj,
++			       struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%d\n", himax_get_gesture_mode());
++}
++
++static ssize_t double_tap_store(struct kobject *kobj,
++				struct kobj_attribute *attr, const char *buf,
++				size_t count)
++{
++	int rc, val;
++
++	rc = kstrtoint(buf, 10, &val);
++	if (rc)
++		return -EINVAL;
++
++	himax_set_gesture_mode(!!val);
++
++	return count;
++}
++
++static struct tp_common_ops double_tap_ops = {
++	.show = double_tap_show,
++	.store = double_tap_store,
++};
++#endif
++
+ static ssize_t himax_vendor_read(struct file *file, char *buf, size_t len,
+ 				 loff_t *pos)
+ {
+@@ -3857,6 +3889,11 @@ int himax_chip_common_init(void)
+ 		E(" %s: crate sysfs node failed!\n", __func__);
+ 		goto err_creat_sysfs_node_failed;
+ 	}
++
++#if defined(HX_SMART_WAKEUP) && defined(CONFIG_TOUCHSCREEN_COMMON)
++	tp_common_set_double_tap_ops(&double_tap_ops);
++#endif
++
+ #if defined(CONFIG_TOUCHSCREEN_HIMAX_DEBUG)
+ 	if (himax_debug_init()) {
+ 		E(" %s: debug initial failed!\n", __func__);
+diff --git a/drivers/input/touchscreen/hxchipset/himax_ic_core.h b/drivers/input/touchscreen/hxchipset/himax_ic_core.h
+index db797b7d8ec5..a4f7df14fbab 100644
+--- a/drivers/input/touchscreen/hxchipset/himax_ic_core.h
++++ b/drivers/input/touchscreen/hxchipset/himax_ic_core.h
+@@ -130,6 +130,11 @@ extern int i2c_error_count;
+ extern u8 HX_EXCP_RESET_ACTIVATE;
+ #endif
+ 
++#if defined(HX_SMART_WAKEUP)
++bool himax_get_gesture_mode(void);
++int himax_set_gesture_mode(uint8_t gesture_mode);
++#endif
++
+ /* CORE_INIT */
+ int himax_mcu_in_cmd_struct_init(void);
+ void himax_mcu_in_cmd_init(void);
+diff --git a/drivers/input/touchscreen/hxchipset/himax_ic_incell_core.c b/drivers/input/touchscreen/hxchipset/himax_ic_incell_core.c
+index bbc866248089..78a78c323cd8 100644
+--- a/drivers/input/touchscreen/hxchipset/himax_ic_incell_core.c
++++ b/drivers/input/touchscreen/hxchipset/himax_ic_incell_core.c
+@@ -1129,7 +1129,12 @@ static int himax_Screen_orientation_set(uint8_t direction)
+ #endif
+ 
+ #if defined(HX_SMART_WAKEUP)
+-static int himax_set_gesture_mode(uint8_t gesture_mode)
++bool himax_get_gesture_mode(void)
++{
++	return !!private_ts->db_wakeup;
++}
++
++int himax_set_gesture_mode(uint8_t gesture_mode)
+ {
+ 	int ret = 0;
+ 	private_ts->db_wakeup = gesture_mode ? (private_ts->db_wakeup | 0x01) :
+-- 
+2.48.1
+
