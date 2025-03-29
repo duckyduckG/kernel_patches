@@ -1,0 +1,52 @@
+From f0e023648f49cb179105dc222494d83bc6da1839 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Fri, 7 Feb 2020 21:06:29 +0800
+Subject: [PATCH 150/178] of: of_batterydata: Import Xiaomi MI changes
+
+Change-Id: Idef017bef06b1f8b62694ccf9616e10d693ba3d6
+---
+ drivers/of/of_batterydata.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/of/of_batterydata.c b/drivers/of/of_batterydata.c
+index 611cef54f4ed..c08f4bcf1b37 100644
+--- a/drivers/of/of_batterydata.c
++++ b/drivers/of/of_batterydata.c
+@@ -314,6 +314,9 @@ struct device_node *of_batterydata_get_best_profile(
+ {
+ 	struct batt_ids batt_ids;
+ 	struct device_node *node, *best_node = NULL;
++#ifdef CONFIG_MACH_MI
++	struct device_node *generic_node = NULL;
++#endif
+ 	const char *battery_type = NULL;
+ 	int delta = 0, best_delta = 0, best_id_kohm = 0, id_range_pct,
+ 		i = 0, rc = 0, limit = 0;
+@@ -370,6 +373,12 @@ struct device_node *of_batterydata_get_best_profile(
+ 			}
+ #ifndef CONFIG_MACH_LONGCHEER
+ 		}
++#ifdef CONFIG_MACH_MI
++		rc = of_property_read_string(node, "qcom,battery-type",
++							&battery_type);
++		if (!rc && strcmp(battery_type, "itech_3000mah") == 0)
++			generic_node = node;
++#endif
+ #endif
+ 	}
+ 
+@@ -386,6 +395,11 @@ struct device_node *of_batterydata_get_best_profile(
+ 		}
+ 		if (best_node)
+ 			pr_info("Use unknown battery data\n");
++#elif defined(CONFIG_MACH_MI)
++		/* now that best_node is null, there is no need to
++		 * check whether generic node is null. */
++		best_node = generic_node;
++		pr_err("No battery data found, use generic one\n");
+ #else
+ 		pr_err("No battery data found\n");
+ #endif
+-- 
+2.49.0
+

@@ -1,0 +1,41 @@
+From deb9f246bc43753145aaec1bc6a3dab94f164bfe Mon Sep 17 00:00:00 2001
+From: Diogo Ferreira <defer@cyngn.com>
+Date: Sun, 2 Oct 2016 21:49:09 +0100
+Subject: [PATCH 124/178] input: touchscreen: synaptics_dsx_force: Properly
+ setup soft button irqs on resume
+
+If soft-buttons are disabled, their interrupt should also be disabled
+upon initialization. This patch reconfigures the soft-button function
+irqs upon suspend/resume so that the disabled state survives after
+coming out of suspension.
+
+Change-Id: Iec8242608754af0761ebb9f1e5ff12c2f8c7415a
+---
+ .../touchscreen/synaptics_dsx_force/synaptics_dsx_core.c      | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/input/touchscreen/synaptics_dsx_force/synaptics_dsx_core.c b/drivers/input/touchscreen/synaptics_dsx_force/synaptics_dsx_core.c
+index b23534981541..4f1695e01f73 100644
+--- a/drivers/input/touchscreen/synaptics_dsx_force/synaptics_dsx_core.c
++++ b/drivers/input/touchscreen/synaptics_dsx_force/synaptics_dsx_core.c
+@@ -188,6 +188,8 @@ static void mdss_regulator_ctrl(struct synaptics_rmi4_data *rmi4_data, unsigned
+ static void mdss_reset_ctrl(const struct synaptics_dsx_board_data *bdata, bool on);
+ static void mdss_reset_action(const struct synaptics_dsx_board_data *bdata);
+ 
++static void synaptics_key_ctrl(struct synaptics_rmi4_data *rmi4_data, bool enable);
++
+ #ifdef CONFIG_HAS_EARLYSUSPEND
+ #ifndef CONFIG_FB
+ #define USE_EARLYSUSPEND
+@@ -2104,6 +2106,8 @@ static int synaptics_rmi4_int_enable(struct synaptics_rmi4_data *rmi4_data,
+ 		}
+ 	}
+ 
++	synaptics_key_ctrl(rmi4_data, enable && rmi4_data->button_0d_enabled);
++
+ 	return retval;
+ }
+ 
+-- 
+2.49.0
+

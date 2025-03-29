@@ -1,0 +1,29 @@
+From 7fb0ba3211c7241861587775e89a094d801fa900 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Wed, 12 Sep 2018 13:52:55 +0800
+Subject: [PATCH 167/178] techpack: audio: asoc: msm: Report correct key code
+ of headset buttons
+
+Change-Id: I8ecc1609d929ac5a8d4d73711b15b4a741d910a3
+---
+ techpack/audio/asoc/sdm660-common.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/techpack/audio/asoc/sdm660-common.c b/techpack/audio/asoc/sdm660-common.c
+index 00987f914f28..55b88c32f3df 100644
+--- a/techpack/audio/asoc/sdm660-common.c
++++ b/techpack/audio/asoc/sdm660-common.c
+@@ -238,8 +238,8 @@ static struct wcd_mbhc_config mbhc_cfg = {
+ 	.key_code[2] = KEY_VOLUMEUP,
+ 	.key_code[3] = KEY_VOLUMEDOWN,
+ #else
+-	.key_code[1] = BTN_1,
+-	.key_code[2] = BTN_2,
++	.key_code[1] = KEY_VOLUMEUP,
++	.key_code[2] = KEY_VOLUMEDOWN,
+ 	.key_code[3] = 0,
+ #endif
+ 	.key_code[4] = 0,
+-- 
+2.49.0
+

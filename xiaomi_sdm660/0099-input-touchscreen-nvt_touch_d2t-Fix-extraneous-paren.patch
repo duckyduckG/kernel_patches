@@ -1,0 +1,34 @@
+From 3ae657eaf20d21cffdbf0e273ae4b02d67e6e77e Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Tue, 24 Nov 2020 00:19:22 +0100
+Subject: [PATCH 099/178] input: touchscreen: nvt_touch_d2t: Fix extraneous
+ parentheses
+
+drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c:911:29: error:
+      equality comparison with extraneous parentheses [-Werror,-Wparentheses-equality]
+                if ((ts->lockdown_info[0] ==
+                     ~~~~~~~~~~~~~~~~~~~~~^~
+
+Change-Id: I4603746e9a937761686a730611e32f8f681ab04f
+---
+ drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c
+index 8b6264f329f1..45e1e6569392 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c
+@@ -908,8 +908,8 @@ static const char *nvt_get_config(struct nvt_ts_data *ts)
+ 	int i;
+ 
+ 	for (i = 0; i < ts->config_array_size; i++) {
+-		if ((ts->lockdown_info[0] ==
+-		     ts->config_array[i].tp_vendor))
++		if (ts->lockdown_info[0] ==
++		     ts->config_array[i].tp_vendor)
+ 			break;
+ 	}
+ 
+-- 
+2.49.0
+

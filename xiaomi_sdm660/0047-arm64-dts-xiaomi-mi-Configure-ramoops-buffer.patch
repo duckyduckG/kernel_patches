@@ -1,0 +1,43 @@
+From 11498341e7f5669eba8eebfae688e33b4edbf048 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Sun, 28 Jan 2018 13:07:45 +0800
+Subject: [PATCH 047/178] arm64: dts: xiaomi: mi: Configure ramoops buffer
+
+ * Use the same region and buffer size as stock.
+
+Change-Id: I4a964e3e3a13a74b6091262b4bdc44eecc63eca8
+---
+ .../vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi
+index 701891134345..df64c35f0c6a 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi
+@@ -566,3 +566,23 @@
+ 		/delete-node/ camera_snapshot;
+ 	};
+ };
++
++// custom
++/ {
++	reserved-memory {
++		ramoops_mem: ramoops_region@b0000000 {
++			compatible = "removed-dma-pool";
++			no-map;
++			reg = <0 0xb0000000 0 0x400000>;
++		};
++	};
++};
++
++&soc {
++	ramoops {
++		compatible = "ramoops";
++		memory-region = <&ramoops_mem>;
++		console-size = <0x0 0x200000>;
++		pmsg-size = <0x0 0x200000>;
++	};
++};
+-- 
+2.49.0
+

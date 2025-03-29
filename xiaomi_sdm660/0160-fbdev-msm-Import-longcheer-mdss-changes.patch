@@ -1,0 +1,661 @@
+From 9b9480becf167b91e9018c8db6ffa029eb6e8023 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Sat, 15 Feb 2020 12:12:42 +0100
+Subject: [PATCH 160/178] fbdev: msm: Import longcheer mdss changes
+
+Change-Id: Id0b33ed93b57caa84335c9361fd83181bb4f3669
+---
+ drivers/video/fbdev/core/fbmem.c          |   6 +-
+ drivers/video/fbdev/msm/mdss_dsi.c        |  49 ++++++
+ drivers/video/fbdev/msm/mdss_dsi_host.c   |   8 +
+ drivers/video/fbdev/msm/mdss_dsi_panel.c  | 200 ++++++++++++++++++++++
+ drivers/video/fbdev/msm/mdss_dsi_status.c |   4 +
+ drivers/video/fbdev/msm/mdss_fb.c         |  18 +-
+ drivers/video/fbdev/msm/mdss_fb.h         |   2 +-
+ drivers/video/fbdev/msm/mdss_io_util.c    |  63 +++++++
+ include/linux/fb.h                        |   2 +-
+ include/linux/mdss_io_util.h              |   5 +-
+ 10 files changed, 342 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/video/fbdev/core/fbmem.c b/drivers/video/fbdev/core/fbmem.c
+index 817f1ce8283f..42b032d7d8ae 100644
+--- a/drivers/video/fbdev/core/fbmem.c
++++ b/drivers/video/fbdev/core/fbmem.c
+@@ -1080,7 +1080,7 @@ fb_blank(struct fb_info *info, int blank)
+  	if (blank > FB_BLANK_POWERDOWN)
+  		blank = FB_BLANK_POWERDOWN;
+ 
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	if (info->blank == blank) {
+ 		if (info->fbops->fb_blank)
+ 			ret = info->fbops->fb_blank(blank, info);
+@@ -1107,7 +1107,7 @@ fb_blank(struct fb_info *info, int blank)
+ 			fb_notifier_call_chain(FB_R_EARLY_EVENT_BLANK, &event);
+ 	}
+ 
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	if (!ret)
+ 		info->blank = blank;
+ #endif
+@@ -1699,7 +1699,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 		if (!registered_fb[i])
+ 			break;
+ 	fb_info->node = i;
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	fb_info->blank = -1;
+ #endif
+ 	atomic_set(&fb_info->count, 1);
+diff --git a/drivers/video/fbdev/msm/mdss_dsi.c b/drivers/video/fbdev/msm/mdss_dsi.c
+index 1fccdd42dc97..705bb517012c 100644
+--- a/drivers/video/fbdev/msm/mdss_dsi.c
++++ b/drivers/video/fbdev/msm/mdss_dsi.c
+@@ -434,11 +434,18 @@ static int mdss_dsi_panel_power_lp(struct mdss_panel_data *pdata, int enable)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++extern bool ESD_TE_status;
++#endif
++
+ static int mdss_dsi_panel_power_ctrl(struct mdss_panel_data *pdata,
+ 	int power_state)
+ {
+ 	int ret = 0;
+ 	struct mdss_panel_info *pinfo;
++#ifdef CONFIG_MACH_LONGCHEER
++	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
++#endif
+ 
+ 	if (pdata == NULL) {
+ 		pr_err("%s: Invalid input data\n", __func__);
+@@ -473,7 +480,49 @@ static int mdss_dsi_panel_power_ctrl(struct mdss_panel_data *pdata,
+ 		if (mdss_dsi_is_panel_on_lp(pdata))
+ 			ret = mdss_dsi_panel_power_lp(pdata, false);
+ 		else
++#ifdef CONFIG_MACH_LONGCHEER
++		{
++			if (ESD_TE_status) {
++				ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
++							panel_data);
++
++				ret = mdss_dsi_panel_reset(pdata, 0);
++				if (ret) {
++					pr_warn("%s: Panel reset failed. rc=%d\n", __func__, ret);
++					ret = 0;
++				}
++				if (mdss_dsi_pinctrl_set_state(ctrl_pdata, false))
++					pr_debug("reset disable:pinctrl not enable \n");
++
++				ret = msm_dss_enable_vreg(ctrl_pdata->panel_power_data.vreg_config,
++						ctrl_pdata->panel_power_data.num_vreg, 0);
++				if (ret)
++					pr_err("%s:failed to disable vreg for %s\n", __func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
++				msleep(10);
++				mdss_dsi_panel_reset(pdata, 1);
++				msleep(10);
++				mdss_dsi_panel_reset(pdata, 0);
++				msleep(1);
++				mdss_dsi_panel_reset(pdata, 1);
++				msleep(10);
++				mdss_dsi_panel_reset(pdata, 0);
++				msleep(300);
++				mdss_dsi_panel_reset(pdata, 1);
++				msleep(20);
++				mdss_dsi_panel_reset(pdata, 0);
++				msleep(20);
++				mdss_dsi_panel_reset(pdata, 1);
++				msleep(20);
++				mdss_dsi_panel_reset(pdata, 0);
++				printk("nova panel reset\n");
++
++				ESD_TE_status = false;
++			}
++#endif
+ 			ret = mdss_dsi_panel_power_on(pdata);
++#ifdef CONFIG_MACH_LONGCHEER
++		}
++#endif
+ 		break;
+ 	case MDSS_PANEL_POWER_LP1:
+ 	case MDSS_PANEL_POWER_LP2:
+diff --git a/drivers/video/fbdev/msm/mdss_dsi_host.c b/drivers/video/fbdev/msm/mdss_dsi_host.c
+index 29275e86902e..7770a2383b1d 100644
+--- a/drivers/video/fbdev/msm/mdss_dsi_host.c
++++ b/drivers/video/fbdev/msm/mdss_dsi_host.c
+@@ -1233,6 +1233,10 @@ static int mdss_dsi_read_status(struct mdss_dsi_ctrl_pdata *ctrl)
+ 	return rc;
+ }
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++extern char g_lcd_id[128];
++extern bool ESD_TE_status;
++#endif
+ 
+ /**
+  * mdss_dsi_reg_status_check() - Check dsi panel status through reg read
+@@ -1295,6 +1299,10 @@ int mdss_dsi_reg_status_check(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+ 			ret = ctrl_pdata->check_read_status(sctrl_pdata);
+ 	} else {
+ 		pr_err("%s: Read status register returned error\n", __func__);
++#ifdef CONFIG_MACH_LONGCHEER
++		if ((strstr(g_lcd_id, "nt36672") != NULL) || (strstr(g_lcd_id, "nt36672a") != NULL) || (strstr(g_lcd_id, "td4320") != NULL))
++			ESD_TE_status = true;
++#endif
+ 	}
+ 
+ 	mdss_dsi_clk_ctrl(ctrl_pdata, ctrl_pdata->dsi_clk_handle,
+diff --git a/drivers/video/fbdev/msm/mdss_dsi_panel.c b/drivers/video/fbdev/msm/mdss_dsi_panel.c
+index c625b4972f5a..041423efec95 100644
+--- a/drivers/video/fbdev/msm/mdss_dsi_panel.c
++++ b/drivers/video/fbdev/msm/mdss_dsi_panel.c
+@@ -27,6 +27,26 @@
+ #define DEFAULT_MDP_TRANSFER_TIME 14000
+ 
+ #define VSYNC_DELAY msecs_to_jiffies(17)
++
++#ifdef CONFIG_MACH_LONGCHEER
++bool tianma_jdi_flag=0;
++char g_lcd_id[128];
++struct mdss_dsi_ctrl_pdata *ctrl_pdata_whitepoint;
++EXPORT_SYMBOL(g_lcd_id);
++extern bool enable_gesture_mode;
++
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++#define TP_RESET_GPIO 66
++extern bool synaptics_gesture_enable_flag;
++//#elif defined CONFIG_MACH_XIAOMI_TULIP
++//extern bool focal_gesture_mode;
++#elif defined CONFIG_MACH_XIAOMI_WHYRED
++extern bool synaptics_gesture_func_on;
++#endif
++
++bool ESD_TE_status = false;
++#endif
++
+ #ifndef CONFIG_BACKLIGHT_QCOM_SPMI_WLED
+ DEFINE_LED_TRIGGER(bl_led_trigger);
+ #endif
+@@ -196,6 +216,66 @@ int mdss_dsi_panel_cmd_read(struct mdss_dsi_ctrl_pdata *ctrl, char cmd0,
+ 	return mdss_dsi_cmdlist_put(ctrl, &cmdreq);
+ }
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++static char dcs_reg[2] = {0x00, 0x00}; /* DTYPE_DCS_READ */
++static struct dsi_cmd_desc dcs_read_reg = {
++	{DTYPE_DCS_READ, 1, 0, 1, 5, sizeof(dcs_reg)},
++	dcs_reg
++};
++
++int mdss_dsi_read_reg(struct mdss_dsi_ctrl_pdata *ctrl, char cmd0, int *val0, int *val1)
++{
++	struct dcs_cmd_req cmdreq;
++	struct mdss_panel_info *pinfo;
++	char rbuf[8];
++	int len = sizeof(rbuf);
++	printk("guorui:%s,reg 0x%x\n", __func__, cmd0);
++	if(ctrl == NULL)
++		ctrl = ctrl_pdata_whitepoint;
++	pinfo = &(ctrl->panel_data.panel_info);
++	if (pinfo->dcs_cmd_by_left) {
++		if (ctrl->ndx != DSI_CTRL_LEFT)
++			return -EINVAL;
++	}
++
++	dcs_reg[0] = cmd0;
++	memset(&cmdreq, 0, sizeof(cmdreq));
++	cmdreq.cmds = &dcs_read_reg;
++	cmdreq.cmds_cnt = 1;
++	cmdreq.flags = CMD_REQ_RX | CMD_REQ_COMMIT | CMD_REQ_HS_MODE;
++	cmdreq.rlen = len;
++	cmdreq.rbuf = rbuf;
++	cmdreq.cb = NULL; /* call back */
++	/*
++	 * blocked here, until call back called
++	 */
++
++
++	mdss_dsi_cmdlist_put(ctrl, &cmdreq);
++	*val0 = rbuf[0];
++#if defined CONFIG_MACH_XIAOMI_LAVENDER || defined CONFIG_MACH_XIAOMI_TULIP
++	/* policy for e7t tianma nt36672a D0:x D2:y */
++	if (strstr(g_lcd_id,"tianma") != NULL)
++		*val1 = rbuf[2];
++	else {
++		/* policy for f7a ebbg nt36672a D0:x D1:y */
++		if(0 != rbuf[1])
++			*val1 = rbuf[1];
++		else
++			*val1 = rbuf[2];
++	}
++#else
++	/* policy for nt36672 */
++	if(0 != rbuf[1])
++		*val1 = rbuf[1];
++	else
++		*val1 = rbuf[2];
++#endif
++	printk("guorui:%x %x %x %x %x %x %x %x\n",rbuf[0],rbuf[1],rbuf[2],rbuf[3],rbuf[4],rbuf[5],rbuf[6],rbuf[7]);
++	return 0;
++}
++#endif
++
+ static void mdss_dsi_panel_apply_settings(struct mdss_dsi_ctrl_pdata *ctrl,
+ 			struct dsi_panel_cmds *pcmds)
+ {
+@@ -488,6 +568,16 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
+ 				}
+ 			}
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++			usleep_range(12 * 1000, 12 * 1000);
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++			if(!enable_gesture_mode && !synaptics_gesture_enable_flag) {
++				if (gpio_direction_output(TP_RESET_GPIO, 1)) {
++					pr_err("%s: unable to set dir for touch reset gpio\n", __func__);
++				}
++			}
++#endif
++#endif
+ 			if (pdata->panel_info.rst_seq_len) {
+ 				rc = gpio_direction_output(ctrl_pdata->rst_gpio,
+ 					pdata->panel_info.rst_seq[0]);
+@@ -560,7 +650,30 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
+ 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
+ 			gpio_free(ctrl_pdata->disp_en_gpio);
+ 		}
++
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++		if(enable_gesture_mode || synaptics_gesture_enable_flag) {
++			printk(KERN_ERR "[lcd][tp][gesture] keep lcd_reset and tp_reset gpio to high.\n");
++			goto keep_lcd_and_tp_reset;
++		}
++		if (gpio_direction_output(TP_RESET_GPIO, 0)) {
++			pr_err("%s: unable to set dir for touch reset gpio\n", __func__);
++		}
++		gpio_set_value((ctrl_pdata->rst_gpio), 0);
++keep_lcd_and_tp_reset:
++#elif defined(CONFIG_MACH_XIAOMI_TULIP)
++		printk(KERN_ERR "[lcd][tp][gesture] keep lcd_reset and tp_reset gpio to high.\n");
++#elif defined(CONFIG_MACH_XIAOMI_WAYNE)
++		if(enable_gesture_mode)
++			printk("gesture mode keep reset gpio to high.\n");
++#elif defined(CONFIG_MACH_XIAOMI_WHYRED)
++		if(enable_gesture_mode || synaptics_gesture_func_on)
++			printk("gesture mode keep reset gpio to high.\n");
++		else
++			gpio_set_value((ctrl_pdata->rst_gpio), 0);
++#else
+ 		gpio_set_value((ctrl_pdata->rst_gpio), 0);
++#endif
+ 		gpio_free(ctrl_pdata->rst_gpio);
+ 		if (gpio_is_valid(ctrl_pdata->lcd_mode_sel_gpio)) {
+ 			gpio_set_value(ctrl_pdata->lcd_mode_sel_gpio, 0);
+@@ -1223,6 +1336,12 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
+ 			goto end;
+ 	}
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++	if (ESD_TE_status)
++		printk("%s: esd check skip lcd suspend \n", __func__);
++	else
++#endif
++
+ 	if (ctrl->off_cmds.cmd_cnt)
+ 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->off_cmds, CMD_REQ_COMMIT);
+ 
+@@ -2028,6 +2147,10 @@ static int mdss_dsi_gen_read_status(struct mdss_dsi_ctrl_pdata *ctrl_pdata)
+ 	if (!mdss_dsi_cmp_panel_reg_v2(ctrl_pdata)) {
+ 		pr_err("%s: Read back value from panel is incorrect\n",
+ 							__func__);
++#ifdef CONFIG_MACH_LONGCHEER
++	if ((strstr(g_lcd_id,"nt36672") != NULL)||(strstr(g_lcd_id,"nt36672a") != NULL)||(strstr(g_lcd_id,"td4320") != NULL))
++		ESD_TE_status = true;
++#endif
+ 		return -EINVAL;
+ 	} else {
+ 		return 1;
+@@ -3270,6 +3393,70 @@ static int mdss_panel_parse_dt(struct device_node *np,
+ 	return -EINVAL;
+ }
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++static ssize_t msm_fb_lcd_name(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	ssize_t ret = 0;
++	sprintf(buf, "%s\n", g_lcd_id);
++	ret = strlen(buf) + 1;
++	return ret;
++}
++
++static DEVICE_ATTR(lcd_name,0664,msm_fb_lcd_name,NULL);
++static struct kobject *msm_lcd_name;
++static int msm_lcd_name_create_sysfs(void)
++{
++	int ret;
++	msm_lcd_name=kobject_create_and_add("android_lcd",NULL);
++	if (msm_lcd_name == NULL) {
++		pr_info("msm_lcd_name_create_sysfs_ failed\n");
++		ret=-ENOMEM;
++		return ret;
++	}
++	ret=sysfs_create_file(msm_lcd_name,&dev_attr_lcd_name.attr);
++	if(ret){
++		pr_info("%s failed \n",__func__);
++		kobject_del(msm_lcd_name);
++	}
++	return 0;
++}
++
++
++static ssize_t mdss_fb_get_whitepoint(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
++	int val0 =0;
++	int val1 = 0;
++	ssize_t ret = 0;
++
++	mdss_dsi_read_reg(ctrl,0xa1,&val0,&val1);
++	ret = snprintf(buf, PAGE_SIZE, "val0=%d,val1=%d\n",val0,val1);
++
++	return ret;
++}
++
++static DEVICE_ATTR(whitepoint, 0644, mdss_fb_get_whitepoint,NULL );
++static struct kobject *msm_whitepoint;
++static int msm_whitepoint_create_sysfs(void)
++{
++	int ret;
++	msm_whitepoint=kobject_create_and_add("android_whitepoint",NULL);
++	if (msm_whitepoint == NULL) {
++		pr_info("msm_whitepoint_create_sysfs_ failed\n");
++		ret=-ENOMEM;
++		return ret;
++	}
++	ret=sysfs_create_file(msm_whitepoint,&dev_attr_whitepoint.attr);
++	if (ret) {
++		pr_info("%s failed \n",__func__);
++		kobject_del(msm_whitepoint);
++	}
++	return 0;
++}
++#endif
++
+ int mdss_dsi_panel_init(struct device_node *node,
+ 	struct mdss_dsi_ctrl_pdata *ctrl_pdata,
+ 	int ndx)
+@@ -3298,6 +3485,14 @@ int mdss_dsi_panel_init(struct device_node *node,
+ 		pr_info("%s: Panel Name = %s\n", __func__, panel_name);
+ 		strlcpy(&pinfo->panel_name[0], panel_name, MDSS_MAX_PANEL_LEN);
+ 	}
++#ifdef CONFIG_MACH_LONGCHEER
++	if (strstr(panel_name,"tianma") == NULL)
++		tianma_jdi_flag = 1;
++	else
++                tianma_jdi_flag = 0;
++	/*add for device name node */
++	strcpy(g_lcd_id,panel_name);
++#endif
+ 	rc = mdss_panel_parse_dt(node, ctrl_pdata);
+ 	if (rc) {
+ 		pr_err("%s:%d panel dt parse failed\n", __func__, __LINE__);
+@@ -3330,5 +3525,10 @@ int mdss_dsi_panel_init(struct device_node *node,
+ 			mdss_dsi_panel_apply_display_setting;
+ 	ctrl_pdata->switch_mode = mdss_dsi_panel_switch_mode;
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++	ctrl_pdata_whitepoint = ctrl_pdata;
++	msm_lcd_name_create_sysfs();
++	msm_whitepoint_create_sysfs();
++#endif
+ 	return 0;
+ }
+diff --git a/drivers/video/fbdev/msm/mdss_dsi_status.c b/drivers/video/fbdev/msm/mdss_dsi_status.c
+index aae9dae83ffb..b9d13b55c98b 100644
+--- a/drivers/video/fbdev/msm/mdss_dsi_status.c
++++ b/drivers/video/fbdev/msm/mdss_dsi_status.c
+@@ -21,7 +21,11 @@
+ #include "mdss_panel.h"
+ #include "mdss_mdp.h"
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++#define STATUS_CHECK_INTERVAL_MS 1000
++#else
+ #define STATUS_CHECK_INTERVAL_MS 5000
++#endif
+ #define STATUS_CHECK_INTERVAL_MIN_MS 50
+ #define DSI_STATUS_CHECK_INIT -1
+ #define DSI_STATUS_CHECK_DISABLE 1
+diff --git a/drivers/video/fbdev/msm/mdss_fb.c b/drivers/video/fbdev/msm/mdss_fb.c
+index 18a9491f7691..5db1fc0293bf 100644
+--- a/drivers/video/fbdev/msm/mdss_fb.c
++++ b/drivers/video/fbdev/msm/mdss_fb.c
+@@ -124,7 +124,7 @@ static int mdss_fb_send_panel_event(struct msm_fb_data_type *mfd,
+ static void mdss_fb_set_mdp_sync_pt_threshold(struct msm_fb_data_type *mfd,
+ 		int type);
+ 
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ #define WAIT_RESUME_TIMEOUT 200
+ static struct fb_info *prim_fbi;
+ static struct delayed_work prim_panel_work;
+@@ -1563,7 +1563,7 @@ static int mdss_fb_remove(struct platform_device *pdev)
+ 	if (!mfd)
+ 		return -ENODEV;
+ 
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	if (mfd->panel_info && mfd->panel_info->is_prim_panel) {
+ 		atomic_set(&prim_panel_is_on, false);
+ 		cancel_delayed_work_sync(&prim_panel_work);
+@@ -1747,7 +1747,7 @@ static int mdss_fb_resume(struct platform_device *pdev)
+ #endif
+ 
+ #ifdef CONFIG_PM_SLEEP
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ static int mdss_fb_pm_prepare(struct device *dev)
+ {
+ 	struct msm_fb_data_type *mfd = dev_get_drvdata(dev);
+@@ -1828,7 +1828,7 @@ static int mdss_fb_pm_resume(struct device *dev)
+ #endif
+ 
+ static const struct dev_pm_ops mdss_fb_pm_ops = {
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	.prepare = mdss_fb_pm_prepare,
+ 	.complete = mdss_fb_pm_complete,
+ #endif
+@@ -2266,7 +2266,7 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
+ 	struct mdss_panel_data *pdata;
+ 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
+ 
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	if ((info == prim_fbi) && (blank_mode == FB_BLANK_UNBLANK) &&
+ 		atomic_read(&prim_panel_is_on)) {
+ 		atomic_set(&prim_panel_is_on, false);
+@@ -2907,7 +2907,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	atomic_set(&mfd->commits_pending, 0);
+ 	atomic_set(&mfd->ioctl_ref_cnt, 0);
+ 	atomic_set(&mfd->kickoff_pending, 0);
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	atomic_set(&mfd->resume_pending, 0);
+ #endif
+ 
+@@ -2924,7 +2924,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	init_waitqueue_head(&mfd->idle_wait_q);
+ 	init_waitqueue_head(&mfd->ioctl_q);
+ 	init_waitqueue_head(&mfd->kickoff_wait_q);
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	init_waitqueue_head(&mfd->resume_wait_q);
+ #endif
+ 
+@@ -2944,7 +2944,7 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	mdss_panel_debugfs_init(panel_info, panel_name);
+ 	pr_info("FrameBuffer[%d] %dx%d registered successfully!\n", mfd->index,
+ 					fbi->var.xres, fbi->var.yres);
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	if (panel_info->is_prim_panel) {
+ 		prim_fbi = fbi;
+ 		atomic_set(&prim_panel_is_on, false);
+@@ -5533,7 +5533,7 @@ void mdss_fb_idle_pc(struct msm_fb_data_type *mfd)
+ 	}
+ }
+ 
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ /*
+  * mdss_prim_panel_fb_unblank() - Unblank primary panel FB
+  * @timeout : >0 blank primary panel FB after timeout (ms)
+diff --git a/drivers/video/fbdev/msm/mdss_fb.h b/drivers/video/fbdev/msm/mdss_fb.h
+index d14553fc29e0..42d3f8a08d10 100644
+--- a/drivers/video/fbdev/msm/mdss_fb.h
++++ b/drivers/video/fbdev/msm/mdss_fb.h
+@@ -333,7 +333,7 @@ struct msm_fb_data_type {
+ 	struct task_struct *disp_thread;
+ 	atomic_t commits_pending;
+ 	atomic_t kickoff_pending;
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	atomic_t resume_pending;
+ 	wait_queue_head_t resume_wait_q;
+ #endif
+diff --git a/drivers/video/fbdev/msm/mdss_io_util.c b/drivers/video/fbdev/msm/mdss_io_util.c
+index 7f047b927bbd..5865de0d88ef 100644
+--- a/drivers/video/fbdev/msm/mdss_io_util.c
++++ b/drivers/video/fbdev/msm/mdss_io_util.c
+@@ -7,6 +7,18 @@
+ #include <linux/delay.h>
+ #include <linux/mdss_io_util.h>
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++extern bool enable_gesture_mode;
++#endif
++
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++extern bool synaptics_gesture_enable_flag;
++//#elif defined CONFIG_MACH_XIAOMI_TULIP
++//extern bool focal_gesture_mode;
++#elif defined CONFIG_MACH_XIAOMI_WHYRED
++extern bool synaptics_gesture_func_on;
++#endif
++
+ #define MAX_I2C_CMDS  16
+ void dss_reg_w(struct dss_io_data *io, u32 offset, u32 value, u32 debug)
+ {
+@@ -250,6 +262,10 @@ int msm_dss_config_vreg_opt_mode(struct dss_vreg *in_vreg, int num_vreg,
+ }
+ EXPORT_SYMBOL(msm_dss_config_vreg_opt_mode);
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++extern bool ESD_TE_status;
++#endif
++
+ int msm_dss_enable_vreg(struct dss_vreg *in_vreg, int num_vreg, int enable)
+ {
+ 	int i = 0, rc = 0;
+@@ -257,6 +273,26 @@ int msm_dss_enable_vreg(struct dss_vreg *in_vreg, int num_vreg, int enable)
+ 
+ 	if (enable) {
+ 		for (i = 0; i < num_vreg; i++) {
++#ifdef CONFIG_MACH_LONGCHEER
++			/* vddio lab ibb continus supply */
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++			if(enable_gesture_mode || synaptics_gesture_enable_flag) {
++#elif defined CONFIG_MACH_XIAOMI_TULIP
++			//if(enable_gesture_mode || focal_gesture_mode) {
++			if(enable_gesture_mode) {
++#elif defined CONFIG_MACH_XIAOMI_WAYNE
++			if(enable_gesture_mode) {
++#elif defined CONFIG_MACH_XIAOMI_WHYRED
++			if(enable_gesture_mode || synaptics_gesture_func_on) {
++#endif
++				if( (strcmp(in_vreg[i].vreg_name,"lab")==0) ||
++						(strcmp(in_vreg[i].vreg_name,"ibb")==0) ||
++						(strcmp(in_vreg[i].vreg_name,"wqhd-vddio")==0) ) {
++					printk(KERN_ERR "[LCD][TP][Gesture][resume] '%s' power continus supply\n",in_vreg[i].vreg_name);
++					continue;
++				}
++			}
++#endif
+ 			rc = PTR_RET(in_vreg[i].vreg);
+ 			if (rc) {
+ 				DEV_ERR("%pS->%s: %s regulator error. rc=%d\n",
+@@ -289,6 +325,33 @@ int msm_dss_enable_vreg(struct dss_vreg *in_vreg, int num_vreg, int enable)
+ 		}
+ 	} else {
+ 		for (i = num_vreg-1; i >= 0; i--) {
++#ifdef CONFIG_MACH_LONGCHEER
++			if(ESD_TE_status){
++				printk(KERN_ERR "panel esd check recovery \n");
++				if((strcmp(in_vreg[i].vreg_name,"wqhd-vddio")==0) ) {
++						printk(KERN_ERR "panel '%s' power continus supply\n",in_vreg[i].vreg_name);
++						continue;
++				}
++			}
++			/* vddio lab ibb continus supply */
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++			if (enable_gesture_mode || synaptics_gesture_enable_flag) {
++#elif defined CONFIG_MACH_XIAOMI_TULIP
++			//if (enable_gesture_mode || focal_gesture_mode) {
++			if (enable_gesture_mode) {
++#elif defined CONFIG_MACH_XIAOMI_WAYNE
++			if(enable_gesture_mode) {
++#elif defined CONFIG_MACH_XIAOMI_WHYRED
++			if (enable_gesture_mode || synaptics_gesture_func_on) {
++#endif
++				if( (strcmp(in_vreg[i].vreg_name,"lab")==0) ||
++						(strcmp(in_vreg[i].vreg_name,"ibb")==0) ||
++						(strcmp(in_vreg[i].vreg_name,"wqhd-vddio")==0) ) {
++					printk(KERN_ERR "[LCD][TP][Gesture][suspend] '%s' power continus supply\n",in_vreg[i].vreg_name);
++					continue;
++				}
++			}
++#endif
+ 			if (in_vreg[i].pre_off_sleep)
+ 				usleep_range(in_vreg[i].pre_off_sleep * 1000,
+ 					in_vreg[i].pre_off_sleep * 1000);
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index dc5236b3b5fc..6d7d690c77b1 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -537,7 +537,7 @@ struct fb_info {
+ 	} *apertures;
+ 
+ 	bool skip_vt_switch; /* no VT switch on suspend/resume required */
+-#ifdef CONFIG_MACH_MI
++#ifdef CONFIG_MACH_XIAOMI_SDM660
+ 	int blank;
+ #endif
+ };
+diff --git a/include/linux/mdss_io_util.h b/include/linux/mdss_io_util.h
+index 4d81c9826e12..060cfdfd118b 100644
+--- a/include/linux/mdss_io_util.h
++++ b/include/linux/mdss_io_util.h
+@@ -120,11 +120,14 @@ bool mdss_prim_panel_is_dead(void);
+ void mdss_panel_reset_skip_enable(bool enable);
+ void mdss_dsi_ulps_enable(bool enable);
+ void mdss_dsi_ulps_suspend_enable(bool enable);
+-int mdss_prim_panel_fb_unblank(int timeout);
+ void mdss_fb_prim_panel_recover(void);
+ 
+ int mdss_prim_panel_fb_unblank(int timeout);
+ void mdss_fb_prim_panel_recover(void);
+ #endif
+ 
++#ifdef CONFIG_MACH_XIAOMI_SDM660
++int mdss_prim_panel_fb_unblank(int timeout);
++#endif
++
+ #endif /* __MDSS_IO_UTIL_H__ */
+-- 
+2.49.0
+

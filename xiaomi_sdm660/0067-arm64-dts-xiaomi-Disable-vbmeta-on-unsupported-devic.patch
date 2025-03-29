@@ -1,0 +1,65 @@
+From 631fb53f98b97a5fdc36f2b2e9309f0c11237959 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 28 Oct 2020 13:13:56 +0000
+Subject: [PATCH 067/178] arm64: dts: xiaomi: Disable vbmeta on unsupported
+ devices
+
+Change-Id: I0db01d6f071faee4f6048ea4eeb5de0dff814067
+---
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi              | 1 +
+ .../vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi    | 1 +
+ .../arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi | 1 +
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi                | 1 +
+ 4 files changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+index 29f1f64066b5..9152ad6a4312 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+@@ -15,6 +15,7 @@
+ 
+ &firmware {
+ 	android {
++		/delete-node/ vbmeta;
+ 		fstab {
+ 			vendor {
+ 				mnt_flags = "ro,barrier=1";
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi
+index da16cc17a9de..00ae405aa30d 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi
+@@ -13,6 +13,7 @@
+ /* sdm660.dtsi tulip/whyred specific diff */
+ &firmware {
+ 	android {
++		/delete-node/ vbmeta;
+ 		fstab {
+ 			vendor {
+ 				mnt_flags = "ro,barrier=1";
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
+index 8858416b8b32..b49821be1ad8 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
+@@ -404,6 +404,7 @@
+ 
+ &firmware {
+ 	android {
++		/delete-node/ vbmeta;
+ 		fstab {
+ 			system {
+ 				compatible = "android,system";
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+index 2c1a4b0a352d..23227262ea0a 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+@@ -16,6 +16,7 @@
+ /* sdm660.dtsi wayne specific diff */
+ &firmware {
+ 	android {
++		/delete-node/ vbmeta;
+ 		fstab {
+ 			vendor {
+ 				mnt_flags = "ro,barrier=1";
+-- 
+2.49.0
+

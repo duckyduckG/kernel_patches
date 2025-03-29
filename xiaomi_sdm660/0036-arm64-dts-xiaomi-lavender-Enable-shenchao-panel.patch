@@ -1,0 +1,31 @@
+From 96a65372b66cf4a4608c1736abf69c0e8c1770a2 Mon Sep 17 00:00:00 2001
+From: Erfan Abdi <erfangplus@gmail.com>
+Date: Sat, 7 Mar 2020 15:34:58 +0330
+Subject: [PATCH 036/178] arm64: dts: xiaomi: lavender: Enable shenchao panel
+
+Change-Id: I3c0c8dfc49377fa98634d966ed95c2207a37ac9b
+---
+ .../qcom/xiaomi/longcheer/lavender/lavender-base.dtsi      | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi
+index 60b7571fd336..98c40383af5c 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi
+@@ -69,6 +69,13 @@
+ 	#include "fg-gen3-batterydata-m6100default-4000mah.dtsi"
+ };
+ 
++&dsi_nt36672a_shenchao_fhdplus_video {
++	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++	qcom,mdss-dsi-bl-min-level = <1>;
++	qcom,mdss-dsi-bl-max-level = <4095>;
++	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
++};
++
+ &i2c_2 {
+ 	/delete-property/ status;
+ 	/delete-node/ smb1351-charger@1d;
+-- 
+2.49.0
+

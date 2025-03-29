@@ -1,0 +1,245 @@
+From 7d991be894ad2e8d21c0f4bea16745072de35bb2 Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@aosip.dev>
+Date: Thu, 19 Nov 2020 23:09:59 +0530
+Subject: [PATCH 060/178] arm64: dts: xiaomi: longcheer: Port xiaomi JEITA/step
+ charging edits to k4.14
+
+ * Most them are done from DTS now
+
+Signed-off-by: Subhajeet Muhuri <subhajeet.muhuri@aosip.dev>
+Change-Id: Ic8054cb8bbdcff5640ec727ec6aabeaa3d876d53
+---
+ .../lavender/fg-gen3-batterydata-m6100atl-4000mah.dtsi    | 7 +++++++
+ .../fg-gen3-batterydata-m6100default-4000mah.dtsi         | 7 +++++++
+ .../lavender/fg-gen3-batterydata-m6100sun-4000mah.dtsi    | 7 +++++++
+ .../tulip/fg-gen3-batterydata-l6660atl-4000mah.dtsi       | 7 +++++++
+ .../tulip/fg-gen3-batterydata-l6660cos-4000mah.dtsi       | 7 +++++++
+ .../tulip/fg-gen3-batterydata-l6660desay-4000mah.dtsi     | 7 +++++++
+ .../wayne/fg-gen3-batterydata-l8866cos-3000mah.dtsi       | 7 +++++++
+ .../wayne/fg-gen3-batterydata-l8866default-3000mah.dtsi   | 7 +++++++
+ .../wayne/fg-gen3-batterydata-l8866sun-3000mah.dtsi       | 7 +++++++
+ .../whyred/fg-gen3-batterydata-l6650cos-4000mah.dtsi      | 7 +++++++
+ .../whyred/fg-gen3-batterydata-l6650desay-4000mah.dtsi    | 8 +++++++-
+ .../whyred/fg-gen3-batterydata-l6650sun-4000mah.dtsi      | 7 +++++++
+ 12 files changed, 84 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100atl-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100atl-4000mah.dtsi
+index c0cc69d22736..e288fbf7fd23 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100atl-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100atl-4000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,m6100atl_4000mah {
+ 	/* #3633204_LC_M6100_ATL4000mAh_FG_averaged_MasterSlave_Sep25th2018*/
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2900>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2900000
++				 451 600  2000000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <68>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100default-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100default-4000mah.dtsi
+index eb229dd4e9e9..da5dceea4a4a 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100default-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100default-4000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,m6100default_4000mah {
+ 	/* #3296509_Longcheer_BN36atl_3000mAh_averaged_MasterSlave_Feb5th2018*/
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2900>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2900000
++				 451 600  2000000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <3000>;
+ 	qcom,batt-id-kohm = <666>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100sun-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100sun-4000mah.dtsi
+index 89274d0e5962..8d26666b6162 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100sun-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/fg-gen3-batterydata-m6100sun-4000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,m6100sun_4000mah {
+ 	/* #3632066_LC_M6100_Sunwoda_4000mAh_FG_averaged_MasterSlave_Oct17th2018*/
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2900>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2900000
++				 451 600  2000000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <330>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660atl-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660atl-4000mah.dtsi
+index c5649e6840c8..552d7819677b 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660atl-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660atl-4000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,3440255_longcheer_l6660atl_4000mah_averaged_masterslave_may15th2018 {
+ 	qcom,max-voltage-uv = <4408000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4398>;
+ 	qcom,fastchg-current-ma = <2500>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2500000
++				 451 600  2000000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <200>;
+ 	qcom,battery-beta = <3435>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660cos-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660cos-4000mah.dtsi
+index f2929b81e6ee..dc39f80295f3 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660cos-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660cos-4000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,3383405_longcheer_l6660cos_4000mah_averaged_masterslave_apr2nd2018 {
+ 	qcom,max-voltage-uv = <4408000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4398>;
+ 	qcom,fastchg-current-ma = <2500>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2500000
++				 451 600  2000000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <100>;
+ 	qcom,battery-beta = <3435>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660desay-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660desay-4000mah.dtsi
+index 722c76e179fd..ef0421e9a168 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660desay-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/fg-gen3-batterydata-l6660desay-4000mah.dtsi
+@@ -5,6 +5,13 @@ qcom,3434695_longcheer_l6600desay_4000mah_averaged_masterslave_may2nd2018 {
+ 	qcom,max-voltage-uv = <4408000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4398>;
+ 	qcom,fastchg-current-ma = <2500>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2500000
++				 451 600  2000000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <70>;
+ 	qcom,battery-beta = <3435>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866cos-3000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866cos-3000mah.dtsi
+index b7190c833b6f..d5fbac2260fd 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866cos-3000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866cos-3000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,l8866cos_3000mah {
+ 	/* #3797542_LC_D2S_coslight_3000mAH_FG_averaged_MasterSlave_Jan11th2019*/
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2900>;
++	qcom,jeita-fcc-ranges = <0   50   300000
++				 51  150  900000
++				 151 450  2900000
++				 451 600  1500000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <3000>;
+ 	qcom,batt-id-kohm = <100>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866default-3000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866default-3000mah.dtsi
+index bf630807d57c..d3a8c7fd30f5 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866default-3000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866default-3000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,l8866default_3000mah {
+ 	/* #3296509_Longcheer_BN36atl_3000mAh_averaged_MasterSlave_Feb5th2018*/
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2900>;
++	qcom,jeita-fcc-ranges = <0   50   300000
++				 51  150  900000
++				 151 450  2900000
++				 451 600  1500000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <3000>;
+ 	qcom,batt-id-kohm = <666>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866sun-3000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866sun-3000mah.dtsi
+index 7a8b9e4c7e03..744486ee187e 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866sun-3000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/fg-gen3-batterydata-l8866sun-3000mah.dtsi
+@@ -4,6 +4,13 @@ qcom,l8866sun_3000mah {
+ 	/* #3797504_LC_D2S_Sunwoda_3000mAH_FG_averaged_MasterSlave_Jan11th2019*/
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2900>;
++	qcom,jeita-fcc-ranges = <0   50   300000
++				 51  150  900000
++				 151 450  2900000
++				 451 600  1500000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <3000>;
+ 	qcom,batt-id-kohm = <68>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650cos-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650cos-4000mah.dtsi
+index 616c702e877b..4e3066f6bf97 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650cos-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650cos-4000mah.dtsi
+@@ -3,6 +3,13 @@ qcom,l6650cos_4000mah {
+ 	qcom, = <24>;
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2500>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2500000
++				 451 600  1200000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <100>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650desay-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650desay-4000mah.dtsi
+index 8d05ef697eef..63d2d3333a76 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650desay-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650desay-4000mah.dtsi
+@@ -3,7 +3,13 @@ qcom,l6650desay_4000mah {
+ 	qcom, = <24>;
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2500>;
+-
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2500000
++				 451 600  1200000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <30>;
+ 	qcom,battery-beta = <3380>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650sun-4000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650sun-4000mah.dtsi
+index e5092c368370..39d7671ba09f 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650sun-4000mah.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/fg-gen3-batterydata-l6650sun-4000mah.dtsi
+@@ -3,6 +3,13 @@ qcom,l6650sun_4000mah {
+ 	qcom, = <24>;
+ 	qcom,max-voltage-uv = <4400000>;
+ 	qcom,fastchg-current-ma = <2500>;
++	qcom,jeita-fcc-ranges = <0   50   400000
++				 51  150  1200000
++				 151 450  2500000
++				 451 600  1200000>;
++	qcom,jeita-fv-ranges = <0   150  4400000
++				151 450  4400000
++				451 600  4100000>;
+ 	qcom,fg-cc-cv-threshold-mv = <4390>;
+ 	qcom,nom-batt-capacity-mah = <4000>;
+ 	qcom,batt-id-kohm = <68>;
+-- 
+2.49.0
+

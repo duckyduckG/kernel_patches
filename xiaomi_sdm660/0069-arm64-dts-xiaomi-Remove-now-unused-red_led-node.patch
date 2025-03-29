@@ -1,0 +1,31 @@
+From b8d72477e74322843427084fae0808beb8ce53f9 Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@aosip.dev>
+Date: Thu, 24 Dec 2020 17:08:12 +0530
+Subject: [PATCH 069/178] arm64: dts: xiaomi: Remove now unused red_led node
+
+Change-Id: Ie34da91d531642782df86915e56c1a08bbe85c95
+Signed-off-by: Subhajeet Muhuri <subhajeet.muhuri@aosip.dev>
+---
+ .../dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+index 8f32b4b38cbe..8b137891791f 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+@@ -1,11 +1 @@
+-/* Red led was used for powersupply of White led */
+-&red_led {
+-	linux,name = "white";
+-	qcom,duty-pcts = [ 00 0E 1C 2A 38 46 54 64 ];
+-	qcom,idx-len = <8>;
+-	qcom,pause-lo = <500>;
+-	qcom,pause-hi = <500>;
+-	qcom,ramp-step-ms = <50>;
+-	qcom,lut-flags = <31>; /* loop, ramp up, reverse, pause hi, pause lo */
+-	qcom,use-blink;
+-};
++
+-- 
+2.49.0
+

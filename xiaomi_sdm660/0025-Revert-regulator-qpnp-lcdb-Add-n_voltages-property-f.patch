@@ -1,0 +1,49 @@
+From 09c3579670ce3355fcb470b13d689d86538bd6e2 Mon Sep 17 00:00:00 2001
+From: Oktapra Amtono <oktapra.amtono@gmail.com>
+Date: Fri, 25 Jun 2021 17:52:46 +0700
+Subject: [PATCH 025/178] Revert "regulator: qpnp-lcdb: Add n_voltages property
+ for LCDB regulators"
+
+* seems causing some device didn't boot
+
+This reverts commit 7a3ec1cd36c4aeb0c613b637b2e27a229a89a75a.
+
+Change-Id: I8a955c7bd8a263d39e9fe5854808ab6157f85b67
+Signed-off-by: clarencelol <clarencekuiek@icloud.com>
+---
+ drivers/regulator/qpnp-lcdb-regulator.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/drivers/regulator/qpnp-lcdb-regulator.c b/drivers/regulator/qpnp-lcdb-regulator.c
+index 972437a2f3cf..62cd2520f0c0 100644
+--- a/drivers/regulator/qpnp-lcdb-regulator.c
++++ b/drivers/regulator/qpnp-lcdb-regulator.c
+@@ -1509,7 +1509,7 @@ static struct regulator_ops qpnp_lcdb_ncp_ops = {
+ 
+ static int qpnp_lcdb_regulator_register(struct qpnp_lcdb *lcdb, u8 type)
+ {
+-	int rc = 0, off_on_delay = 0, voltage_step = VOLTAGE_STEP_50_MV;
++	int rc = 0, off_on_delay = 0;
+ 	struct regulator_init_data *init_data;
+ 	struct regulator_config cfg = {};
+ 	struct regulator_desc *rdesc;
+@@ -1524,16 +1524,12 @@ static int qpnp_lcdb_regulator_register(struct qpnp_lcdb *lcdb, u8 type)
+ 		rdesc			= &lcdb->ldo.rdesc;
+ 		rdesc->ops		= &qpnp_lcdb_ldo_ops;
+ 		rdesc->off_on_delay	= off_on_delay;
+-		rdesc->n_voltages = ((MAX_VOLTAGE_MV - MIN_VOLTAGE_MV)
+-					/ voltage_step) + 1;
+ 		rdev			= lcdb->ldo.rdev;
+ 	} else if (type == NCP) {
+ 		node			= lcdb->ncp.node;
+ 		rdesc			= &lcdb->ncp.rdesc;
+ 		rdesc->ops		= &qpnp_lcdb_ncp_ops;
+ 		rdesc->off_on_delay	= off_on_delay;
+-		rdesc->n_voltages = ((MAX_VOLTAGE_MV - MIN_VOLTAGE_MV)
+-					/ voltage_step) + 1;
+ 		rdev			= lcdb->ncp.rdev;
+ 	} else {
+ 		pr_err("Invalid regulator type %d\n", type);
+-- 
+2.49.0
+

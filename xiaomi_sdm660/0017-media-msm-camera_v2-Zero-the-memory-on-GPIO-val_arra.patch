@@ -1,0 +1,29 @@
+From dff581f901ecf6f7d87ae5785eaa8383ff50a5db Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Sat, 11 Aug 2018 16:04:42 +0200
+Subject: [PATCH 017/178] media: msm: camera_v2: Zero the memory on GPIO
+ val_array allocation
+
+To enhance reliability, use kzalloc instead.
+
+Change-Id: I96f0c901463b7cd5236b95c332f7b186a45608f5
+---
+ drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c b/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
+index 834b0b5c4ebf..229cbab12324 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
+@@ -1917,7 +1917,7 @@ static int32_t msm_cci_init_gpio_params(struct cci_device *cci_dev)
+ 			gpio_tbl[i].gpio);
+ 	}
+ 
+-	val_array = kcalloc(tbl_size, sizeof(uint32_t), GFP_KERNEL);
++	val_array = kzalloc(sizeof(uint32_t) * tbl_size, GFP_KERNEL);
+ 	if (!val_array) {
+ 		rc = -ENOMEM;
+ 		goto ERROR1;
+-- 
+2.49.0
+

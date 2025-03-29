@@ -1,0 +1,35 @@
+From 3ee2afc944c899b0cbbda23b9150c7eb84387b7f Mon Sep 17 00:00:00 2001
+From: Khusika Dhamar Gusti <mail@khusika.com>
+Date: Fri, 13 Sep 2019 23:05:32 +0700
+Subject: [PATCH 138/178] input: touchscreen: synaptics_dsx_e7s: fix snprintf
+ warning
+
+Clang warns:
+
+./drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c:5728:13:
+warning: 'snprintf' size argument is too large; destination buffer has size 2,
+but size argument is 4096 [-Wfortify-source]
+                retval += snprintf(ld_val, PAGE_SIZE, "%02x",
+                          ^
+
+Change-Id: I0f1d102b334dc679af603bde26bdf2baa0865053
+---
+ .../touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c     | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c
+index 4756da0f2a67..b07163055b70 100644
+--- a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c
++++ b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c
+@@ -5725,7 +5725,7 @@ static ssize_t fwu_sysfs_read_lockdown_code_show(struct device *dev,
+ 	}
+ 
+ 	for (i = 0; i < lockdown_data_size; i++) {
+-		retval += snprintf(ld_val, PAGE_SIZE, "%02x",
++		retval += snprintf(ld_val, sizeof(ld_val), "%02x",
+ 				*(lockdown_data + i));
+ 		strlcat(buf, ld_val, lockdown_data_size);
+ 	}
+-- 
+2.49.0
+

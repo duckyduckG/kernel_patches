@@ -1,0 +1,75 @@
+From e5384f11245e7925ba074b8b59f48a6a87c5362b Mon Sep 17 00:00:00 2001
+From: Artem Borisov <dedsa2002@gmail.com>
+Date: Tue, 6 Nov 2018 13:00:54 +0400
+Subject: [PATCH 002/178] HACK: media: Restore old entity_id logic
+
+3.18 camera doesn't know how to use the new unique ids and
+so doesn't enumerate the entities properly.
+
+Change-Id: If566a7527263c995ab201aa5271c1be46aa7285f
+---
+ drivers/media/media-device.c | 6 ++++++
+ include/media/media-device.h | 1 +
+ include/media/media-entity.h | 3 ++-
+ 3 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+index d0611a04e994..980b877c9b28 100644
+--- a/drivers/media/media-device.c
++++ b/drivers/media/media-device.c
+@@ -637,6 +637,11 @@ int __must_check media_device_register_entity(struct media_device *mdev,
+ 	/* Initialize media_gobj embedded at the entity */
+ 	media_gobj_create(mdev, MEDIA_GRAPH_ENTITY, &entity->graph_obj);
+ 
++	if (entity->id == 0)
++		entity->id = mdev->entity_id++;
++	else
++		mdev->entity_id = max(entity->id + 1, mdev->entity_id);
++
+ 	/* Initialize objects at the pads */
+ 	for (i = 0; i < entity->num_pads; i++)
+ 		media_gobj_create(mdev, MEDIA_GRAPH_PAD,
+@@ -727,6 +732,7 @@ int __must_check __media_device_register(struct media_device *mdev,
+ 		return -ENOMEM;
+ 
+ 	/* Register the device node. */
++	mdev->entity_id = 1;
+ 	mdev->devnode = devnode;
+ 	devnode->fops = &media_device_fops;
+ 	devnode->parent = mdev->dev;
+diff --git a/include/media/media-device.h b/include/media/media-device.h
+index bcc6ec434f1f..ad33b113004b 100644
+--- a/include/media/media-device.h
++++ b/include/media/media-device.h
+@@ -137,6 +137,7 @@ struct media_device {
+ 	u64 topology_version;
+ 
+ 	u32 id;
++	u32 entity_id;
+ 	struct ida entity_internal_idx;
+ 	int entity_internal_idx_max;
+ 
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index 257814ae7c80..801eb0b5dde1 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -266,6 +266,7 @@ enum media_entity_type {
+  */
+ struct media_entity {
+ 	struct media_gobj graph_obj;	/* must be first field in struct */
++	u32 id;
+ 	const char *name;
+ 	enum media_entity_type obj_type;
+ 	u32 function;
+@@ -341,7 +342,7 @@ struct media_intf_devnode {
+  */
+ static inline u32 media_entity_id(struct media_entity *entity)
+ {
+-	return entity->graph_obj.id;
++	return entity->id;
+ }
+ 
+ /**
+-- 
+2.49.0
+

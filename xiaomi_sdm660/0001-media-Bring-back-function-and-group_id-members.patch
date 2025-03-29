@@ -1,0 +1,46 @@
+From 81b42b6984277c2b31f2f6048323ff784cac6e25 Mon Sep 17 00:00:00 2001
+From: Artem Borisov <dedsa2002@gmail.com>
+Date: Tue, 6 Nov 2018 12:55:07 +0400
+Subject: [PATCH 001/178] media: Bring back function and group_id members
+
+3.18 camera blobs expect these to be filled properly.
+
+Change-Id: I190c7d6cb8248914d97a7fce6b1d1459ae84a53d
+---
+ drivers/media/media-device.c | 4 ++--
+ include/media/media-entity.h | 2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/media-device.c b/drivers/media/media-device.c
+index d04ed438a45d..d0611a04e994 100644
+--- a/drivers/media/media-device.c
++++ b/drivers/media/media-device.c
+@@ -117,9 +117,9 @@ static long media_device_enum_entities(struct media_device *mdev, void *arg)
+ 	if (ent->name)
+ 		strlcpy(entd->name, ent->name, sizeof(entd->name));
+ 	entd->type = ent->function;
+-	entd->revision = 0;		/* Unused */
++	entd->revision = ent->revision;
+ 	entd->flags = ent->flags;
+-	entd->group_id = 0;		/* Unused */
++	entd->group_id = ent->group_id;
+ 	entd->pads = ent->num_pads;
+ 	entd->links = ent->num_links - ent->num_backlinks;
+ 
+diff --git a/include/media/media-entity.h b/include/media/media-entity.h
+index 3aa3d58d1d58..257814ae7c80 100644
+--- a/include/media/media-entity.h
++++ b/include/media/media-entity.h
+@@ -269,7 +269,9 @@ struct media_entity {
+ 	const char *name;
+ 	enum media_entity_type obj_type;
+ 	u32 function;
++	u32 revision;
+ 	unsigned long flags;
++	u32 group_id;
+ 
+ 	u16 num_pads;
+ 	u16 num_links;
+-- 
+2.49.0
+

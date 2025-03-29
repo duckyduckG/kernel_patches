@@ -1,0 +1,63 @@
+From 616df03fc0ddd2884c1eff6cc62b7ce375296d2c Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Fri, 8 May 2020 17:51:21 +0800
+Subject: [PATCH 148/178] media: msm: camera_v2-legacy: conditionality
+ eliminate drop_reconfig flag
+
+The flag is set to notify userspace driver, and expected to be clear
+there. However, our userspace driver isn't able to handle this, as a
+result the camera stopped working once it's set because an empty frame
+is always returned.
+
+This conditionality reverts bc82952bb8012641c5e74a228ab697ff6eec38e4
+and 39e7df335515c3f11859901d650d47ee983fcf6a
+
+Change-Id: I598d8ffc5f2d8eb1fe387a5210e0ef97d2e3badd
+---
+ .../msm/camera_v2-legacy/isp/msm_isp_axi_util.c   | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c b/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c
+index 25ad61e989bf..b227672d65b8 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c
+@@ -3672,6 +3672,9 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
+ 		) {
+ 		pr_debug("%s:%d invalid time to request frame %d try drop_reconfig\n",
+ 			__func__, __LINE__, frame_id);
++#ifdef CONFIG_MACH_XIAOMI_JASON
++		goto error;
++#else
+ 		vfe_dev->isp_page->drop_reconfig = 1;
+ 		return 0;
+ 	} else if ((vfe_dev->axi_data.src_info[frame_src].active) &&
+@@ -3686,6 +3689,7 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
+ 			vfe_dev->axi_data.src_info[VFE_PIX_0].frame_id,
+ 			vfe_dev->axi_data.src_info[VFE_PIX_0].active);
+ 		return 0;
++#endif
+ 	} else if ((vfe_dev->axi_data.src_info[frame_src].active && (frame_id !=
+ 		vfe_dev->axi_data.src_info[frame_src].frame_id + vfe_dev->
+ 		axi_data.src_info[frame_src].sof_counter_step)) ||
+@@ -3717,7 +3721,18 @@ static int msm_isp_request_frame(struct vfe_device *vfe_dev,
+ 			__func__, __LINE__, vfe_dev->pdev->id, frame_id,
+ 			stream_info->activated_framedrop_period,
+ 			stream_info->stream_id);
++#ifdef CONFIG_MACH_XIAOMI_JASON
++		rc = msm_isp_return_empty_buffer(vfe_dev, stream_info,
++			user_stream_id, frame_id, buf_index, frame_src);
++		if (rc < 0)
++			pr_err("%s:%d failed: return_empty_buffer src %d\n",
++				__func__, __LINE__, frame_src);
++		stream_info->current_framedrop_period =
++			MSM_VFE_STREAM_STOP_PERIOD;
++		msm_isp_cfg_framedrop_reg(stream_info);
++#else
+ 		vfe_dev->isp_page->drop_reconfig = 1;
++#endif
+ 		return 0;
+ 	}
+ 
+-- 
+2.49.0
+

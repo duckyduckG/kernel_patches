@@ -1,0 +1,63 @@
+From b4f5c254ade9f7f0a35e0abb5c0ccf88fa2c298f Mon Sep 17 00:00:00 2001
+From: AngeloGioacchino Del Regno <kholk11@gmail.com>
+Date: Sun, 28 Jun 2020 18:36:20 +0200
+Subject: [PATCH 019/178] media: msm: camera_v2: Fix dual vfe sync mode on
+ SDM630/660
+
+The VFE48 interface on SDM630/660 is not exposing any dual vfe
+specific interrupt, so we cannot rely on that: differentiate
+the check for msm_vfe_is_vfe48 by adding a _660 variant that
+returns the specific "vfe48 on sdm630/636/660" info and use it
+in the CAMIF configuration function to disallow enabling the
+dual_vfe_sync_mode parameter, forcing the code to fall back
+to the old dual vfe paths.
+
+Change-Id: Ia2b3a63d7e6a7a95e41ae3c55340920ecc4e37ad
+---
+ drivers/media/platform/msm/camera_v2/isp/msm_isp47.c | 2 +-
+ drivers/media/platform/msm/camera_v2/isp/msm_isp48.h | 9 +++++++--
+ 2 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
+index 92e34210f650..cbeeffd6a326 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
+@@ -1439,7 +1439,7 @@ void msm_vfe47_cfg_camif(struct vfe_device *vfe_dev,
+ 		bus_sub_en = 0;
+ 
+ 	vfe_dev->dual_vfe_enable = camif_cfg->is_split;
+-	vfe_dev->dual_vfe_sync_mode =
++	vfe_dev->dual_vfe_sync_mode = !msm_vfe_is_vfe48_660(vfe_dev) &&
+ 		(vfe_dev->dual_vfe_sync_enable && camif_cfg->is_split);
+ 
+ 	msm_camera_io_w(pix_cfg->input_mux << 5 | pix_cfg->pixel_pattern,
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.h b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.h
+index 6d6589674ef0..21e8c5ffbf9a 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.h
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.h
+@@ -28,6 +28,12 @@ enum msm_vfe_clk_rates {
+ #define MSM_VFE48_HW_VERSION_SHIFT 28
+ #define MSM_VFE48_HW_VERSION_MASK 0xF
+ 
++static inline int msm_vfe_is_vfe48_660(struct vfe_device *vfe_dev)
++{
++	return (((vfe_dev->vfe_hw_version >> MSM_VFE48_HW_VERSION_SHIFT) &
++		MSM_VFE48_HW_VERSION_MASK) == MSM_VFE48_HW_VERSION);
++}
++
+ static inline int msm_vfe_is_vfe48(struct vfe_device *vfe_dev)
+ {
+ 	/* Check for Trinket specific as it uses h/w version 0x9 */
+@@ -36,8 +42,7 @@ static inline int msm_vfe_is_vfe48(struct vfe_device *vfe_dev)
+ 		return (((vfe_dev->vfe_hw_version >> MSM_VFE48_HW_VERSION_SHIFT)
+ 			& MSM_VFE48_HW_VERSION_MASK)
+ 			== MSM_VFE48_HW_VERSION_TRINKET);
+-	return (((vfe_dev->vfe_hw_version >> MSM_VFE48_HW_VERSION_SHIFT) &
+-		MSM_VFE48_HW_VERSION_MASK) == MSM_VFE48_HW_VERSION);
++	return msm_vfe_is_vfe48_660(vfe_dev);
+ }
+ 
+ void msm_vfe48_stats_cfg_ub(struct vfe_device *vfe_dev);
+-- 
+2.49.0
+

@@ -1,0 +1,34 @@
+From b559381cd6f25a945afc5bfc22fa9a7a00a27dd5 Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Sat, 11 Aug 2018 16:01:08 +0200
+Subject: [PATCH 016/178] media: msm: camera_v2: actuator: Fix init focus
+ address type switch
+
+The address type is of enumeration msm_actuator_addr_type,
+not msm_camera_i2c_reg_addr_type.
+
+Change-Id: I3e56f37bc9fb2416a0996c33efb4e31e40c5a19c
+---
+ .../platform/msm/camera_v2/sensor/actuator/msm_actuator.c     | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+index 31c579391832..6d048a2d77d9 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+@@ -379,10 +379,10 @@ static int32_t msm_actuator_init_focus(struct msm_actuator_ctrl_t *a_ctrl,
+ 	for (i = 0; i < size; i++) {
+ 
+ 		switch (settings[i].addr_type) {
+-		case MSM_CAMERA_I2C_BYTE_ADDR:
++		case MSM_ACTUATOR_BYTE_ADDR:
+ 			a_ctrl->i2c_client.addr_type = MSM_CAMERA_I2C_BYTE_ADDR;
+ 			break;
+-		case MSM_CAMERA_I2C_WORD_ADDR:
++		case MSM_ACTUATOR_WORD_ADDR:
+ 			a_ctrl->i2c_client.addr_type = MSM_CAMERA_I2C_WORD_ADDR;
+ 			break;
+ 		default:
+-- 
+2.49.0
+

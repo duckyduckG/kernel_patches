@@ -1,0 +1,25 @@
+From 1de665e0cb2ce822c2b29764db9fe9d7b472976b Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Date: Sat, 27 Jun 2020 22:06:18 +0530
+Subject: [PATCH 033/178] arm64: configs: xiaomi: Enable legacy ion
+
+Change-Id: I477c54a1e034d96566c7bf440c119727b0180dd6
+---
+ arch/arm64/configs/vendor/xiaomi/sdm660_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+index 08586b1bbd52..055dfe1a898f 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
++++ b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+@@ -547,6 +547,7 @@ CONFIG_UIO_MSM_SHAREDMEM=y
+ CONFIG_STAGING=y
+ CONFIG_ASHMEM=y
+ CONFIG_ION=y
++CONFIG_ION_LEGACY=y
+ CONFIG_ION_POOL_AUTO_REFILL=y
+ CONFIG_QCA_CLD_WLAN=y
+ CONFIG_QPNP_REVID=y
+-- 
+2.49.0
+

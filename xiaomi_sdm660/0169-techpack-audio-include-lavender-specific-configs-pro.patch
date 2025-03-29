@@ -1,0 +1,27 @@
+From cff53b1c48f0936eac958e2700b36f089d56d82a Mon Sep 17 00:00:00 2001
+From: sohamxda7 <sensoham135@gmail.com>
+Date: Sun, 27 Dec 2020 14:01:47 +0000
+Subject: [PATCH 169/178] techpack: audio: include lavender specific configs
+ properly
+
+Change-Id: Ie8f1fc80a2e1d062332465cfff798efeb29e4b2f
+---
+ techpack/audio/include/asoc/wcd-mbhc-v2.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/techpack/audio/include/asoc/wcd-mbhc-v2.h b/techpack/audio/include/asoc/wcd-mbhc-v2.h
+index 215b6c62bc54..ec65f8cf7a07 100644
+--- a/techpack/audio/include/asoc/wcd-mbhc-v2.h
++++ b/techpack/audio/include/asoc/wcd-mbhc-v2.h
+@@ -652,7 +652,7 @@ int wcd_mbhc_get_button_mask(struct wcd_mbhc *mbhc);
+ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
+ 			enum snd_jack_types jack_type);
+ 
+-#if defined(CONFIG_MACH_XIAOMI_WHYRED) || defined(CONFIG_MACH_XIAOMI_WAYNE) || defined(CONFIG_MACH_XIAOMI_TULIP)
++#if defined(CONFIG_MACH_LONGCHEER)
+ /*Add for selfie stick not work  tangshouxing 9/6*/
+ void wcd_enable_mbhc_supply(struct wcd_mbhc *mbhc,
+ 			enum wcd_mbhc_plug_type plug_type);
+-- 
+2.49.0
+

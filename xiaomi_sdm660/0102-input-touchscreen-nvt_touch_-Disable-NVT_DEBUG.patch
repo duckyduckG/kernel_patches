@@ -1,0 +1,82 @@
+From 250900a9ddacbf67de634f454ee3d4393f895514 Mon Sep 17 00:00:00 2001
+From: Michael Bestas <mkbestas@lineageos.org>
+Date: Sun, 27 Dec 2020 19:45:41 +0200
+Subject: [PATCH 102/178] input: touchscreen: nvt_touch_*: Disable NVT_DEBUG
+
+Change-Id: I9fd44a40c8085af46a5e8a8ca69522b9872c6ee0
+---
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx.h   | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+index 1a17d1514141..970c9cd69289 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+@@ -33,7 +33,7 @@
+ #include "../lct_tp_fm_info.h"
+ #include "../lct_ctp_upgrade.h"
+ #endif
+-#define NVT_DEBUG 1
++#define NVT_DEBUG 0
+ 
+ 
+ #define NVTTOUCH_RST_PIN 66
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+index 52592bb4872c..7966941f255e 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+@@ -28,7 +28,7 @@
+ #include <linux/earlysuspend.h>
+ #endif
+ 
+-#define NVT_DEBUG 1
++#define NVT_DEBUG 0
+ 
+ 
+ #define NVTTOUCH_INT_PIN 943
+diff --git a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
+index 12f7e18b58d4..7ec185ca8947 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
+@@ -32,7 +32,7 @@
+ #define PINCTRL_STATE_SUSPEND		"pmx_ts_suspend"
+ #define PINCTRL_STATE_RELEASE		"pmx_ts_release"
+ #define NVT_COORDS_ARR_SIZE 2
+-#define NVT_DEBUG 1
++#define NVT_DEBUG 0
+ 
+ /*---GPIO number---*/
+ #define NVTTOUCH_INT_PIN 943
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+index aaff1689d654..6a20401328d2 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+@@ -28,7 +28,7 @@
+ #include <linux/earlysuspend.h>
+ #endif
+ 
+-#define NVT_DEBUG 1
++#define NVT_DEBUG 0
+ 
+ 
+ #define NVTTOUCH_INT_PIN 943
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+index aeb6ec89568f..1718f9db547a 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+@@ -30,7 +30,7 @@
+ 
+ #include "../lct_tp_info.h"
+ 
+-#define NVT_DEBUG 1
++#define NVT_DEBUG 0
+ 
+ 
+ #define NVTTOUCH_RST_PIN 66
+-- 
+2.49.0
+

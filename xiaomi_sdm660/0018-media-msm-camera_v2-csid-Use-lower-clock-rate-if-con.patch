@@ -1,0 +1,31 @@
+From b97ec20bdf4e01c578ea5ea73884b5698628700d Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Sat, 11 Aug 2018 16:06:55 +0200
+Subject: [PATCH 018/178] media: msm: camera_v2: csid: Use lower clock rate if
+ configured
+
+If the CSID has been previously configured, use the last clock
+rate to improve power consumption.
+
+Change-Id: I48a537137318c9708f23e15a8866727e41b6771a
+---
+ drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+index 22fe895b8407..3c96cfe021bf 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+@@ -403,7 +403,8 @@ static int msm_csid_config(struct csid_device *csid_dev,
+ 	if (!msm_csid_find_max_clk_rate(csid_dev))
+ 		pr_err("msm_csid_find_max_clk_rate failed\n");
+ 
+-	clk_rate = csid_dev->csid_max_clk;
++	clk_rate = (csid_params->csi_clk > 0) ?
++				(csid_params->csi_clk) : csid_dev->csid_max_clk;
+ 
+ 	clk_rate = msm_camera_clk_set_rate(&csid_dev->pdev->dev,
+ 		csid_dev->csid_clk[csid_dev->csid_clk_index], clk_rate);
+-- 
+2.49.0
+

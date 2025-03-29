@@ -1,0 +1,48 @@
+From 64bbb52c920954e6e1c5c8678fd59153a34a1aec Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Wed, 28 Aug 2019 02:32:26 +0200
+Subject: [PATCH 075/178] msm: kgsl: Import xiaomi longcheer changes
+
+* As original comment says, is needed for poweroff charging kernel panic issue
+
+Signed-off-by: Davide Garberi <dade.garberi@gmail.com>
+Change-Id: I8597f70c35d8efc96a8e1ae893a427a148cd4607
+---
+ drivers/gpu/msm/adreno_a5xx_snapshot.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/msm/adreno_a5xx_snapshot.c b/drivers/gpu/msm/adreno_a5xx_snapshot.c
+index 0b55bfe29671..f5bc566cafa6 100644
+--- a/drivers/gpu/msm/adreno_a5xx_snapshot.c
++++ b/drivers/gpu/msm/adreno_a5xx_snapshot.c
+@@ -799,6 +799,7 @@ static void _a5xx_do_crashdump(struct kgsl_device *device)
+ 	crash_dump_valid = true;
+ }
+ 
++#ifndef CONFIG_MACH_LONGCHEER
+ static int get_hlsq_registers(struct kgsl_device *device,
+ 		const struct a5xx_hlsq_sp_tp_regs *regs, unsigned int *data)
+ {
+@@ -838,6 +839,7 @@ static size_t a5xx_snapshot_dump_hlsq_sp_tp_regs(struct kgsl_device *device,
+ 	/* Return the size of the section */
+ 	return (count * 8) + sizeof(*header);
+ }
++#endif
+ 
+ /*
+  * a5xx_snapshot() - A5XX GPU snapshot function
+@@ -887,9 +889,11 @@ void a5xx_snapshot(struct adreno_device *adreno_dev,
+ 	}
+ 
+ 
++#ifndef CONFIG_MACH_LONGCHEER
+ 	/* Dump SP TP HLSQ registers */
+ 	kgsl_snapshot_add_section(device, KGSL_SNAPSHOT_SECTION_REGS, snapshot,
+ 		a5xx_snapshot_dump_hlsq_sp_tp_regs, NULL);
++#endif
+ 
+ 	/* CP_PFP indexed registers */
+ 	kgsl_snapshot_indexed_registers(device, snapshot,
+-- 
+2.49.0
+

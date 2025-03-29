@@ -1,0 +1,28 @@
+From 057f98e6eb656d51a6ab026794aacfe0fbb2bb5a Mon Sep 17 00:00:00 2001
+From: Artem Borisov <dedsa2002@gmail.com>
+Date: Tue, 6 Nov 2018 13:12:28 +0400
+Subject: [PATCH 004/178] msm: camera: cpp: Define entity.revision on probe
+
+This is required by our userspace blobs as well.
+
+Change-Id: I3791d5ebc059067e0c132bf89bca8131f844b2d3
+---
+ drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c b/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c
+index f67bacd99ab7..baa6d835d780 100644
+--- a/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c
++++ b/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c
+@@ -4710,7 +4710,7 @@ static int cpp_probe(struct platform_device *pdev)
+ #endif
+ 
+ 	cpp_dev->msm_sd.sd.devnode->fops = &msm_cpp_v4l2_subdev_fops;
+-
++	cpp_dev->msm_sd.sd.entity.revision = cpp_dev->msm_sd.sd.devnode->num;
+ 
+ 	msm_camera_io_w(0x0, cpp_dev->base +
+ 					   MSM_CPP_MICRO_IRQGEN_MASK);
+-- 
+2.49.0
+

@@ -1,0 +1,239 @@
+From a7835ddf4ddb7e601fb0007483f33475bcc04594 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 28 Oct 2020 13:12:39 +0000
+Subject: [PATCH 164/178] techpack: audio: tas2557: Updates from raphael
+
+Change-Id: I51fc96864d00e34464a5a8b7e6e1f9aae58112ba
+---
+ .../audio/asoc/codecs/tas2557/tas2557-core.c  | 33 +++++++++--------
+ .../asoc/codecs/tas2557/tas2557-regmap.c      | 37 +++++++++++++++----
+ techpack/audio/asoc/codecs/tas2557/tiload.c   | 27 ++++++++++++--
+ 3 files changed, 69 insertions(+), 28 deletions(-)
+
+diff --git a/techpack/audio/asoc/codecs/tas2557/tas2557-core.c b/techpack/audio/asoc/codecs/tas2557/tas2557-core.c
+index 14baa9a2654e..786cc84277a3 100644
+--- a/techpack/audio/asoc/codecs/tas2557/tas2557-core.c
++++ b/techpack/audio/asoc/codecs/tas2557/tas2557-core.c
+@@ -38,6 +38,8 @@
+ #include <linux/fcntl.h>
+ #include <linux/uaccess.h>
+ #include <linux/crc8.h>
++#include <linux/fs.h>
++#include <asm/segment.h>
+ 
+ #include "tas2557.h"
+ #include "tas2557-core.h"
+@@ -1526,30 +1528,31 @@ void tas2557_clear_firmware(struct TFirmware *pFirmware)
+ 	memset(pFirmware, 0x00, sizeof(struct TFirmware));
+ }
+ 
+-static int tas2557_load_calibration(struct tas2557_priv *pTAS2557,	char *pFileName)
++static int tas2557_load_calibration(struct tas2557_priv *pTAS2557, char *pFileName)
+ {
+ 	int nResult = 0;
+-
+-	int nFile;
++	struct file *nFile=NULL;
+ 	mm_segment_t fs;
+ 	unsigned char pBuffer[1000];
+ 	int nSize = 0;
++	loff_t pos = 0;
+ 
+ 	dev_err(pTAS2557->dev, "%s:\n", __func__);
+ 
+ 	fs = get_fs();
+ 	set_fs(KERNEL_DS);
+-	nFile = sys_open(pFileName, O_RDONLY, 0);
+-
+-	dev_err(pTAS2557->dev, "TAS2557 calibration file = %s, handle = %d\n",
+-		pFileName, nFile);
+-
+-	if (nFile >= 0) {
+-		nSize = sys_read(nFile, pBuffer, 1000);
+-		sys_close(nFile);
++	nFile = filp_open(pFileName, O_RDONLY, 0);
++
++	dev_info(pTAS2557->dev, "TAS2557 calibration file = %s\n", pFileName);
++	if (IS_ERR(nFile)) {
++		if (PTR_ERR(nFile) == -ENOENT)
++			dev_err(pTAS2557->dev, "TAS2557 calibration file %s is not exit\n", pFileName);
++		else
++			dev_err(pTAS2557->dev, "TAS2557 cannot open calibration file: %s errno:%d\n", pFileName, (int)PTR_ERR(nFile));
+ 	} else {
+-		dev_err(pTAS2557->dev, "TAS2557 cannot open calibration file: %s\n",
+-			pFileName);
++		pos = nFile->f_pos;
++		nSize = vfs_read(nFile, pBuffer, 1000, &pos);
++		filp_close(nFile,NULL);
+ 	}
+ 
+ 	set_fs(fs);
+@@ -1564,12 +1567,10 @@ static int tas2557_load_calibration(struct tas2557_priv *pTAS2557,	char *pFileNa
+ 	if (nResult)
+ 		dev_err(pTAS2557->dev, "TAS2557 calibration file is corrupt\n");
+ 	else
+-		dev_info(pTAS2557->dev, "TAS2557 calibration: %d calibrations\n",
+-			pTAS2557->mpCalFirmware->mnCalibrations);
++		dev_info(pTAS2557->dev, "TAS2557 calibration: %d calibrations\n", pTAS2557->mpCalFirmware->mnCalibrations);
+ 
+ 	printk("tsx_cal_reload_ok\n");
+ end:
+-
+ 	return nResult;
+ }
+ 
+diff --git a/techpack/audio/asoc/codecs/tas2557/tas2557-regmap.c b/techpack/audio/asoc/codecs/tas2557/tas2557-regmap.c
+index 210bbb82f4d7..31e384bfece6 100644
+--- a/techpack/audio/asoc/codecs/tas2557/tas2557-regmap.c
++++ b/techpack/audio/asoc/codecs/tas2557/tas2557-regmap.c
+@@ -212,6 +212,7 @@ static int tas2557_dev_bulk_read(
+ 	unsigned int nLength)
+ {
+ 	int nResult = 0;
++	int i;
+ 
+ 	mutex_lock(&pTAS2557->dev_lock);
+ 	if (pTAS2557->mbTILoadActive) {
+@@ -230,17 +231,37 @@ static int tas2557_dev_bulk_read(
+ 				TAS2557_BOOK_ID(nRegister),
+ 				TAS2557_PAGE_ID(nRegister));
+ 	if (nResult >= 0) {
+-		nResult = regmap_bulk_read(pTAS2557->mpRegmap, TAS2557_PAGE_REG(nRegister), pData, nLength);
+-		if (nResult < 0) {
+-			dev_err(pTAS2557->dev, "%s, %d, I2C error %d\n",
+-				__func__, __LINE__, nResult);
+-			pTAS2557->mnErrCode |= ERROR_DEVA_I2C_COMM;
+-		} else
+-			pTAS2557->mnErrCode &= ~ERROR_DEVA_I2C_COMM;
++		#define STRIDE 4
++		/* Read chunk bytes defined by STRIDE */
++		for (i = 0; i < (nLength / STRIDE); i++) {
++			nResult = regmap_bulk_read(pTAS2557->mpRegmap,
++						TAS2557_PAGE_REG((nRegister + i*STRIDE)),
++						&pData[i*STRIDE], STRIDE);
++			if (nResult < 0) {
++				dev_err(pTAS2557->dev, "%s, %d, I2C error %d\n",
++						__func__, __LINE__, nResult);
++				pTAS2557->mnErrCode |= ERROR_DEVA_I2C_COMM;
++			} else {
++				pTAS2557->mnErrCode &= ~ERROR_DEVA_I2C_COMM;
++			}
++		}
++
++		/* Read remaining bytes */
++		if ((nLength % STRIDE) != 0) {
++			nResult = regmap_bulk_read(pTAS2557->mpRegmap,
++						TAS2557_PAGE_REG(nRegister + i*STRIDE),
++						&pData[i*STRIDE], (nLength % STRIDE));
++			if (nResult < 0) {
++				dev_err(pTAS2557->dev, "%s, %d, I2C error %d\n",
++					__func__, __LINE__, nResult);
++				pTAS2557->mnErrCode |= ERROR_DEVA_I2C_COMM;
++			} else {
++				pTAS2557->mnErrCode &= ~ERROR_DEVA_I2C_COMM;
++			}
++		}
+ 	}
+ 
+ end:
+-
+ 	mutex_unlock(&pTAS2557->dev_lock);
+ 	return nResult;
+ }
+diff --git a/techpack/audio/asoc/codecs/tas2557/tiload.c b/techpack/audio/asoc/codecs/tas2557/tiload.c
+index 3509fe45ca8e..7d4bc19f650e 100644
+--- a/techpack/audio/asoc/codecs/tas2557/tiload.c
++++ b/techpack/audio/asoc/codecs/tas2557/tiload.c
+@@ -35,6 +35,7 @@
+ #include <linux/i2c.h>
+ #include <linux/platform_device.h>
+ #include <linux/uaccess.h>
++#include <linux/slab.h>
+ 
+ #include "tiload.h"
+ 
+@@ -101,7 +102,7 @@ static ssize_t tiload_read(struct file *filp, char __user *buf,
+ 	size_t count, loff_t *offset)
+ {
+ 	struct tas2557_priv *pTAS2557 = (struct tas2557_priv *)filp->private_data;
+-	static char rd_data[MAX_LENGTH + 1];
++	char *rd_data;
+ 	unsigned int nCompositeRegister = 0, Value = 0;
+ 	char reg_addr;
+ 	size_t size;
+@@ -125,6 +126,13 @@ static ssize_t tiload_read(struct file *filp, char __user *buf,
+ 
+ 	size = count;
+ 
++	rd_data = kmalloc(MAX_LENGTH + 1, GFP_KERNEL | GFP_DMA);
++
++	if(rd_data == NULL) {
++		dev_err(pTAS2557->dev, "kmalloc fail \n");
++		return -EINVAL;
++	}
++
+ 	nCompositeRegister = BPR_REG(gBook, gPage, reg_addr);
+ 	if (count == 1) {
+ 		ret =
+@@ -153,9 +161,11 @@ static ssize_t tiload_read(struct file *filp, char __user *buf,
+ 
+ 	if (copy_to_user(buf, rd_data, size) != 0) {
+ 		dev_err(pTAS2557->dev, "copy_to_user failed\n");
++		kfree(rd_data);
+ 		return -EINVAL;
+ 	}
+ 
++	kfree(rd_data);
+ 	return size;
+ }
+ 
+@@ -170,8 +180,8 @@ static ssize_t tiload_write(struct file *filp, const char __user *buf,
+ 	size_t count, loff_t *offset)
+ {
+ 	struct tas2557_priv *pTAS2557 = (struct tas2557_priv *)filp->private_data;
+-	static char wr_data[MAX_LENGTH + 1];
+-	char *pData = wr_data;
++	char *wr_data;
++	char *pData;
+ 	size_t size;
+ 	unsigned int nCompositeRegister = 0;
+ 	unsigned int nRegister;
+@@ -186,10 +196,18 @@ static ssize_t tiload_write(struct file *filp, const char __user *buf,
+ 		return -EINVAL;
+ 	}
+ 
++	wr_data = kmalloc(MAX_LENGTH + 1, GFP_KERNEL | GFP_DMA);
++	if(wr_data == NULL) {
++		dev_err(pTAS2557->dev, "kmalloc fail \n");
++		return -EINVAL;
++	}
++	pData = wr_data;
++
+ 	/* copy buffer from user space  */
+ 	size = copy_from_user(wr_data, buf, count);
+ 	if (size != 0) {
+ 		dev_err(pTAS2557->dev, "copy_from_user failure %d\n", (int) size);
++		kfree(wr_data);
+ 		return -EINVAL;
+ 	}
+ #ifdef DEBUG
+@@ -203,6 +221,7 @@ static ssize_t tiload_write(struct file *filp, const char __user *buf,
+ 	size = count;
+ 	if ((nRegister == 127) && (gPage == 0)) {
+ 		gBook = wr_data[1];
++		kfree(wr_data);
+ 		return size;
+ 	}
+ 
+@@ -226,7 +245,7 @@ static ssize_t tiload_write(struct file *filp, const char __user *buf,
+ 	if (ret < 0)
+ 		dev_err(pTAS2557->dev, "%s, %d, ret=%d, count=%zu, ERROR Happen\n", __func__,
+ 			__LINE__, ret, count);
+-
++	kfree(wr_data);
+ 	return size;
+ }
+ 
+-- 
+2.49.0
+

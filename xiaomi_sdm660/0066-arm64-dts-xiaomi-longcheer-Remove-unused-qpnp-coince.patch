@@ -1,0 +1,46 @@
+From d32d04a14ac25fd8861c6e47e13d17a0cdc4d694 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 28 Oct 2020 13:13:51 +0000
+Subject: [PATCH 066/178] arm64: dts: xiaomi: longcheer: Remove unused
+ qpnp-coincell node
+
+Change-Id: I1bd47fb9ddbae6cc117eee7d53fa8d35c4987c9d
+---
+ .../vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi | 4 ----
+ .../qcom/xiaomi/longcheer/wayne/wayne-common-base.dtsi       | 5 -----
+ 2 files changed, 9 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi
+index 98c40383af5c..22c65e39863f 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/lavender/lavender-base.dtsi
+@@ -25,10 +25,6 @@
+ 	};
+ };
+ 
+-&pm660_coincell {
+-	qcom,charge-enable = <0>;
+-};
+-
+ &pm660_charger {
+ 	qcom,usb-icl-ua = <2900000>;
+ 	qcom,otg-cl-ua = <1500000>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-common-base.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-common-base.dtsi
+index f2b231973d3b..9c0f63fff327 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-common-base.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-common-base.dtsi
+@@ -26,11 +26,6 @@
+ 				0x00 0x18>;
+ };
+ 
+-/* msm-pm660.dtsi wayne specific diff */
+-&pm660_coincell {
+-	qcom,charge-enable = <0>;
+-};
+-
+ &pm660_charger {
+ 	qcom,usb-icl-ua = <2900000>;
+ 	qcom,otg-cl-ua = <1500000>;
+-- 
+2.49.0
+

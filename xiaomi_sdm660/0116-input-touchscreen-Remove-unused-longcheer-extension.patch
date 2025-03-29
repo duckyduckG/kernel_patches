@@ -1,0 +1,5418 @@
+From 0c9697628fe3cd6d72f7845164699e8a0d84220a Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Fri, 28 Feb 2020 16:55:53 +0800
+Subject: [PATCH 116/178] input: touchscreen: Remove unused longcheer extension
+
+Change-Id: I974555ab1a8996cf5383289911ae6301c8a73251
+---
+ drivers/input/touchscreen/Makefile            |   9 -
+ drivers/input/touchscreen/lct_ctp_selftest.c  | 205 -----
+ drivers/input/touchscreen/lct_ctp_selftest.h  |  16 -
+ drivers/input/touchscreen/lct_ctp_upgrade.c   | 214 -----
+ drivers/input/touchscreen/lct_ctp_upgrade.h   |  15 -
+ .../input/touchscreen/lct_if_ctp_upgrade.c    | 268 ------
+ .../input/touchscreen/lct_if_ctp_upgrade.h    |  15 -
+ drivers/input/touchscreen/lct_tp_fm_info.c    | 120 ---
+ drivers/input/touchscreen/lct_tp_fm_info.h    |  10 -
+ drivers/input/touchscreen/lct_tp_gesture.c    | 176 ----
+ drivers/input/touchscreen/lct_tp_gesture.h    |  10 -
+ drivers/input/touchscreen/lct_tp_grip_area.c  | 183 ----
+ drivers/input/touchscreen/lct_tp_grip_area.h  |  11 -
+ drivers/input/touchscreen/lct_tp_info.c       | 240 -----
+ drivers/input/touchscreen/lct_tp_info.h       |  24 -
+ drivers/input/touchscreen/lct_tp_selftest.c   | 209 -----
+ drivers/input/touchscreen/lct_tp_selftest.h   |  33 -
+ drivers/input/touchscreen/lct_tp_work.c       | 176 ----
+ drivers/input/touchscreen/lct_tp_work.h       |  10 -
+ .../input/touchscreen/nvt_touch_a/nt36xxx.c   |  22 +-
+ .../input/touchscreen/nvt_touch_a/nt36xxx.h   |   5 -
+ .../nvt_touch_a/nt36xxx_mp_ctrlram.c          | 142 ---
+ .../input/touchscreen/nvt_touch_d2s/nt36xxx.c |  11 -
+ .../input/touchscreen/nvt_touch_d2s/nt36xxx.h |   2 -
+ .../nvt_touch_d2s/nt36xxx_fw_update.c         |   4 -
+ .../nvt_touch_d2s/nt36xxx_mp_ctrlram.c        | 247 ------
+ .../input/touchscreen/nvt_touch_e7s/nt36xxx.c |  35 -
+ .../input/touchscreen/nvt_touch_e7s/nt36xxx.h |   2 -
+ .../nvt_touch_e7s/nt36xxx_fw_update.c         |   4 -
+ .../nvt_touch_e7s/nt36xxx_mp_ctrlram.c        | 142 ---
+ .../input/touchscreen/nvt_touch_f7a/nt36xxx.c | 180 ----
+ .../input/touchscreen/nvt_touch_f7a/nt36xxx.h |   2 -
+ .../nvt_touch_f7a/nt36xxx_ext_proc.c          | 123 ---
+ .../nvt_touch_f7a/nt36xxx_mp_ctrlram.c        | 235 -----
+ .../synaptics_dsx_e7s/synaptics_dsx_core.c    |  27 -
+ .../synaptics_dsx_fw_update.c                 |   8 -
+ .../synaptics_dsx_test_reporting.c            | 839 ------------------
+ .../synaptics_tcm_f7a/synaptics_tcm_core.c    | 226 -----
+ .../synaptics_tcm_f7a/synaptics_tcm_device.c  |   8 -
+ .../synaptics_tcm_diagnostics.c               |   8 -
+ .../synaptics_tcm_recovery.c                  |   8 -
+ .../synaptics_tcm_f7a/synaptics_tcm_reflash.c | 153 ----
+ .../synaptics_tcm_f7a/synaptics_tcm_testing.c | 161 ----
+ .../synaptics_tcm_f7a/synaptics_tcm_touch.c   |   5 -
+ .../synaptics_tcm_zeroflash.c                 |   8 -
+ 45 files changed, 2 insertions(+), 4549 deletions(-)
+ delete mode 100644 drivers/input/touchscreen/lct_ctp_selftest.c
+ delete mode 100644 drivers/input/touchscreen/lct_ctp_selftest.h
+ delete mode 100644 drivers/input/touchscreen/lct_ctp_upgrade.c
+ delete mode 100644 drivers/input/touchscreen/lct_ctp_upgrade.h
+ delete mode 100644 drivers/input/touchscreen/lct_if_ctp_upgrade.c
+ delete mode 100644 drivers/input/touchscreen/lct_if_ctp_upgrade.h
+ delete mode 100644 drivers/input/touchscreen/lct_tp_fm_info.c
+ delete mode 100644 drivers/input/touchscreen/lct_tp_fm_info.h
+ delete mode 100644 drivers/input/touchscreen/lct_tp_gesture.c
+ delete mode 100644 drivers/input/touchscreen/lct_tp_gesture.h
+ delete mode 100644 drivers/input/touchscreen/lct_tp_grip_area.c
+ delete mode 100644 drivers/input/touchscreen/lct_tp_grip_area.h
+ delete mode 100644 drivers/input/touchscreen/lct_tp_info.c
+ delete mode 100644 drivers/input/touchscreen/lct_tp_info.h
+ delete mode 100644 drivers/input/touchscreen/lct_tp_selftest.c
+ delete mode 100644 drivers/input/touchscreen/lct_tp_selftest.h
+ delete mode 100644 drivers/input/touchscreen/lct_tp_work.c
+ delete mode 100644 drivers/input/touchscreen/lct_tp_work.h
+
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 86d1fc55c49e..cbc4d2a1b705 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -124,12 +124,3 @@ obj-$(CONFIG_TOUCHSCREEN_NVT_F7A) 	+= nvt_touch_f7a/
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S)	+= synaptics_dsx_e7s/
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_D2T) += synaptics_tcm_d2t/
+ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_F7A) += synaptics_tcm_f7a/
+-
+-# Longcheer Common
+-obj-$(CONFIG_MACH_LONGCHEER)	+= lct_tp_fm_info.o
+-obj-$(CONFIG_MACH_LONGCHEER)	+= lct_ctp_selftest.o
+-obj-$(CONFIG_MACH_LONGCHEER)	+= lct_ctp_upgrade.o
+-obj-$(CONFIG_MACH_LONGCHEER)	+= lct_if_ctp_upgrade.o
+-
+-# Whyred
+-obj-$(CONFIG_MACH_XIAOMI_WHYRED)	+= lct_tp_gesture.o
+diff --git a/drivers/input/touchscreen/lct_ctp_selftest.c b/drivers/input/touchscreen/lct_ctp_selftest.c
+deleted file mode 100644
+index 057a288e1123..000000000000
+--- a/drivers/input/touchscreen/lct_ctp_selftest.c
++++ /dev/null
+@@ -1,205 +0,0 @@
+-#include <linux/module.h>
+-#include <linux/moduleparam.h>
+-#include <linux/kernel.h>
+-#include <linux/sysfs.h>
+-#include <linux/init.h>
+-#include <linux/mutex.h>
+-#include <linux/spinlock.h>
+-#include <linux/delay.h>
+-#include <linux/slab.h>
+-
+-#include <linux/syscalls.h>
+-#include <linux/file.h>
+-#include <linux/fs.h>
+-#include <linux/fcntl.h>
+-#include <linux/string.h>
+-#include <asm/unistd.h>
+-#include <linux/cdev.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-
+-
+-
+-typedef  int (*CTP_SELFTEST_FUNC)(void);
+-
+-static CTP_SELFTEST_FUNC PSelftest_func = NULL;
+-
+-
+-
+-
+-#define CTP_FELF_TEST_RETROY_COUNT      3
+-#define CTP_SELF_TEST_CHECK_STATE_COUNT 30
+-
+-#define CTP_SELF_TEST_XM_CMD_STR   "i2c"
+-#define CTP_SELF_TEST_LC_CMD_STR   "mmi"
+-#define CTP_SELF_TEST_PROC_FILE "tp_selftest"
+-static struct proc_dir_entry *g_ctp_selftest_proc = NULL;
+-static struct work_struct ctp_selftest_work;
+-static struct workqueue_struct * ctp_selftest_workqueue = NULL;
+-
+-static char ft_ctp_selftest_status[15] = {0};
+-static int is_in_self_test = 0;
+-static int retry_count = CTP_FELF_TEST_RETROY_COUNT;
+-static struct mutex lct_tp_selftest_rw_mutex;
+-
+-
+-
+-
+-static ssize_t ctp_selftest_proc_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+-{
+-	char tmp_data[64] = {0};
+-
+-	if(copy_from_user(tmp_data, buf, size)) {
+-		printk("copy_from_user() fail.\n");
+-		return -EFAULT;
+-	}
+-
+-	if((strncmp(tmp_data,CTP_SELF_TEST_XM_CMD_STR,strlen(CTP_SELF_TEST_XM_CMD_STR)) == 0) && (is_in_self_test == 0)) {
+-		printk("ctp_selftest_proc_write xm cmd\n");
+-		mutex_lock(&lct_tp_selftest_rw_mutex);
+-		strcpy(ft_ctp_selftest_status,"Testing");
+-		is_in_self_test = 1;
+-		retry_count = CTP_FELF_TEST_RETROY_COUNT;
+-		queue_work(ctp_selftest_workqueue, &ctp_selftest_work);
+-
+-	} else if ((strncmp(tmp_data, CTP_SELF_TEST_LC_CMD_STR, strlen(CTP_SELF_TEST_LC_CMD_STR)) == 0) && (is_in_self_test == 0)) {
+-		printk("ctp_selftest_proc_write lc cmd\n");
+-		mutex_lock(&lct_tp_selftest_rw_mutex);
+-		strcpy(ft_ctp_selftest_status,"Testing");
+-		is_in_self_test = 1;
+-		retry_count = CTP_FELF_TEST_RETROY_COUNT;
+-		queue_work(ctp_selftest_workqueue, &ctp_selftest_work);
+-
+-	}
+-
+-	return size;
+-}
+-
+-static ssize_t ctp_selftest_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt= 0;
+-    char *page = NULL;
+-	
+-	mutex_lock(&lct_tp_selftest_rw_mutex);
+-	page = kzalloc(128, GFP_KERNEL);
+-	cnt = sprintf(page, "%s", ft_ctp_selftest_status);   
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	printk("%s, page=%s, cnt=%d\n", __func__, page, cnt);
+-	kfree(page);
+-	mutex_unlock(&lct_tp_selftest_rw_mutex);
+-	return cnt;
+-}
+-
+-static int ctp_chip_self_test(void)
+-{	
+-	if(PSelftest_func == NULL)
+-	{
+-		printk("ctp_chip_self_test this ctp is not support self test func \n");
+-		return 0;
+-	}
+-	else
+-	{
+-		printk("ctp_chip_self_test call pointer func to test \n");
+-		return PSelftest_func();
+-	}
+-
+-}
+-static void ctp_selftest_workqueue_func(struct work_struct *work)
+-{
+-	int val=0x00;
+-	printk("ctp_selftest_workqueue_func is_in_self_test=%d,retry_count=%d\n",is_in_self_test,retry_count);
+-	val = ctp_chip_self_test();
+-	if(val == 2)
+-	{
+-		strcpy(ft_ctp_selftest_status,"2\n");
+-		is_in_self_test = 0;
+-		printk("ctp_selftest_workqueue_func self test success \n");
+-	}
+-	else if(val == 1)
+-	{
+-		retry_count--;
+-		if(retry_count > 0)
+-		{
+-			printk("ctp_selftest_workqueue_func self test retry retry_count=%d\n",retry_count);
+-			queue_work(ctp_selftest_workqueue, &ctp_selftest_work);
+-		}
+-		else
+-		{
+-			strcpy(ft_ctp_selftest_status,"1\n");
+-			printk("ctp_selftest_workqueue_func self test failed\n");
+-			is_in_self_test = 0;
+-		}
+-		
+-	}
+-        else
+-        {
+-            strcpy(ft_ctp_selftest_status,"0\n");
+-            is_in_self_test = 0;
+-            printk("ctp_selftest_workqueue_func self test invalid\n");
+-        }
+-	
+-	mutex_unlock(&lct_tp_selftest_rw_mutex);
+-}
+-
+-int lct_get_ctp_selttest_status(void)
+-{
+-	return is_in_self_test;
+-}
+-EXPORT_SYMBOL(lct_get_ctp_selttest_status);
+-
+-void lct_ctp_selftest_int(CTP_SELFTEST_FUNC PTestfunc)
+-{
+-	printk( "%s\n", __func__);
+-	PSelftest_func = PTestfunc;
+-}
+-EXPORT_SYMBOL(lct_ctp_selftest_int);
+-
+-static const struct file_operations ctp_selftest_proc_fops = {
+-	.read		= ctp_selftest_proc_read,
+-	.write		= ctp_selftest_proc_write,
+-};
+-
+-static int  ctp_selftest_init(void)
+-{
+-	printk( "%s\n", __func__);
+-	ctp_selftest_workqueue = create_singlethread_workqueue("ctp_selftest");
+-	INIT_WORK(&ctp_selftest_work, ctp_selftest_workqueue_func);
+-	mutex_init(&lct_tp_selftest_rw_mutex);
+-
+-#if 1
+-	g_ctp_selftest_proc = proc_create_data(CTP_SELF_TEST_PROC_FILE, 0666, NULL, &ctp_selftest_proc_fops, NULL);
+-	if (IS_ERR_OR_NULL(g_ctp_selftest_proc))
+-	{
+-		printk("create_proc_entry g_ctp_selftest_proc failed\n");
+-	}
+-	else
+-	{
+-		printk("create_proc_entry g_ctp_selftest_proc success\n");
+-	}
+-#else
+-	g_ctp_selftest_proc = create_proc_entry(CTP_SELF_TEST_PROC_FILE, 0660, NULL);
+-	if (g_ctp_selftest_proc == NULL) {
+-		printk("create_proc_entry g_ctp_selftest_proc failed\n");
+-	} else {
+-		g_ctp_selftest_proc->read_proc = ctp_selftest_proc_read;
+-		g_ctp_selftest_proc->write_proc = ctp_selftest_proc_write; 
+-		printk("create_proc_entry g_ctp_selftest_proc success\n");
+-	}
+-#endif
+-	return 0;
+-}
+-
+-static void __exit ctp_selftest_exit(void)
+-{
+-	return;
+-}
+-
+-module_init(ctp_selftest_init);
+-module_exit(ctp_selftest_exit);
+-
+-MODULE_DESCRIPTION("CTP selftest driver");
+-MODULE_LICENSE("GPL");
+-
+-
+-
+diff --git a/drivers/input/touchscreen/lct_ctp_selftest.h b/drivers/input/touchscreen/lct_ctp_selftest.h
+deleted file mode 100644
+index 3938e5d1dfae..000000000000
+--- a/drivers/input/touchscreen/lct_ctp_selftest.h
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#ifndef _LCT_CTP_SELFTEST_H
+-#define _LCT_CTP_SELFTEST_H
+-
+-
+-typedef  int (*CTP_SELFTEST_FUNC)(void);
+-
+-
+-extern void lct_ctp_selftest_int(CTP_SELFTEST_FUNC PTestfunc);
+-
+-
+-
+-
+-extern int lct_get_ctp_selttest_status(void);
+-
+-#endif
+-
+diff --git a/drivers/input/touchscreen/lct_ctp_upgrade.c b/drivers/input/touchscreen/lct_ctp_upgrade.c
+deleted file mode 100644
+index 8a17cfb2fefa..000000000000
+--- a/drivers/input/touchscreen/lct_ctp_upgrade.c
++++ /dev/null
+@@ -1,214 +0,0 @@
+-#include <linux/module.h>
+-#include <linux/moduleparam.h>
+-#include <linux/kernel.h>
+-#include <linux/sysfs.h>
+-#include <linux/init.h>
+-#include <linux/mutex.h>
+-#include <linux/spinlock.h>
+-#include <linux/delay.h>
+-#include <linux/slab.h>
+-
+-#include <linux/syscalls.h>
+-#include <linux/file.h>
+-#include <linux/fs.h>
+-#include <linux/fcntl.h>
+-#include <linux/string.h>
+-#include <asm/unistd.h>
+-#include <linux/cdev.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-
+-
+-
+-#include "lct_ctp_upgrade.h"
+-
+-
+-#define CTP_UPGRADE_PROC_FILE "ctp_upgrade"
+-static struct proc_dir_entry *g_ctp_upgrade_proc = NULL;
+-
+-static struct work_struct ctp_upgrade_work;
+-static struct workqueue_struct * ctp_upgrade_workqueue = NULL;
+-static char ft_ctp_upgrade_status[20] = {0};
+-
+-
+- #define CTP_PROC_FILE "ctp_version"
+-
+-static struct proc_dir_entry *g_ctp_proc = NULL;
+-
+-
+-static CTP_UPGRADE_FUNC PCtpupdateFunc = NULL;
+-static CTP_READ_VERSION PCtpreadverFunc = NULL;
+-
+-
+- static int ctp_upgrade_from_engineermode(void)
+- {
+- 	if(PCtpupdateFunc == NULL)
+-	{
+-		strcpy(ft_ctp_upgrade_status,"Unsupport");
+-	}
+-	else
+-	{
+-		printk("ctp_upgrade_from_engineermode call pointer func to upgrade \n");
+-		PCtpupdateFunc();
+-	}
+- 	return 0;
+- }
+-
+-static void ctp_upgrade_workqueue_func(struct work_struct *work)
+-{
+-	printk("ctp_upgrade_workqueue_func\n");
+-	ctp_upgrade_from_engineermode();
+-}
+-
+-static ssize_t ctp_upgrade_proc_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+-{
+-	char tmp_data[64] = {0};
+-
+-	if(copy_from_user(tmp_data, buf, size))
+-    {
+-        printk("copy_from_user() fail.\n");
+-        return -EFAULT;
+-    }
+-
+-	if(strncmp(tmp_data,"tp_update_13817059502",strlen("tp_update_13817059502")) == 0)
+-	{
+-		printk("ctp_upgrade_proc_write start upgrade\n");
+-		if(PCtpupdateFunc == NULL)
+-		{
+-			strcpy(ft_ctp_upgrade_status,"Unsupport");
+-		}
+-		else
+-		{
+-			strcpy(ft_ctp_upgrade_status,"upgrading");
+-			queue_work(ctp_upgrade_workqueue, &ctp_upgrade_work);
+-		}
+-	}
+-	return size;
+-}
+-
+-static ssize_t ctp_upgrade_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt= 0;
+-    char *page = NULL;
+-
+-	page = kzalloc(256, GFP_KERNEL);
+-	cnt = sprintf(page, "%s",ft_ctp_upgrade_status);   
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-
+-	kfree(page);
+-	return cnt;
+-}
+-
+-static ssize_t ctp_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt= 0;
+-	char version[100] = {0};
+-    char *page = NULL;
+-
+-	page = kzalloc(64, GFP_KERNEL);
+-	if(PCtpreadverFunc == NULL)
+-	{
+-		cnt = sprintf(page, "%s\n","Unknown");
+-	}
+-	else
+-	{
+-		PCtpreadverFunc(version);
+-		cnt = sprintf(page, "%s\n",version);
+-	}
+-	
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-
+-	kfree(page);
+-	return cnt;
+-}
+-
+-void lct_ctp_upgrade_int(CTP_UPGRADE_FUNC PUpdatefunc,CTP_READ_VERSION PVerfunc)
+-{
+-	PCtpupdateFunc = PUpdatefunc;
+-	PCtpreadverFunc = PVerfunc;
+-}
+-
+-int lct_set_ctp_upgrade_status(char * status)
+-{
+-	if((status != NULL) && (strlen(status) < 20))
+-	{
+-		strcpy(ft_ctp_upgrade_status,status);
+-	}
+-	return 0;
+-}
+-
+-static const struct file_operations ctp_upgrade_proc_fops = {
+-	.read		= ctp_upgrade_proc_read,
+-	.write		= ctp_upgrade_proc_write,
+-};
+-
+-static const struct file_operations ctp_proc_fops = {
+-	.read		= ctp_proc_read,
+-};
+-
+-static int __init ctp_upgrade_init(void)
+-{
+-	printk( "%s\n", __func__);
+-		
+-	strcpy(ft_ctp_upgrade_status,"Unsupport");
+-	ctp_upgrade_workqueue = create_singlethread_workqueue("ctp_upgrade");
+-	INIT_WORK(&ctp_upgrade_work, ctp_upgrade_workqueue_func);
+-
+-#if 1
+-	g_ctp_upgrade_proc = proc_create_data(CTP_UPGRADE_PROC_FILE, 0660, NULL, &ctp_upgrade_proc_fops, NULL);
+-	if (IS_ERR_OR_NULL(g_ctp_upgrade_proc))
+-	{
+-		printk("[elan] create_proc_entry 222 failed\n");
+-	}
+-	else
+-	{
+-		printk("[elan] create_proc_entry 222 success\n");
+-	}
+-	
+-	g_ctp_proc = proc_create_data(CTP_PROC_FILE, 0444, NULL, &ctp_proc_fops, NULL);
+-	if (IS_ERR_OR_NULL(g_ctp_proc))
+-	{
+-		printk("create_proc_entry failed\n");
+-	}
+-	else
+-	{
+-		printk("create_proc_entry success\n");
+-	}
+-#else
+-	g_ctp_upgrade_proc = create_proc_entry(CTP_UPGRADE_PROC_FILE, 0660, NULL);
+-	if (g_ctp_upgrade_proc == NULL) {
+-		printk("[elan] create_proc_entry 222 failed\n");
+-	} else {
+-		g_ctp_upgrade_proc->read_proc = ctp_upgrade_proc_read;
+-		g_ctp_upgrade_proc->write_proc = ctp_upgrade_proc_write;
+-
+-		printk("[elan] create_proc_entry 222 success\n");
+-	}
+-
+-	g_ctp_proc = create_proc_entry(CTP_PROC_FILE, 0444, NULL);
+-	if (g_ctp_proc == NULL) {
+-		printk("create_proc_entry failed\n");
+-	} else {
+-		g_ctp_proc->read_proc = ctp_proc_read;
+-		g_ctp_proc->write_proc = NULL;	
+-		printk("create_proc_entry success\n");
+-	}
+-#endif
+-
+-	return 0;
+-}
+-
+-static void __exit ctp_upgrade_exit(void)
+-{
+-	return;
+-}
+-
+-module_init(ctp_upgrade_init);
+-module_exit(ctp_upgrade_exit);
+-
+-MODULE_DESCRIPTION("CTP upgrade driver");
+-MODULE_LICENSE("GPL");
+-
+-
+-
+diff --git a/drivers/input/touchscreen/lct_ctp_upgrade.h b/drivers/input/touchscreen/lct_ctp_upgrade.h
+deleted file mode 100644
+index a5cc7816d9ae..000000000000
+--- a/drivers/input/touchscreen/lct_ctp_upgrade.h
++++ /dev/null
+@@ -1,15 +0,0 @@
+-#ifndef _LCT_CTP_UPGRADE_H
+-#define _LCT_CTP_UPGRADE_H
+-
+-typedef  int (*CTP_UPGRADE_FUNC)(void);
+-typedef void (*CTP_READ_VERSION)(char* version);
+-
+-
+-
+-
+-void lct_ctp_upgrade_int(CTP_UPGRADE_FUNC PUpdatefunc,CTP_READ_VERSION PVerfunc);
+-
+-int lct_set_ctp_upgrade_status(char * status);
+-
+-
+-#endif
+\ No newline at end of file
+diff --git a/drivers/input/touchscreen/lct_if_ctp_upgrade.c b/drivers/input/touchscreen/lct_if_ctp_upgrade.c
+deleted file mode 100644
+index ffa795cef300..000000000000
+--- a/drivers/input/touchscreen/lct_if_ctp_upgrade.c
++++ /dev/null
+@@ -1,268 +0,0 @@
+-#include <linux/module.h>
+-#include <linux/moduleparam.h>
+-#include <linux/kernel.h>
+-#include <linux/sysfs.h>
+-#include <linux/init.h>
+-#include <linux/mutex.h>
+-#include <linux/spinlock.h>
+-#include <linux/delay.h>
+-#include <linux/slab.h>
+-
+-#include <linux/syscalls.h>
+-#include <linux/file.h>
+-#include <linux/fs.h>
+-#include <linux/fcntl.h>
+-#include <linux/string.h>
+-#include <asm/unistd.h>
+-#include <linux/cdev.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-
+-
+-
+-#include "lct_if_ctp_upgrade.h"
+-
+-
+-#define CTP_IF_UPGRADE_PROC_FILE "ctp_if_upgrade"
+-static struct proc_dir_entry *g_ctp_if_upgrade_proc = NULL;
+-
+-static struct work_struct ctp_if_upgrade_work;
+-static struct workqueue_struct * ctp_if_upgrade_workqueue = NULL;
+-static char ctp_if_upgrade_status[20] = {0};
+-
+-
+- #define CTP_IF_UPGRADE_VERSION_PROC_FILE "ctp_if_upgrade_version"
+-
+-static struct proc_dir_entry *g_ctp_if_upgrade_version_proc = NULL;
+-
+- #define CTP_IF_UPGRADE_OLD_VERSION_PROC_FILE "ctp_if_upgrade_old_version"
+-
+-static struct proc_dir_entry *g_ctp_if_upgrade_old_version_proc = NULL;
+-
+-
+-static CTP_UPGRADE_FUNC PIFCtpupdateFunc = NULL;
+-static CTP_READ_VERSION PIFCtpreadverFunc = NULL;
+-static CTP_READ_VERSION PIFCtpreadOldverFunc = NULL;
+-
+-
+-
+- static int ctp_if_upgrade_start(void)
+- {
+- 	if(PIFCtpupdateFunc == NULL)
+-	{
+-		strcpy(ctp_if_upgrade_status,"Unsupport");
+-	}
+-	else
+-	{
+-		printk("ctp_upgrade_from_engineermode call pointer func to upgrade \n");
+-		PIFCtpupdateFunc();
+-	}
+- 	return 0;
+- }
+-
+-static void ctp_if_upgrade_workqueue_func(struct work_struct *work)
+-{
+-	printk("ctp_upgrade_workqueue_func\n");
+-	ctp_if_upgrade_start();
+-}
+-
+-static ssize_t ctp_if_upgrade_proc_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+-{
+-	char tmp_data[64] = {0};
+-
+-	if(copy_from_user(tmp_data, buf, size))
+-    {
+-        printk("copy_from_user() fail.\n");
+-        return -EFAULT;
+-    }
+-
+-	if(strncmp(tmp_data,"tp_update_13817059502",strlen("tp_update_13817059502")) == 0)
+-	{
+-		printk("ctp_upgrade_proc_write start upgrade\n");
+-		if(PIFCtpupdateFunc == NULL)
+-		{
+-			strcpy(ctp_if_upgrade_status,"Unsupport");
+-		}
+-		else
+-		{
+-			strcpy(ctp_if_upgrade_status,"upgrading");
+-			queue_work(ctp_if_upgrade_workqueue, &ctp_if_upgrade_work);
+-		}
+-		
+-	}
+-	return size;
+-}
+-
+-static ssize_t ctp_if_upgrade_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt= 0;
+-    char *page = NULL;
+-	
+-	page = kzalloc(64, GFP_KERNEL);
+-	cnt = sprintf(page, "%s",ctp_if_upgrade_status);   
+-	printk("ctp_if_upgrade_proc_read cnt = %d\n",cnt);
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	kfree(page);
+-	return cnt;
+-}
+-
+-static ssize_t ctp_if_upgrade_version_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt= 0;
+-	char version[100] = {0};
+-    char *page = NULL;
+-	
+-	page = kzalloc(128, GFP_KERNEL);
+-
+-	if(PIFCtpreadverFunc == NULL)
+-	{
+-		cnt = sprintf(page, "%s\n","Unknown");
+-	}
+-	else
+-	{
+-		PIFCtpreadverFunc(version);
+-		cnt = sprintf(page, "%s\n",version);
+-	}
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	kfree(page);
+-	return cnt;
+-}
+-
+-static ssize_t ctp_if_upgrade_old_version_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt= 0;
+-	char version[100] = {0};
+-    char *page = NULL;
+-	
+-	page = kzalloc(128, GFP_KERNEL);
+-
+-	if(PIFCtpreadOldverFunc == NULL)
+-	{
+-		cnt = sprintf(page, "%s\n","Unknown");
+-	}
+-	else
+-	{
+-		PIFCtpreadOldverFunc(version);
+-		cnt = sprintf(page, "%s\n",version);
+-	}
+-	
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	kfree(page);
+-	return cnt;
+-}
+-
+-void lct_if_ctp_upgrade_int(CTP_UPGRADE_FUNC PUpdatefunc,CTP_READ_VERSION PVerfunc,CTP_READ_VERSION POldVerfunc)
+-{
+-	PIFCtpupdateFunc = PUpdatefunc;
+-	PIFCtpreadverFunc = PVerfunc;
+-	PIFCtpreadOldverFunc = POldVerfunc;
+-}
+-
+-int lct_set_if_ctp_upgrade_status(char * status)
+-{
+-	if((status != NULL) && (strlen(status) < 20))
+-	{
+-		strcpy(ctp_if_upgrade_status,status);
+-	}
+-	return 0;
+-}
+-
+-static const struct file_operations g_ctp_if_upgrade_proc_fops = {
+-	.read		= ctp_if_upgrade_proc_read,
+-	.write		= ctp_if_upgrade_proc_write,
+-};
+-
+-static const struct file_operations g_ctp_if_upgrade_version_proc_fops = {
+-	.read		= ctp_if_upgrade_version_proc_read,
+-};
+-
+-static const struct file_operations g_ctp_if_upgrade_old_version_proc_fops = {
+-	.read		= ctp_if_upgrade_old_version_proc_read,
+-};
+-
+-static int __init ctp_if_upgrade_init(void)
+-{
+-	printk( "%s\n", __func__);
+-		
+-	strcpy(ctp_if_upgrade_status,"Unsupport");
+-	ctp_if_upgrade_workqueue = create_singlethread_workqueue("ctp_if_upgrade");
+-	INIT_WORK(&ctp_if_upgrade_work, ctp_if_upgrade_workqueue_func);
+-	
+-#if 1
+-	g_ctp_if_upgrade_proc = proc_create_data(CTP_IF_UPGRADE_PROC_FILE, 0660, NULL, &g_ctp_if_upgrade_proc_fops, NULL);
+-	if (IS_ERR_OR_NULL(g_ctp_if_upgrade_proc))
+-	{
+-		printk(" ctp_if_upgrade_init create_proc_entry 222 failed\n");
+-	}
+-	else
+-	{
+-		printk("ctp_if_upgrade_init create_proc_entry 222 success\n");
+-	}
+-	
+-	g_ctp_if_upgrade_version_proc = proc_create_data(CTP_IF_UPGRADE_VERSION_PROC_FILE, 0660, NULL, &g_ctp_if_upgrade_version_proc_fops, NULL);
+-	if (IS_ERR_OR_NULL(g_ctp_if_upgrade_version_proc))
+-	{
+-		printk("create_proc_entry failed\n");
+-	}
+-	else
+-	{
+-		printk("create_proc_entry success\n");
+-	}
+-	
+-	g_ctp_if_upgrade_old_version_proc = proc_create_data(CTP_IF_UPGRADE_OLD_VERSION_PROC_FILE, 0444, NULL, &g_ctp_if_upgrade_old_version_proc_fops, NULL);
+-	if (IS_ERR_OR_NULL(g_ctp_if_upgrade_old_version_proc))
+-	{
+-		printk("create_proc_entry failed\n");
+-	}
+-	else
+-	{
+-		printk("create_proc_entry success\n");
+-	}
+-#else
+-	g_ctp_if_upgrade_proc = create_proc_entry(CTP_IF_UPGRADE_PROC_FILE, 0660, NULL);
+-	if (g_ctp_if_upgrade_proc == NULL) {
+-		printk(" ctp_if_upgrade_init create_proc_entry 222 failed\n");
+-	} else {
+-		g_ctp_if_upgrade_proc->read_proc = ctp_if_upgrade_proc_read;
+-		g_ctp_if_upgrade_proc->write_proc = ctp_if_upgrade_proc_write;
+-
+-		printk("ctp_if_upgrade_init create_proc_entry 222 success\n");
+-	}
+-
+-
+-	g_ctp_if_upgrade_version_proc = create_proc_entry(CTP_IF_UPGRADE_VERSION_PROC_FILE, 0444, NULL);
+-	if (g_ctp_if_upgrade_version_proc == NULL) {
+-		printk("create_proc_entry failed\n");
+-	} else {
+-		g_ctp_if_upgrade_version_proc->read_proc = ctp_if_upgrade_version_proc_read;
+-		g_ctp_if_upgrade_version_proc->write_proc = NULL;	
+-		printk("create_proc_entry success\n");
+-	}
+-
+-
+-	g_ctp_if_upgrade_old_version_proc = create_proc_entry(CTP_IF_UPGRADE_OLD_VERSION_PROC_FILE, 0444, NULL);
+-	if (g_ctp_if_upgrade_old_version_proc == NULL) {
+-		printk("create_proc_entry failed\n");
+-	} else {
+-		g_ctp_if_upgrade_old_version_proc->read_proc = ctp_if_upgrade_old_version_proc_read;
+-		g_ctp_if_upgrade_old_version_proc->write_proc = NULL;	
+-		printk("create_proc_entry success\n");
+-	}
+-#endif
+-	return 0;
+-}
+-
+-static void __exit ctp_if_upgrade_exit(void)
+-{
+-	return;
+-}
+-
+-module_init(ctp_if_upgrade_init);
+-module_exit(ctp_if_upgrade_exit);
+-
+-MODULE_DESCRIPTION("CTP if upgrade driver");
+-MODULE_LICENSE("GPL");
+-
+-
+-
+diff --git a/drivers/input/touchscreen/lct_if_ctp_upgrade.h b/drivers/input/touchscreen/lct_if_ctp_upgrade.h
+deleted file mode 100644
+index 060eb48baf83..000000000000
+--- a/drivers/input/touchscreen/lct_if_ctp_upgrade.h
++++ /dev/null
+@@ -1,15 +0,0 @@
+-#ifndef _LCT_IF_CTP_UPGRADE_H
+-#define _LCT_IF_CTP_UPGRADE_H
+-
+-typedef  int (*CTP_UPGRADE_FUNC)(void);
+-typedef void (*CTP_READ_VERSION)(char* version);
+-
+-
+-
+-
+-void lct_if_ctp_upgrade_int(CTP_UPGRADE_FUNC PUpdatefunc,CTP_READ_VERSION PVerfunc,CTP_READ_VERSION POldVerfunc);
+-
+-int lct_set_if_ctp_upgrade_status(char * status);
+-
+-
+-#endif
+\ No newline at end of file
+diff --git a/drivers/input/touchscreen/lct_tp_fm_info.c b/drivers/input/touchscreen/lct_tp_fm_info.c
+deleted file mode 100644
+index b7a17f79db45..000000000000
+--- a/drivers/input/touchscreen/lct_tp_fm_info.c
++++ /dev/null
+@@ -1,120 +0,0 @@
+-#include <linux/string.h>
+-#include <asm/uaccess.h>
+-#include <linux/slab.h>
+-#include <linux/module.h>
+-#include <linux/proc_fs.h>
+-#include <linux/device.h>
+-#include <linux/miscdevice.h>
+-#include "lct_tp_fm_info.h"
+-
+-static struct kobject *msm_tp_device;
+-static u16 tp_ver_show = 0;
+-static char tp_ver_show_str[80] = {0x00};
+-static char module_name[80] = {0x00};
+-
+-static ssize_t msm_tp_module_id_show(struct device *dev,
+-		struct device_attribute *attr, char *buf)
+-{
+-	ssize_t rc = 0;
+-
+-    char tp_version[60] = {0};
+-
+-    if((0 == tp_ver_show) && (0 == strlen(tp_ver_show_str)))
+-        strcpy(tp_version,"no tp");
+-    else
+-    {
+-        sprintf(tp_version, "[Vendor]%s,%s\n", (strlen(module_name) ? module_name : "Unknown"),
+-				(strlen(tp_ver_show_str) ? tp_ver_show_str : "Unknown product"));
+-    }
+-	
+-	sprintf(buf, "%s", tp_version);
+-	rc = strlen(buf) + 1;
+-
+-	return rc;
+-}
+-
+-static DEVICE_ATTR(tp_info, 0444, msm_tp_module_id_show, NULL);
+-static int tp_fm_creat_sys_entry(void)
+-{
+-    int32_t rc = 0;
+-
+-	msm_tp_device = kobject_create_and_add("android_tp", NULL);
+-	if (msm_tp_device == NULL) {
+-		pr_info("%s: subsystem_register failed\n", __func__);
+-		rc = -ENOMEM;
+-		return rc ;
+-	}
+-	rc = sysfs_create_file(msm_tp_device, &dev_attr_tp_info.attr);
+-	if (rc) {
+-		pr_info("%s: sysfs_create_file failed\n", __func__);
+-		kobject_del(msm_tp_device);
+-	}
+-
+-	return 0 ;
+-}
+-
+-static ssize_t tp_proc_tp_info_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-    int cnt=0;
+-    char *page = NULL;
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-
+-    if((0 == strlen(module_name)) && (0 == tp_ver_show) && (0 == strlen(tp_ver_show_str)))
+-        cnt = sprintf(page, "no tp\n");
+-	else
+-	{
+-
+-		cnt = sprintf(page, "[Vendor]%s,%s\n", (strlen(module_name) ? module_name : "Unknown"),
+-				(strlen(tp_ver_show_str) ? tp_ver_show_str : "Unknown product"));
+-	}
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-
+-	
+-	kfree(page);
+-    return cnt;
+-}
+-
+-static const struct file_operations tp_proc_tp_info_fops = {
+-	.read		= tp_proc_tp_info_read,
+-};
+-
+-static int tp_fm_creat_proc_entry(void)
+-{
+-    struct proc_dir_entry *proc_entry_tp;
+-
+-	proc_entry_tp = proc_create_data("tp_info", 0444, NULL, &tp_proc_tp_info_fops, NULL);
+-	if (IS_ERR_OR_NULL(proc_entry_tp))
+-	{
+-		pr_err("add /proc/tp_info error \n");
+-	}
+-
+-    return 0;
+-}
+-
+-int init_tp_fm_info(u16 version_info_num, char* version_info_str, char *name)
+-{
+-    tp_ver_show = version_info_num;
+-
+-    if (NULL != version_info_str)
+-        strcpy(tp_ver_show_str, version_info_str);
+-    if (NULL != name)
+-        strcpy(module_name, name);
+-
+-    tp_fm_creat_sys_entry();
+-    tp_fm_creat_proc_entry();
+-
+-    return 0;
+-}
+-
+-void update_tp_fm_info(char* version_info_str)
+-{
+-    if (NULL != version_info_str) {
+-		memset(tp_ver_show_str, 0, sizeof(tp_ver_show_str));
+-        strcpy(tp_ver_show_str, version_info_str);
+-    }
+-}
+-
+-MODULE_DESCRIPTION("GTP Series Driver");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/input/touchscreen/lct_tp_fm_info.h b/drivers/input/touchscreen/lct_tp_fm_info.h
+deleted file mode 100644
+index 7fb9091aaf05..000000000000
+--- a/drivers/input/touchscreen/lct_tp_fm_info.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-
+-#ifndef LCT_TP_FM_INFO_H
+-#define LCT_TP_FM_INFO_H
+-
+-#define SUPPORT_READ_TP_VERSION
+-
+-extern int init_tp_fm_info(u16 version_info_num, char* version_info_str, char *name);
+-extern void update_tp_fm_info(char  *version_info_str);
+-
+-#endif
+diff --git a/drivers/input/touchscreen/lct_tp_gesture.c b/drivers/input/touchscreen/lct_tp_gesture.c
+deleted file mode 100644
+index 21c8457a424e..000000000000
+--- a/drivers/input/touchscreen/lct_tp_gesture.c
++++ /dev/null
+@@ -1,176 +0,0 @@
+-/****************************************************************************************
+- *
+- * @File Name   : lct_tp_gesture.c
+- * @Author      : wanghan
+- * @E-mail      : <wanghan@longcheer.com>
+- * @Create Time : 2018-09-30 17:34:43
+- * @Description : Enable/Disable touchpad.
+- *
+- ****************************************************************************************/
+-
+-/*
+- * INCLUDE FILES
+- ****************************************************************************************
+- */
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/string.h>
+-#include <linux/slab.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-#include <linux/miscdevice.h>
+-#include <asm/uaccess.h>
+-
+-/*
+- * DEFINE CONFIGURATION
+- ****************************************************************************************
+- */
+-#define TP_GESTURE_LOG_ENABLE
+-#define TP_GESTURE_TAG           "LCT_TP_GESTURE"
+-
+-#ifdef TP_GESTURE_LOG_ENABLE
+-#define TP_LOGW(log, ...) printk(KERN_WARNING "[%s] %s (line %d): " log, TP_GESTURE_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#define TP_LOGE(log, ...) printk(KERN_ERR "[%s] %s ERROR (line %d): " log, TP_GESTURE_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#else
+-#define TP_LOGW(log, ...) {}
+-#define TP_LOGE(log, ...) {}
+-#endif
+-
+-/*
+- * DATA STRUCTURES
+- ****************************************************************************************
+- */
+-typedef int (*tp_gesture_cb_t)(bool enable_tp);
+-
+-typedef struct lct_tp{
+-	bool enable_tp_gesture_flag;
+-	tp_gesture_cb_t pfun;
+-}lct_tp_t;
+-
+-/*
+- * GLOBAL VARIABLE DEFINITIONS
+- ****************************************************************************************
+- */
+-static lct_tp_t *lct_tp_p = NULL;
+-
+-/*
+- * FUNCTION DEFINITIONS
+- ****************************************************************************************
+- */
+-
+-static int lct_creat_proc_tp_entry(void);
+-static ssize_t lct_proc_tp_gesture_read(struct file *file, char __user *buf, size_t size, loff_t *ppos);
+-static ssize_t lct_proc_tp_gesture_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos);
+-static const struct file_operations lct_proc_tp_gesture_fops = {
+-	.read		= lct_proc_tp_gesture_read,
+-	.write		= lct_proc_tp_gesture_write,
+-};
+-
+-
+-int init_lct_tp_gesture(tp_gesture_cb_t callback)
+-{
+-	if (NULL == callback) {
+-		TP_LOGE("callback is NULL!\n");
+-		return -EINVAL;
+-	}
+-
+-	TP_LOGW("Initialization tp_gesture node!\n");
+-	lct_tp_p = kzalloc(sizeof(lct_tp_t), GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(lct_tp_p)){
+-		TP_LOGE("kzalloc() request memory failed!\n");
+-		return -ENOMEM;
+-	}
+-	lct_tp_p->pfun = callback;
+-	lct_tp_p->enable_tp_gesture_flag = false;
+-
+-	lct_creat_proc_tp_entry();
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(init_lct_tp_gesture);
+-
+-bool get_lct_tp_gesture_status(void)
+-{
+-	return lct_tp_p->enable_tp_gesture_flag;
+-}
+-EXPORT_SYMBOL(get_lct_tp_gesture_status);
+-
+-static int lct_creat_proc_tp_entry(void)
+-{
+-	struct proc_dir_entry *proc_entry_tp;
+-
+-	proc_entry_tp = proc_create_data("tp_gesture", 0444, NULL, &lct_proc_tp_gesture_fops, NULL);
+-	if (IS_ERR_OR_NULL(proc_entry_tp)) {
+-		TP_LOGE("add /proc/tp_gesture error!\n");
+-		return -1;
+-	}
+-	TP_LOGW("/proc/tp_gesture is okay!\n");
+-
+-	return 0;
+-}
+-
+-static ssize_t lct_proc_tp_gesture_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	ssize_t cnt=0;
+-	char *page = NULL;
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(page))
+-		return -ENOMEM;
+-
+-	cnt = sprintf(page, "%s", (lct_tp_p->enable_tp_gesture_flag ? "1\n" : "0\n"));
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	TP_LOGW("Touchpad status : %s", page);
+-
+-	kfree(page);
+-	return cnt;
+-}
+-
+-static ssize_t lct_proc_tp_gesture_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int ret;
+-	ssize_t cnt = 0;
+-	char *page = NULL;
+-	unsigned int input = 0;
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(page))
+-		return -ENOMEM;
+-	cnt = simple_write_to_buffer(page, 128, ppos, buf, size);
+-	if (cnt <= 0)
+-		return -EINVAL;
+-	if (sscanf(page, "%u", &input) != 1)
+-		return -EINVAL;
+-
+-	if (input > 0) {
+-		if (lct_tp_p->enable_tp_gesture_flag)
+-			goto exit;
+-		TP_LOGW("Enbale Touchpad Gesture ...\n");
+-		ret = lct_tp_p->pfun(true);
+-		if (ret) {
+-			TP_LOGW("Enable Touchpad Gesture Failed! ret=%d\n", ret);
+-			goto exit;
+-		}
+-		lct_tp_p->enable_tp_gesture_flag = true;
+-	} else {
+-		if (!lct_tp_p->enable_tp_gesture_flag)
+-			goto exit;
+-		TP_LOGW("Disable Touchpad Gesture ...\n");
+-		ret = lct_tp_p->pfun(false);
+-		if (ret) {
+-			TP_LOGW("Disable Touchpad Gesture Failed! ret=%d\n", ret);
+-			goto exit;
+-		}
+-		lct_tp_p->enable_tp_gesture_flag = false;
+-	}
+-	TP_LOGW("Set Touchpad Gesture successfully!\n");
+-
+-exit:
+-	kfree(page);
+-	return cnt;
+-}
+-
+-MODULE_DESCRIPTION("Touchpad Work Contoller Driver");
+-MODULE_LICENSE("GPL");
+-
+diff --git a/drivers/input/touchscreen/lct_tp_gesture.h b/drivers/input/touchscreen/lct_tp_gesture.h
+deleted file mode 100644
+index c430e1c42fef..000000000000
+--- a/drivers/input/touchscreen/lct_tp_gesture.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-#ifndef __LCT_TP_GESTURE_H__
+-#define __LCT_TP_GESTURE_H__
+-
+-typedef int (*tp_gesture_cb_t)(bool enable_tp);
+-
+-extern int init_lct_tp_gesture(tp_gesture_cb_t callback);
+-extern bool get_lct_tp_gesture_status(void);
+-
+-#endif
+-
+diff --git a/drivers/input/touchscreen/lct_tp_grip_area.c b/drivers/input/touchscreen/lct_tp_grip_area.c
+deleted file mode 100644
+index 94bc5dd2e050..000000000000
+--- a/drivers/input/touchscreen/lct_tp_grip_area.c
++++ /dev/null
+@@ -1,183 +0,0 @@
+-/****************************************************************************************
+- *
+- * @File Name   : lct_tp_grip_area.c
+- * @Author      : wanghan
+- * @E-mail      : <wanghan@longcheer.com>
+- * @Create Time : 2018-08-17 17:34:43
+- * @Description : Display touchpad information.
+- *
+- ****************************************************************************************/
+-
+-/*
+- * INCLUDE FILES
+- ****************************************************************************************
+- */
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/string.h>
+-#include <linux/slab.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-#include <linux/miscdevice.h>
+-
+-/*
+- * DEFINE CONFIGURATION
+- ****************************************************************************************
+- */
+-#define TP_GRIP_AREA_LOG_ENABLE
+-#define TP_GRIP_AREA_TAG           "LCT_TP_GRIP_AREA"
+-
+-#ifdef TP_GRIP_AREA_LOG_ENABLE
+-#define TP_LOGW(log, ...) printk(KERN_WARNING "[%s] %s (line %d): " log, TP_GRIP_AREA_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#define TP_LOGE(log, ...) printk(KERN_ERR "[%s] %s ERROR (line %d): " log, TP_GRIP_AREA_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#else
+-#define TP_LOGW(log, ...) {}
+-#define TP_LOGE(log, ...) {}
+-#endif
+-
+-typedef int (*get_screen_angle_callback)(void);
+-typedef int (*set_screen_angle_callback)(unsigned int angle);
+-
+-/*
+- * DATA STRUCTURES
+- ****************************************************************************************
+- */
+-typedef struct lct_tp{
+-	struct kobject *tp_device;
+-	unsigned int screen_angle;
+-	int (*lct_grip_area_get_screen_angle_callback)(void);
+-	int (*lct_grip_area_set_screen_angle_callback)(unsigned int angle);
+-}lct_tp_t;
+-
+-/*
+- * GLOBAL VARIABLE DEFINITIONS
+- ****************************************************************************************
+- */
+-static lct_tp_t *lct_tp_p = NULL;
+-
+-/*
+- * FUNCTION DEFINITIONS
+- ****************************************************************************************
+- */
+-
+-static int lct_proc_tp_grip_area_open (struct inode *node, struct file *file);
+-static ssize_t lct_proc_tp_grip_area_read(struct file *file, char __user *buf, size_t size, loff_t *ppos);
+-static ssize_t lct_proc_tp_grip_area_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos);
+-static const struct file_operations lct_proc_tp_grip_area_fops = {
+-	.open		= lct_proc_tp_grip_area_open,
+-	.read		= lct_proc_tp_grip_area_read,
+-	.write		= lct_proc_tp_grip_area_write,
+-};
+-
+-int init_lct_tp_grip_area(set_screen_angle_callback set_fun, get_screen_angle_callback get_fun)
+-{
+-	struct proc_dir_entry *proc_entry_tp;
+-
+-	if (NULL == set_fun)
+-		return -1;
+-
+-	TP_LOGW("Initialization /proc/tp_grip_area node!\n");
+-	lct_tp_p = kzalloc(sizeof(lct_tp_t), GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(lct_tp_p)){
+-		TP_LOGE("kzalloc() request memory failed!\n");
+-		return -ENOMEM;
+-	}
+-
+-	lct_tp_p->lct_grip_area_set_screen_angle_callback = set_fun;
+-	lct_tp_p->lct_grip_area_get_screen_angle_callback = get_fun;
+-
+-	proc_entry_tp = proc_create_data("tp_grip_area", 0666, NULL, &lct_proc_tp_grip_area_fops, NULL);
+-	if (IS_ERR_OR_NULL(proc_entry_tp)) {
+-		TP_LOGE("add /proc/tp_grip_area error \n");
+-		kfree(lct_tp_p);
+-		return -1;
+-	}
+-	TP_LOGW("/proc/tp_grip_area is okay!\n");
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(init_lct_tp_grip_area);
+-
+-int get_tp_grip_area_angle(void)
+-{
+-	return lct_tp_p->screen_angle;
+-}
+-EXPORT_SYMBOL(get_tp_grip_area_angle);
+-
+-static int lct_proc_tp_grip_area_open (struct inode *node, struct file *file)
+-{
+-	return 0;
+-}
+-
+-static ssize_t lct_proc_tp_grip_area_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int ret=-EIO;
+-	ssize_t cnt = 0;
+-	char *page = NULL;
+-
+-	page = kzalloc(size + 1, GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(page))
+-		return ret;
+-
+-	if (NULL != lct_tp_p->lct_grip_area_get_screen_angle_callback) {
+-		ret = lct_tp_p->lct_grip_area_get_screen_angle_callback();
+-		if (ret < 0) {
+-			TP_LOGE("get screen angle failed!\n");
+-			goto out;
+-		}
+-		lct_tp_p->screen_angle = ret; 
+-	}
+-	cnt = sprintf(page, "%u\n", lct_tp_p->screen_angle);
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	TP_LOGW("screen_angle = %s", page);
+-	ret = cnt;
+-
+-out:
+-	kfree(page);
+-	return ret;
+-}
+-
+-static ssize_t lct_proc_tp_grip_area_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int ret = -EIO;
+-	ssize_t cnt = 0;
+-	char *cmd = NULL;
+-	unsigned int angle = 0;
+-
+-	cmd = kzalloc(size + 1, GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(cmd))
+-		return -ENOMEM;
+-
+-	cnt = simple_write_to_buffer(cmd, size + 1, ppos, buf, size);
+-	if (cnt <= 0)
+-		goto out;
+-
+-	cmd[size] = '\0';
+-	if (sscanf(cmd, "%u", &angle) < 0)
+-		goto out;
+-
+-	if (angle > 360) {
+-		TP_LOGE("screen_angle range: 0 ~ 360 !\n");
+-		goto out;
+-	}
+-	TP_LOGW("Set screen angle = %u\n", angle);
+-
+-	if (NULL == lct_tp_p->lct_grip_area_set_screen_angle_callback) {
+-		TP_LOGE("none callback!\n");
+-		goto out;
+-	}
+-	ret = lct_tp_p->lct_grip_area_set_screen_angle_callback(angle);
+-	if (ret < 0) {
+-		TP_LOGE("Set screen angle failed! ret = %d\n", ret);
+-		goto out;
+-	}
+-	lct_tp_p->screen_angle = angle;
+-	ret = cnt;
+-
+-out:
+-	kfree(cmd);
+-	return ret;
+-}
+-
+-MODULE_DESCRIPTION("Touchpad Grip Area Driver");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/input/touchscreen/lct_tp_grip_area.h b/drivers/input/touchscreen/lct_tp_grip_area.h
+deleted file mode 100644
+index fdb53decdf0f..000000000000
+--- a/drivers/input/touchscreen/lct_tp_grip_area.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-#ifndef __LCT_TP_GRIP_AREA_H__
+-#define __LCT_TP_GRIP_AREA_H__
+-
+-typedef int (*get_screen_angle_callback)(void);
+-typedef int (*set_screen_angle_callback)(unsigned int angle);
+-
+-extern int init_lct_tp_grip_area(set_screen_angle_callback set_fun, get_screen_angle_callback get_fun);
+-extern int get_tp_grip_area_angle(void);
+-
+-#endif
+-
+diff --git a/drivers/input/touchscreen/lct_tp_info.c b/drivers/input/touchscreen/lct_tp_info.c
+deleted file mode 100644
+index f044c226f601..000000000000
+--- a/drivers/input/touchscreen/lct_tp_info.c
++++ /dev/null
+@@ -1,240 +0,0 @@
+-/****************************************************************************************
+- *
+- * @File Name   : lct_tp_info.c
+- * @Author      : wanghan
+- * @E-mail      : <wanghan@longcheer.com>
+- * @Create Time : 2018-08-17 17:34:43
+- * @Description : Display touchpad information.
+- *
+- ****************************************************************************************/
+-
+-/*
+- * INCLUDE FILES
+- ****************************************************************************************
+- */
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/string.h>
+-#include <linux/slab.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-#include <linux/miscdevice.h>
+-
+-/*
+- * DEFINE CONFIGURATION
+- ****************************************************************************************
+- */
+-#define TP_INFO_LOG_ENABLE
+-#define TP_INFO_TAG           "LCT_TP_INFO"
+-#define LCT_STRING_SIZE       128
+-#define TP_CALLBACK_CMD_INFO      "CMD_INFO"
+-#define TP_CALLBACK_CMD_LOCKDOWN  "CMD_LOCKDOWN"
+-
+-#ifdef TP_INFO_LOG_ENABLE
+-#define TP_LOGW(log, ...) printk(KERN_WARNING "[%s] %s (line %d): " log, TP_INFO_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#define TP_LOGE(log, ...) printk(KERN_ERR "[%s] %s ERROR (line %d): " log, TP_INFO_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#else
+-#define TP_LOGW(log, ...) {}
+-#define TP_LOGE(log, ...) {}
+-#endif
+-
+-/*
+- * DATA STRUCTURES
+- ****************************************************************************************
+- */
+-typedef struct lct_tp{
+-	struct kobject *tp_device;
+-	char tp_info_buf[LCT_STRING_SIZE];
+-	char tp_lockdown_info_buf[LCT_STRING_SIZE];
+-	int (*pfun)(const char *);
+-}lct_tp_t;
+-
+-/*
+- * GLOBAL VARIABLE DEFINITIONS
+- ****************************************************************************************
+- */
+-static lct_tp_t *lct_tp_p = NULL;
+-
+-/*
+- * FUNCTION DEFINITIONS
+- ****************************************************************************************
+- */
+-
+-static int lct_creat_proc_tp_entry(void);
+-static ssize_t lct_proc_tp_info_read(struct file *file, char __user *buf, size_t size, loff_t *ppos);
+-static ssize_t lct_proc_tp_lockdown_info_read(struct file *file, char __user *buf, size_t size, loff_t *ppos);
+-static const struct file_operations lct_proc_tp_info_fops = {
+-	.read		= lct_proc_tp_info_read,
+-};
+-static const struct file_operations lct_proc_tp_lockdown_info_fops = {
+-	.read		= lct_proc_tp_lockdown_info_read,
+-};
+-
+-static int lct_creat_sys_tp_entry(void);
+-static ssize_t lct_sys_tp_info_show(struct device *dev, struct device_attribute *attr, char *buf);
+-static ssize_t lct_sys_tp_lockdown_info_show(struct device *dev, struct device_attribute *attr, char *buf);
+-static DEVICE_ATTR(tp_info, 0444, lct_sys_tp_info_show, NULL);
+-static DEVICE_ATTR(tp_lockdown_info, 0444, lct_sys_tp_lockdown_info_show, NULL);
+-
+-
+-
+-int init_lct_tp_info(char *tp_info_buf, char *tp_lockdown_info_buf)
+-{
+-	TP_LOGW("Initialization tp_info & tp_lockdown_info node!\n");
+-	lct_tp_p = kzalloc(sizeof(lct_tp_t), GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(lct_tp_p)){
+-		TP_LOGE("kzalloc() request memory failed!\n");
+-		return -ENOMEM;
+-	}
+-
+-	if (NULL != tp_info_buf)
+-		strcpy(lct_tp_p->tp_info_buf, tp_info_buf);
+-	if (NULL != tp_lockdown_info_buf)
+-		strcpy(lct_tp_p->tp_lockdown_info_buf, tp_lockdown_info_buf);
+-
+-	lct_creat_proc_tp_entry();
+-	lct_creat_sys_tp_entry();
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(init_lct_tp_info);
+-
+-void update_lct_tp_info(char *tp_info_buf, char *tp_lockdown_info_buf)
+-{
+-	if (NULL != tp_info_buf) {
+-		memset(lct_tp_p->tp_info_buf, 0, sizeof(lct_tp_p->tp_info_buf));
+-		strcpy(lct_tp_p->tp_info_buf, tp_info_buf);
+-	}
+-	if (NULL != tp_lockdown_info_buf) {
+-		memset(lct_tp_p->tp_lockdown_info_buf, 0, sizeof(lct_tp_p->tp_lockdown_info_buf));
+-		strcpy(lct_tp_p->tp_lockdown_info_buf, tp_lockdown_info_buf);
+-	}
+-	return;
+-}
+-EXPORT_SYMBOL(update_lct_tp_info);
+-
+-void set_lct_tp_info_callback(int (*pfun)(const char *))
+-{
+-	if (NULL != pfun)
+-		lct_tp_p->pfun = pfun;
+-	return;
+-}
+-EXPORT_SYMBOL(set_lct_tp_info_callback);
+-
+-static int lct_creat_proc_tp_entry(void)
+-{
+-	struct proc_dir_entry *proc_entry_tp;
+-
+-	proc_entry_tp = proc_create_data("tp_info", 0444, NULL, &lct_proc_tp_info_fops, NULL);
+-	if (IS_ERR_OR_NULL(proc_entry_tp))
+-		TP_LOGE("add /proc/tp_info error \n");
+-	proc_entry_tp = proc_create_data("tp_lockdown_info", 0444, NULL, &lct_proc_tp_lockdown_info_fops, NULL);
+-	if (IS_ERR_OR_NULL(proc_entry_tp))
+-		TP_LOGE("add /proc/tp_lockdown_info error \n");
+-	TP_LOGW("/proc/tp_info & /proc/tp_lockdown_info is okay!\n");
+-
+-	return 0;
+-}
+-
+-static ssize_t lct_proc_tp_info_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt=0;
+-	char *page = NULL;
+-
+-	if (NULL != lct_tp_p->pfun)
+-		lct_tp_p->pfun(TP_CALLBACK_CMD_INFO);
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-
+-	if(NULL == lct_tp_p->tp_info_buf)
+-		cnt = sprintf(page, "No touchpad\n");
+-	else
+-		cnt = sprintf(page, "%s", (strlen(lct_tp_p->tp_info_buf) ? lct_tp_p->tp_info_buf : "Unknown touchpad"));
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	TP_LOGW("page=%s", page);
+-
+-	kfree(page);
+-	return cnt;
+-}
+-
+-static ssize_t lct_proc_tp_lockdown_info_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt=0;
+-	char *page = NULL;
+-
+-	if (NULL != lct_tp_p->pfun)
+-		lct_tp_p->pfun(TP_CALLBACK_CMD_LOCKDOWN);
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-
+-	if(NULL == lct_tp_p->tp_lockdown_info_buf)
+-		cnt = sprintf(page, "No touchpad\n");
+-	else
+-		cnt = sprintf(page, "%s", (strlen(lct_tp_p->tp_lockdown_info_buf) ? lct_tp_p->tp_lockdown_info_buf : "Unknown touchpad"));
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	TP_LOGW("page=%s", page);
+-
+-	kfree(page);
+-	return cnt;
+-}
+-
+-static int lct_creat_sys_tp_entry(void)
+-{
+-	int32_t rc = 0;
+-
+-	lct_tp_p->tp_device = kobject_create_and_add("android_tp", NULL);
+-	if (lct_tp_p->tp_device == NULL) {
+-		TP_LOGE("subsystem_register failed!\n");
+-		return -ENOMEM;
+-	}
+-	rc = sysfs_create_file(lct_tp_p->tp_device, &dev_attr_tp_info.attr);
+-	if (rc) {
+-		TP_LOGE("sysfs_create_file tp_info failed!\n");
+-		kobject_del(lct_tp_p->tp_device);
+-		return rc;
+-	}
+-	rc = sysfs_create_file(lct_tp_p->tp_device, &dev_attr_tp_lockdown_info.attr);
+-	if (rc) {
+-		TP_LOGE("sysfs_create_file tp_lockdown_info failed!\n");
+-		kobject_del(lct_tp_p->tp_device);
+-		return rc;
+-	}
+-	TP_LOGW("/sys/android_tp/tp_info & tp_lockdown_info is okay!\n");
+-
+-	return 0 ;
+-}
+-
+-static ssize_t lct_sys_tp_info_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	ssize_t rc = 0;
+-
+-	if (NULL != lct_tp_p->pfun)
+-		lct_tp_p->pfun(TP_CALLBACK_CMD_INFO);
+-
+-	if(NULL == lct_tp_p->tp_info_buf)
+-		rc = sprintf(buf,"No touchpad\n");
+-	else
+-		rc = sprintf(buf, "%s", (strlen(lct_tp_p->tp_info_buf) ? lct_tp_p->tp_info_buf : "Unknown touchpad"));
+-
+-	return rc;
+-}
+-
+-static ssize_t lct_sys_tp_lockdown_info_show(struct device *dev, struct device_attribute *attr, char *buf)
+-{
+-	ssize_t rc = 0;
+-
+-	if (NULL != lct_tp_p->pfun)
+-		lct_tp_p->pfun(TP_CALLBACK_CMD_LOCKDOWN);
+-
+-	if(NULL == lct_tp_p->tp_lockdown_info_buf)
+-		rc = sprintf(buf,"No touchpad\n");
+-	else
+-		rc = sprintf(buf, "%s", (strlen(lct_tp_p->tp_lockdown_info_buf) ? lct_tp_p->tp_lockdown_info_buf : "Unknown touchpad"));
+-
+-	return rc;
+-}
+-
+-MODULE_DESCRIPTION("Touchpad Information Driver");
+-MODULE_LICENSE("GPL");
+diff --git a/drivers/input/touchscreen/lct_tp_info.h b/drivers/input/touchscreen/lct_tp_info.h
+deleted file mode 100644
+index 1e40a9d6d87e..000000000000
+--- a/drivers/input/touchscreen/lct_tp_info.h
++++ /dev/null
+@@ -1,24 +0,0 @@
+-/****************************************************************************************
+- *
+- * @File Name   : lct_tp_info.h
+- * @Author      : wanghan
+- * @E-mail      : <wanghan@longcheer.com>
+- * @Create Time : 2018-08-17 17:34:43
+- * @Description : Display touchpad information.
+- *
+- ****************************************************************************************/
+-
+-#ifndef __LCT_TP_INFO_H__
+-#define __LCT_TP_INFO_H__
+-
+-#define TP_CALLBACK_CMD_INFO      "CMD_INFO"
+-#define TP_CALLBACK_CMD_LOCKDOWN  "CMD_LOCKDOWN"
+-
+-
+-extern int init_lct_tp_info(char *tp_info_buf, char *tp_lockdown_info_buf);
+-
+-extern void update_lct_tp_info(char *tp_info_buf, char *tp_lockdown_info_buf);
+-
+-extern void set_lct_tp_info_callback(int (*pfun)(const char *));
+-
+-#endif
+diff --git a/drivers/input/touchscreen/lct_tp_selftest.c b/drivers/input/touchscreen/lct_tp_selftest.c
+deleted file mode 100644
+index 3b9950ddbab6..000000000000
+--- a/drivers/input/touchscreen/lct_tp_selftest.c
++++ /dev/null
+@@ -1,209 +0,0 @@
+-#include <linux/module.h>
+-#include <linux/moduleparam.h>
+-#include <linux/kernel.h>
+-#include <linux/sysfs.h>
+-#include <linux/init.h>
+-#include <linux/mutex.h>
+-#include <linux/spinlock.h>
+-#include <linux/delay.h>
+-#include <linux/slab.h>
+-#include <linux/syscalls.h>
+-#include <linux/file.h>
+-#include <linux/fs.h>
+-#include <linux/fcntl.h>
+-#include <linux/string.h>
+-#include <asm/unistd.h>
+-#include <linux/cdev.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-
+-#define TP_SELF_TEST_RETROY_COUNT        3
+-#define TP_SELF_TEST_CHECK_STATE_COUNT   30
+-
+-#define TP_SELF_TEST_PROC_FILE           "tp_selftest"
+-
+-#define TP_SELF_TEST_RESULT_UNKNOW       "0\n"
+-#define TP_SELF_TEST_RESULT_FAIL         "1\n"
+-#define TP_SELF_TEST_RESULT_PASS         "2\n"
+-
+-#define TP_SELF_TEST_LONGCHEER_MMI_CMD   "mmi"
+-#define TP_SELF_TEST_XIAOMI_I2C_CMD      "i2c"
+-#define TP_SELF_TEST_XIAOMI_OPEN_CMD     "open"
+-#define TP_SELF_TEST_XIAOMI_SHORT_CMD    "short"
+-
+-enum lct_tp_selftest_cmd {
+-	TP_SELFTEST_CMD_LONGCHEER_MMI = 0x00,
+-	TP_SELFTEST_CMD_XIAOMI_I2C = 0x01,
+-	TP_SELFTEST_CMD_XIAOMI_OPEN = 0x02,
+-	TP_SELFTEST_CMD_XIAOMI_SHORT = 0x03,
+-};
+-
+-
+-#define TP_INFO_TAG           "LCT_TP_SELFTEST"
+-#define TP_INFO_LOG_ENABLE
+-
+-#ifdef TP_INFO_LOG_ENABLE
+-#define TP_LOGW(log, ...) printk(KERN_WARNING "[%s] %s (line %d): " log, TP_INFO_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#define TP_LOGE(log, ...) printk(KERN_ERR "[%s] %s ERROR (line %d): " log, TP_INFO_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#else
+-#define TP_LOGW(log, ...) {}
+-#define TP_LOGE(log, ...) {}
+-#endif
+-
+-/*
+- * GLOBAL VARIABLE DEFINITIONS
+- ****************************************************************************************
+- */
+-
+-
+-typedef int (*tp_selftest_callback_t)(unsigned char cmd);
+-static tp_selftest_callback_t tp_selftest_callback_func = NULL;
+-
+-static char ft_tp_selftest_status[15] = {0};
+-static bool is_in_self_test = false;
+-static int lct_tp_selftest_cmd;
+-
+-/*
+- * FUNCTION DEFINITIONS
+- ****************************************************************************************
+- */
+-
+-static int tp_chip_self_test(void);
+-static void tp_selftest_work_func(void);
+-
+-static ssize_t tp_selftest_proc_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+-{
+-	char tmp_data[64] = {0};
+-
+-	if(copy_from_user(tmp_data, buf, size)) {
+-		TP_LOGE("copy_from_user() fail.\n");
+-		return -EFAULT;
+-	}
+-
+-	if( (strncmp(tmp_data, TP_SELF_TEST_LONGCHEER_MMI_CMD, strlen(TP_SELF_TEST_LONGCHEER_MMI_CMD)) == 0)
+-			&& (!is_in_self_test)) {
+-
+-		TP_LOGW("Longcheer MMI TP self-test ...\n");
+-		lct_tp_selftest_cmd = TP_SELFTEST_CMD_LONGCHEER_MMI;
+-
+-	} else if ((strncmp(tmp_data, TP_SELF_TEST_XIAOMI_I2C_CMD, strlen(TP_SELF_TEST_XIAOMI_I2C_CMD)) == 0)
+-			&& (!is_in_self_test)) {
+-
+-		TP_LOGW("Xiaomi TP i2c self-test ...\n");
+-		lct_tp_selftest_cmd = TP_SELFTEST_CMD_XIAOMI_I2C;
+-
+-
+-	} else if ((strncmp(tmp_data, TP_SELF_TEST_XIAOMI_OPEN_CMD, strlen(TP_SELF_TEST_XIAOMI_OPEN_CMD)) == 0)
+-			&& (!is_in_self_test)) {
+-
+-		TP_LOGW("Xiaomi TP open self-test ...\n");
+-		lct_tp_selftest_cmd = TP_SELFTEST_CMD_XIAOMI_OPEN;
+-
+-	} else if ((strncmp(tmp_data, TP_SELF_TEST_XIAOMI_SHORT_CMD, strlen(TP_SELF_TEST_XIAOMI_SHORT_CMD)) == 0)
+-			&& (!is_in_self_test)) {
+-
+-		TP_LOGW("Xiaomi TP short self-test ...\n");
+-		lct_tp_selftest_cmd = TP_SELFTEST_CMD_XIAOMI_SHORT;
+-
+-	} else {
+-
+-		TP_LOGW("Unknow command\n");
+-		is_in_self_test = false;
+-		return size;
+-
+-	}
+-
+-	is_in_self_test = true;
+-
+-	return size;
+-}
+-
+-static ssize_t tp_selftest_proc_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int cnt= 0;
+-	char *page = NULL;
+-
+-	if (is_in_self_test)
+-		tp_selftest_work_func();
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-	cnt = sprintf(page, "%s", ft_tp_selftest_status);
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	TP_LOGW("page=%s, cnt=%d\n", page, cnt);
+-	kfree(page);
+-
+-	return cnt;
+-}
+-
+-static int tp_chip_self_test(void)
+-{
+-	unsigned char cmd = lct_tp_selftest_cmd;
+-	if(tp_selftest_callback_func == NULL) {
+-		TP_LOGW("The TP is not support self test func\n");
+-		return 0;
+-	} else {
+-		TP_LOGW("Testing ...\n");
+-		return tp_selftest_callback_func(cmd);
+-	}
+-
+-}
+-
+-static void tp_selftest_work_func(void)
+-{
+-	int i = 0;
+-	int val = 0;
+-
+-	for(i = 0; i < TP_SELF_TEST_RETROY_COUNT; i++) {
+-		TP_LOGW("tp self test count = %d\n", i);
+-		val = tp_chip_self_test();
+-		if(val == 2) {
+-			strcpy(ft_tp_selftest_status, TP_SELF_TEST_RESULT_PASS);
+-			TP_LOGW("self test success\n");
+-			break;
+-		} else if(val == 1) {
+-			strcpy(ft_tp_selftest_status, TP_SELF_TEST_RESULT_FAIL);
+-			TP_LOGW("self test failed\n");
+-		} else {
+-			strcpy(ft_tp_selftest_status, TP_SELF_TEST_RESULT_UNKNOW);
+-			TP_LOGW("self test result unknow\n");
+-			break;
+-		}
+-	}
+-	is_in_self_test = false;
+-}
+-
+-void lct_tp_selftest_init(tp_selftest_callback_t callback)
+-{
+-	tp_selftest_callback_func = callback;
+-}
+-EXPORT_SYMBOL(lct_tp_selftest_init);
+-
+-static const struct file_operations tp_selftest_proc_fops = {
+-	.read		= tp_selftest_proc_read,
+-	.write		= tp_selftest_proc_write,
+-};
+-
+-static int __init tp_selftest_init(void)
+-{
+-	struct proc_dir_entry *tp_selftest_proc = NULL;
+-
+-	tp_selftest_proc = proc_create_data(TP_SELF_TEST_PROC_FILE, 0666, NULL, &tp_selftest_proc_fops, NULL);
+-	if (IS_ERR_OR_NULL(tp_selftest_proc)) {
+-		TP_LOGW("create /proc/%s failed\n", TP_SELF_TEST_PROC_FILE);
+-	} else {
+-		TP_LOGW("create /proc/%s success\n", TP_SELF_TEST_PROC_FILE);
+-	}
+-	return 0;
+-}
+-
+-static void __exit tp_selftest_exit(void)
+-{
+-	return;
+-}
+-
+-module_init(tp_selftest_init);
+-module_exit(tp_selftest_exit);
+-
+-MODULE_DESCRIPTION("TP selftest driver");
+-MODULE_LICENSE("GPL");
+-
+diff --git a/drivers/input/touchscreen/lct_tp_selftest.h b/drivers/input/touchscreen/lct_tp_selftest.h
+deleted file mode 100644
+index 724eb8da911a..000000000000
+--- a/drivers/input/touchscreen/lct_tp_selftest.h
++++ /dev/null
+@@ -1,33 +0,0 @@
+-#ifndef _LCT_CTP_SELFTEST_H
+-#define _LCT_CTP_SELFTEST_H
+-
+-#define TP_FELF_TEST_RETROY_COUNT        3
+-#define TP_SELF_TEST_CHECK_STATE_COUNT   30
+-
+-#define TP_SELF_TEST_PROC_FILE           "tp_selftest"
+-
+-#define TP_SELF_TEST_TESTING             "Testing"
+-#define TP_SELF_TEST_RESULT_UNKNOW       "0\n"
+-#define TP_SELF_TEST_RESULT_FAIL         "1\n"
+-#define TP_SELF_TEST_RESULT_PASS         "2\n"
+-
+-#define TP_SELF_TEST_LONGCHEER_MMI_CMD   "mmi"
+-#define TP_SELF_TEST_XIAOMI_I2C_CMD      "i2c"
+-#define TP_SELF_TEST_XIAOMI_OPEN_CMD     "open"
+-#define TP_SELF_TEST_XIAOMI_SHORT_CMD    "short"
+-
+-enum lct_tp_selftest_cmd {
+-	TP_SELFTEST_CMD_LONGCHEER_MMI = 0x00,
+-	TP_SELFTEST_CMD_XIAOMI_I2C = 0x01,
+-	TP_SELFTEST_CMD_XIAOMI_OPEN = 0x02,
+-	TP_SELFTEST_CMD_XIAOMI_SHORT = 0x03,
+-};
+-
+-
+-typedef int (*tp_selftest_callback_t)(unsigned char cmd);
+-
+-
+-extern void lct_tp_selftest_init(tp_selftest_callback_t callback);
+-
+-#endif
+-
+diff --git a/drivers/input/touchscreen/lct_tp_work.c b/drivers/input/touchscreen/lct_tp_work.c
+deleted file mode 100644
+index 21751be9d497..000000000000
+--- a/drivers/input/touchscreen/lct_tp_work.c
++++ /dev/null
+@@ -1,176 +0,0 @@
+-/****************************************************************************************
+- *
+- * @File Name   : lct_tp_work.c
+- * @Author      : wanghan
+- * @E-mail      : <wanghan@longcheer.com>
+- * @Create Time : 2018-09-30 17:34:43
+- * @Description : Enable/Disable touchpad.
+- *
+- ****************************************************************************************/
+-
+-/*
+- * INCLUDE FILES
+- ****************************************************************************************
+- */
+-#include <linux/module.h>
+-#include <linux/device.h>
+-#include <linux/string.h>
+-#include <linux/slab.h>
+-#include <asm/uaccess.h>
+-#include <linux/proc_fs.h>
+-#include <linux/miscdevice.h>
+-#include <asm/uaccess.h>
+-
+-/*
+- * DEFINE CONFIGURATION
+- ****************************************************************************************
+- */
+-#define TP_WORK_LOG_ENABLE
+-#define TP_WORK_TAG           "LCT_TP_WORK"
+-
+-#ifdef TP_WORK_LOG_ENABLE
+-#define TP_LOGW(log, ...) printk(KERN_WARNING "[%s] %s (line %d): " log, TP_WORK_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#define TP_LOGE(log, ...) printk(KERN_ERR "[%s] %s ERROR (line %d): " log, TP_WORK_TAG, __func__, __LINE__, ##__VA_ARGS__)
+-#else
+-#define TP_LOGW(log, ...) {}
+-#define TP_LOGE(log, ...) {}
+-#endif
+-
+-/*
+- * DATA STRUCTURES
+- ****************************************************************************************
+- */
+-typedef int (*tp_work_cb_t)(bool enable_tp);
+-
+-typedef struct lct_tp{
+-	bool enable_tp_work_flag;
+-	tp_work_cb_t pfun;
+-}lct_tp_t;
+-
+-/*
+- * GLOBAL VARIABLE DEFINITIONS
+- ****************************************************************************************
+- */
+-static lct_tp_t *lct_tp_p = NULL;
+-
+-/*
+- * FUNCTION DEFINITIONS
+- ****************************************************************************************
+- */
+-
+-static int lct_creat_proc_tp_entry(void);
+-static ssize_t lct_proc_tp_work_read(struct file *file, char __user *buf, size_t size, loff_t *ppos);
+-static ssize_t lct_proc_tp_work_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos);
+-static const struct file_operations lct_proc_tp_work_fops = {
+-	.read		= lct_proc_tp_work_read,
+-	.write		= lct_proc_tp_work_write,
+-};
+-
+-
+-int init_lct_tp_work(tp_work_cb_t callback)
+-{
+-	if (NULL == callback) {
+-		TP_LOGE("callback is NULL!\n");
+-		return -EINVAL;
+-	}
+-
+-	TP_LOGW("Initialization tp_work node!\n");
+-	lct_tp_p = kzalloc(sizeof(lct_tp_t), GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(lct_tp_p)){
+-		TP_LOGE("kzalloc() request memory failed!\n");
+-		return -ENOMEM;
+-	}
+-	lct_tp_p->pfun = callback;
+-	lct_tp_p->enable_tp_work_flag = true;
+-
+-	lct_creat_proc_tp_entry();
+-
+-	return 0;
+-}
+-EXPORT_SYMBOL(init_lct_tp_work);
+-
+-bool get_lct_tp_work_status(void)
+-{
+-	return lct_tp_p->enable_tp_work_flag;
+-}
+-EXPORT_SYMBOL(get_lct_tp_work_status);
+-
+-static int lct_creat_proc_tp_entry(void)
+-{
+-	struct proc_dir_entry *proc_entry_tp;
+-
+-	proc_entry_tp = proc_create_data("tp_work", 0444, NULL, &lct_proc_tp_work_fops, NULL);
+-	if (IS_ERR_OR_NULL(proc_entry_tp)) {
+-		TP_LOGE("add /proc/tp_work error \n");
+-		return -1;
+-	}
+-	TP_LOGW("/proc/tp_work is okay!\n");
+-
+-	return 0;
+-}
+-
+-static ssize_t lct_proc_tp_work_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+-{
+-	ssize_t cnt=0;
+-	char *page = NULL;
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(page))
+-		return -ENOMEM;
+-
+-	cnt = sprintf(page, "%s", (lct_tp_p->enable_tp_work_flag ? "1\n" : "0\n"));
+-
+-	cnt = simple_read_from_buffer(buf, size, ppos, page, cnt);
+-	TP_LOGW("Touchpad status : %s", page);
+-
+-	kfree(page);
+-	return cnt;
+-}
+-
+-static ssize_t lct_proc_tp_work_write(struct file *file, const char __user *buf, size_t size, loff_t *ppos)
+-{
+-	int ret;
+-	ssize_t cnt = 0;
+-	char *page = NULL;
+-	unsigned int input = 0;
+-
+-	page = kzalloc(128, GFP_KERNEL);
+-	if (IS_ERR_OR_NULL(page))
+-		return -ENOMEM;
+-	cnt = simple_write_to_buffer(page, 128, ppos, buf, size);
+-	if (cnt <= 0)
+-		return -EINVAL;
+-	if (sscanf(page, "%u", &input) != 1)
+-		return -EINVAL;
+-
+-	if (input > 0) {
+-		if (lct_tp_p->enable_tp_work_flag)
+-			goto exit;
+-		TP_LOGW("Enbale Touchpad ...\n");
+-		ret = lct_tp_p->pfun(true);
+-		if (ret) {
+-			TP_LOGW("Enable Touchpad Failed! ret=%d\n", ret);
+-			goto exit;
+-		}
+-		lct_tp_p->enable_tp_work_flag = true;
+-	} else {
+-		if (!lct_tp_p->enable_tp_work_flag)
+-			goto exit;
+-		TP_LOGW("Disable Touchpad ...\n");
+-		ret = lct_tp_p->pfun(false);
+-		if (ret) {
+-			TP_LOGW("Disable Touchpad Failed! ret=%d\n", ret);
+-			goto exit;
+-		}
+-		lct_tp_p->enable_tp_work_flag = false;
+-	}
+-	TP_LOGW("Set Touchpad successfully!\n");
+-
+-exit:
+-	kfree(page);
+-	return cnt;
+-}
+-
+-MODULE_DESCRIPTION("Touchpad Work Contoller Driver");
+-MODULE_LICENSE("GPL");
+-
+diff --git a/drivers/input/touchscreen/lct_tp_work.h b/drivers/input/touchscreen/lct_tp_work.h
+deleted file mode 100644
+index c38210e1b059..000000000000
+--- a/drivers/input/touchscreen/lct_tp_work.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-#ifndef __LCT_TP_WORK_H__
+-#define __LCT_TP_WORK_H__
+-
+-typedef int (*tp_work_cb_t)(bool enable_tp);
+-
+-extern int init_lct_tp_work(tp_work_cb_t callback);
+-extern bool get_lct_tp_work_status(void);
+-
+-#endif
+-
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
+index 374cd3e6c703..c34b749624d2 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
+@@ -410,11 +410,6 @@ int32_t nvt_get_fw_info(void)
+ 	uint8_t buf[64] = {0};
+ 	uint32_t retry_count = 0;
+ 	int32_t ret = 0;
+-/* add tp-fw information by yangjiangzhu  2018/3/12 start */
+-#if	NVT_READ_TP_FW
+-	char fw_version[64];
+-#endif
+-/* add tp-fw information by yangjiangzhu  2018/3/12 end */
+ 
+ info_retry:
+ 
+@@ -457,23 +452,10 @@ int32_t nvt_get_fw_info(void)
+ 	} else {
+ 		ret = 0;
+ 	}
+-/* add tp-fw and vendor information by yangjiangzhu  2018/3/19 start */
+-#if	NVT_READ_TP_FW
+-		memset(fw_version, 0, sizeof(fw_version));
+-		if (strstr(g_lcd_id,"shenchao nt36672a fhdplus video mode dsi panel") != NULL) {
+-				sprintf(fw_version, "[FW]0x%02x,[IC]nvt36672_a", ts->fw_ver);
+-				init_tp_fm_info(0, fw_version, "shenchao");
+-			}
+-			else {
+-					sprintf(fw_version, "[FW]0x%02x,[IC]nvt36672_a", ts->fw_ver);
+-					init_tp_fm_info(0, fw_version, "tianma");
+-				 }
+-#endif
+-/* add tp-fw and vendor information by yangjiangzhu  2018/3/19 end */
+-printk("yjz nvt_get_fw_info 1 \n");
++	printk("yjz nvt_get_fw_info 1 \n");
+ 
+ 	nvt_read_pid();
+-	
++
+ 	return ret;
+ }
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+index 84a98e74eb0a..a623af9fcebf 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+@@ -27,12 +27,7 @@
+ #endif
+ 
+ #include "nt36xxx_mem_map.h"
+-#define NVT_READ_TP_FW 		1   /* add tp-fw information by yangjiangzhu  2018/3/12 */
+ 
+-#if	NVT_READ_TP_FW
+-#include "../lct_tp_fm_info.h"
+-#include "../lct_ctp_upgrade.h"
+-#endif
+ #define NVT_DEBUG 0
+ 
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c
+index 7737fff331b6..73d0f956399b 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c
+@@ -25,8 +25,6 @@
+ 
+ #include "nt36xxx.h"
+ #include "nt36xxx_mp_ctrlram.h"
+-#include "../lct_ctp_selftest.h"
+-
+ 
+ #if NVT_TOUCH_MP
+ 
+@@ -1561,145 +1559,6 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 	return seq_open(file, &nvt_selftest_seq_ops);
+ }
+ 
+-static int32_t tp_selftest(void)
+-{
+-	struct device_node *np = ts->client->dev.of_node;
+-	uint8_t buf[8] = {0};
+-	unsigned char mpcriteria[32] = {0};
+-	TestResult_Short = 0;
+-	TestResult_Short_Diff = 0;
+-	TestResult_Short_Base = 0;
+-	TestResult_Open = 0;
+-	TestResult_FW_Rawdata = 0;
+-	TestResult_FWMutual = 0;
+-	TestResult_FW_CC = 0;
+-	TestResult_FW_CC_I = 0;
+-	TestResult_FW_CC_Q = 0;
+-	TestResult_Noise = 0;
+-	TestResult_FW_DiffMax = 0;
+-	TestResult_FW_DiffMin = 0;
+-
+-	NVT_LOG("++\n");
+-
+-	if (mutex_lock_interruptible(&ts->lock)) {
+-		return 0;
+-	}
+-
+-#if NVT_TOUCH_ESD_PROTECT
+-	nvt_esd_check_enable(false);
+-#endif /* #if NVT_TOUCH_ESD_PROTECT */
+-
+-	if (nvt_get_fw_info()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("get fw info failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	/* Parsing criteria from dts */
+-	if(of_property_read_bool(np, "novatek,mp-support-dt")) {
+-		/*
+-		 * Parsing Criteria by Novatek PID
+-		 * The string rule is "novatek-mp-criteria-<nvt_pid>"
+-		 * nvt_pid is 2 bytes (show hex).
+-		 *
+-		 * Ex. nvt_pid = 500A
+-		 *     mpcriteria = "novatek-mp-criteria-500A"
+-		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
+-
+-		nvt_mp_parse_dt(np, mpcriteria);
+-	} else {
+-		NVT_LOG("Not found novatek,mp-support-dt, use default setting\n");
+-
+-		nvt_print_criteria();
+-	}
+-
+-	if (nvt_switch_FreqHopEnDis(FREQ_HOP_DISABLE)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("switch frequency hopping disable failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	if (nvt_check_fw_reset_state(RESET_STATE_NORMAL_RUN)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("check fw reset state failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	msleep(100);
+-
+-
+-	if (nvt_read_fw_short(RawData_Short,0) != 0) {
+-		TestResult_Short = 1;
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = 1;
+-			TestResult_Short_Base = 1;
+-		}
+-	} else {
+-
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = RawDataTest_SinglePoint_Sub(RawData_Short_Diff, RecordResult_Short_Diff, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Diff_P, PS_Config_Lmt_Short_Diff_N);
+-			TestResult_Short_Base = RawDataTest_SinglePoint_Sub(RawData_Short_Base, RecordResult_Short_Base, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Base_P, PS_Config_Lmt_Short_Base_N);
+-
+-			if ((TestResult_Short_Diff == -1) || (TestResult_Short_Base == -1))
+-				TestResult_Short = -1;
+-			else
+-				TestResult_Short = 0;
+-		} else {
+-			TestResult_Short = RawDataTest_SinglePoint_Sub(RawData_Short, RecordResult_Short, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Rawdata_P, PS_Config_Lmt_Short_Rawdata_N);
+-		}
+-	}
+-
+-
+-	if (nvt_read_fw_open(RawData_Open,0) != 0) {
+-		TestResult_Open = 1;
+-	} else {
+-
+-		TestResult_Open = RawDataTest_SinglePoint_Sub(RawData_Open, RecordResult_Open, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Open_Rawdata_P, PS_Config_Lmt_Open_Rawdata_N);
+-	}
+-
+-	if (TestResult_Short == 0) {
+-		NVT_LOG("short test pass\n");
+-	} else if (TestResult_Short == -1) {
+-		NVT_LOG("short test fail\n");
+-	} else {
+-		NVT_LOG("short test invalid\n");
+-	}
+-	if (TestResult_Open == 0) {
+-		NVT_LOG("open test pass\n");
+-	} else if (TestResult_Open == -1) {
+-		NVT_LOG("open test fail\n");
+-	} else {
+-		NVT_LOG("open test invalid\n");
+-	}
+-
+-	nvt_bootloader_reset();
+-
+-	mutex_unlock(&ts->lock);
+-
+-	buf[0]=0x00;
+-	buf[2]=0x00;
+-	if (CTP_I2C_READ(ts->client, I2C_HW_Address, buf, 2)<0)
+-	{
+-		NVT_ERR("i2c test fail\n");
+-	} else {
+-		NVT_LOG("i2c test pass\n");
+-	}
+-
+-	NVT_LOG("--\n");
+-
+-	nvt_mp_test_result_printed = 0;
+-	if ((TestResult_Short == 0 )&& (TestResult_Open == 0)) {
+-		return 2;
+-	} else {
+-		return 1;
+-	}
+-}
+-
+ static const struct file_operations nvt_test_result_fops = {
+ 	.owner = THIS_MODULE,
+ 	.read = nvt_test_result_read,
+@@ -1948,7 +1807,6 @@ void nvt_mp_parse_dt(struct device_node *root, const char *node_compatible)
+ *******************************************************/
+ int32_t nvt_mp_proc_init(void)
+ {
+-	lct_ctp_selftest_int(tp_selftest);
+ 	NVT_proc_selftest_entry = proc_create("nvt_selftest", 0444, NULL, &nvt_selftest_fops);
+ 	if (NVT_proc_selftest_entry == NULL) {
+ 		NVT_ERR("create /proc/nvt_selftest Failed!\n");
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c
+index ce586a694857..44ab33e860b3 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c
+@@ -40,7 +40,6 @@
+ #if NVT_TOUCH_ESD_PROTECT
+ #include <linux/jiffies.h>
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
+-extern bool tianma_jdi_flag;
+ #if NVT_TOUCH_ESD_PROTECT
+ static struct delayed_work nvt_esd_check_work;
+ static struct workqueue_struct *nvt_esd_check_wq;
+@@ -1236,7 +1235,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
+ #if ((TOUCH_KEY_NUM > 0) || WAKEUP_GESTURE)
+ 	int32_t retry = 0;
+ #endif
+-	char fw_version[64];
+ 
+ 	NVT_LOG("start\n");
+ 
+@@ -1442,15 +1440,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
+ 		goto err_init_NVT_ts;
+ 	}
+ #endif
+-	if (tianma_jdi_flag == 0) {
+-		memset(fw_version, 0, sizeof(fw_version));
+-		sprintf(fw_version, "[FW]0x%02x,[IC]nvt36672", ts->fw_ver);
+-		init_tp_fm_info(0, fw_version, "tianma");
+-	} else {
+-		memset(fw_version, 0, sizeof(fw_version));
+-		sprintf(fw_version, "[FW]0x%02x,[IC]nvt36672", ts->fw_ver);
+-		init_tp_fm_info(0, fw_version, "jdi");
+-	}
+ #if defined(CONFIG_FB)
+ 	ts->fb_notif.notifier_call = fb_notifier_callback;
+ 	ret = fb_register_client(&ts->fb_notif);
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+index 76cd1ea9d721..d4f5741d768c 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+@@ -22,8 +22,6 @@
+ #include <linux/i2c.h>
+ #include <linux/input.h>
+ #include <linux/regulator/consumer.h>
+-#include "../lct_tp_fm_info.h"
+-#include "../lct_ctp_upgrade.h"
+ #ifdef CONFIG_HAS_EARLYSUSPEND
+ #include <linux/earlysuspend.h>
+ #endif
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_fw_update.c b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_fw_update.c
+index 4c6aa7cc0291..dcd0af7e1bc0 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_fw_update.c
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_fw_update.c
+@@ -834,7 +834,6 @@ int32_t Verify_Flash(void)
+ int32_t Update_Firmware(void)
+ {
+ 	int32_t ret = 0;
+-	char update_version[64];
+ 
+ 	ret = Init_BootLoader();
+ 	if (ret) {
+@@ -870,9 +869,6 @@ int32_t Update_Firmware(void)
+ 	nvt_check_fw_reset_state(RESET_STATE_INIT);
+ 
+ 	nvt_get_fw_info();
+-	memset(update_version, 0, sizeof(update_version));
+-	sprintf(update_version, "[FW]0x%02x,[IC]nvt36672", ts->fw_ver);
+-	update_tp_fm_info(update_version);
+ 	return ret;
+ }
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c
+index 268a748de086..f1e724502b17 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c
+@@ -25,7 +25,6 @@
+ 
+ #include "nt36xxx.h"
+ #include "nt36xxx_mp_ctrlram.h"
+-#include "../lct_ctp_selftest.h"
+ #if NVT_TOUCH_MP
+ 
+ #define NORMAL_MODE 0x00
+@@ -1641,251 +1640,6 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 	return seq_open(file, &nvt_selftest_seq_ops);
+ }
+ 
+-static int32_t tp_selftest(void)
+-{
+-	struct device_node *np = ts->client->dev.of_node;
+-	uint8_t buf[8] = {0};
+-	unsigned char mpcriteria[32] = {0};
+-	TestResult_Short = 0;
+-	TestResult_Short_Diff = 0;
+-	TestResult_Short_Base = 0;
+-	TestResult_Open = 0;
+-	TestResult_FW_Rawdata = 0;
+-	TestResult_FWMutual = 0;
+-	TestResult_FW_CC = 0;
+-	TestResult_FW_CC_I = 0;
+-	TestResult_FW_CC_Q = 0;
+-	TestResult_Noise = 0;
+-	TestResult_FW_DiffMax = 0;
+-	TestResult_FW_DiffMin = 0;
+-
+-	NVT_LOG("++\n");
+-
+-	if (mutex_lock_interruptible(&ts->lock)) {
+-		return 0;
+-	}
+-
+-#if NVT_TOUCH_ESD_PROTECT
+-	nvt_esd_check_enable(false);
+-#endif /* #if NVT_TOUCH_ESD_PROTECT */
+-
+-	if (nvt_get_fw_info()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("get fw info failed!\n");
+-		return 0;
+-	}
+-	/* Parsing criteria from dts */
+-	if(of_property_read_bool(np, "novatek,mp-support-dt")) {
+-		/*
+-		 * Parsing Criteria by Novatek PID
+-		 * The string rule is "novatek-mp-criteria-<nvt_pid>"
+-		 * nvt_pid is 2 bytes (show hex).
+-		 *
+-		 * Ex. nvt_pid = 500A
+-		 *     mpcriteria = "novatek-mp-criteria-500A"
+-		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
+-
+-		nvt_mp_parse_dt(np, mpcriteria);
+-	} else {
+-		NVT_LOG("Not found novatek,mp-support-dt, use default setting\n");
+-
+-		nvt_print_criteria();
+-	}
+-
+-	if (nvt_switch_FreqHopEnDis(FREQ_HOP_DISABLE)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("switch frequency hopping disable failed!\n");
+-		return 0;
+-	}
+-
+-	if (nvt_check_fw_reset_state(RESET_STATE_NORMAL_RUN)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("check fw reset state failed!\n");
+-		return 0;
+-	}
+-
+-	msleep(100);
+-
+-
+-	if (nvt_clear_fw_status()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("clear fw status failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	nvt_change_mode(MP_MODE_CC);
+-
+-	if (nvt_check_fw_status()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("check fw status failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-
+-	if (nvt_read_baseline(RawData_FWMutual) != 0) {
+-		TestResult_FWMutual = 1;
+-	} else {
+-		TestResult_FWMutual = RawDataTest_SinglePoint_Sub(RawData_FWMutual, RecordResult_FWMutual, X_Channel, Y_Channel,
+-												PS_Config_Lmt_FW_Rawdata_P, PS_Config_Lmt_FW_Rawdata_N);
+-	}
+-	if (nvt_read_CC(RawData_FW_CC) != 0) {
+-		TestResult_FW_CC = 1;
+-		if (ts->carrier_system) {
+-			TestResult_FW_CC_I = 1;
+-			TestResult_FW_CC_Q = 1;
+-		}
+-	} else {
+-		if (ts->carrier_system) {
+-			TestResult_FW_CC_I = RawDataTest_Sub(RawData_FW_CC_I, RecordResult_FW_CC_I, X_Channel, Y_Channel,
+-												PS_Config_Lmt_FW_CC_I_P, PS_Config_Lmt_FW_CC_I_N,
+-												PS_Config_Lmt_Key_FW_CC_I_P, PS_Config_Lmt_Key_FW_CC_I_N);
+-			TestResult_FW_CC_Q = RawDataTest_Sub(RawData_FW_CC_Q, RecordResult_FW_CC_Q, X_Channel, Y_Channel,
+-												PS_Config_Lmt_FW_CC_Q_P, PS_Config_Lmt_FW_CC_Q_N,
+-												PS_Config_Lmt_Key_FW_CC_Q_P, PS_Config_Lmt_Key_FW_CC_Q_N);
+-			if ((TestResult_FW_CC_I == -1) || (TestResult_FW_CC_Q == -1))
+-				TestResult_FW_CC = -1;
+-			else
+-				TestResult_FW_CC = 0;
+-		} else {
+-			TestResult_FW_CC = RawDataTest_Sub(RawData_FW_CC, RecordResult_FW_CC, X_Channel, Y_Channel,
+-												PS_Config_Lmt_FW_CC_P, PS_Config_Lmt_FW_CC_N,
+-												PS_Config_Lmt_Key_FW_CC_P, PS_Config_Lmt_Key_FW_CC_N);
+-		}
+-	}
+-
+-	if ((TestResult_FWMutual == 1) || (TestResult_FW_CC == 1)) {
+-		TestResult_FW_Rawdata = 1;
+-	} else {
+-		if ((TestResult_FWMutual == -1) || (TestResult_FW_CC == -1))
+-			TestResult_FW_Rawdata = -1;
+-		else
+-			TestResult_FW_Rawdata = 0;
+-	}
+-
+-
+-	nvt_change_mode(NORMAL_MODE);
+-
+-
+-	if (nvt_read_fw_noise(RawData_Diff) != 0) {
+-		TestResult_Noise = 1;
+-		TestResult_FW_DiffMax = 1;
+-		TestResult_FW_DiffMin = 1;
+-	} else {
+-		TestResult_FW_DiffMax = RawDataTest_Sub(RawData_Diff_Max, RecordResult_FW_DiffMax, X_Channel, Y_Channel,
+-											PS_Config_Lmt_FW_Diff_P, PS_Config_Lmt_FW_Diff_N,
+-											PS_Config_Lmt_Key_FW_Diff_P, PS_Config_Lmt_Key_FW_Diff_N);
+-
+-
+-		if (ts->carrier_system) {
+-			TestResult_FW_DiffMin = 0;
+-		} else {
+-			TestResult_FW_DiffMin = RawDataTest_Sub(RawData_Diff_Min, RecordResult_FW_DiffMin, X_Channel, Y_Channel,
+-												PS_Config_Lmt_FW_Diff_P, PS_Config_Lmt_FW_Diff_N,
+-												PS_Config_Lmt_Key_FW_Diff_P, PS_Config_Lmt_Key_FW_Diff_N);
+-		}
+-
+-		if ((TestResult_FW_DiffMax == -1) || (TestResult_FW_DiffMin == -1))
+-			TestResult_Noise = -1;
+-		else
+-			TestResult_Noise = 0;
+-	}
+-
+-
+-	if (nvt_read_fw_short(RawData_Short,1) != 0) {
+-		TestResult_Short = 1;
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = 1;
+-			TestResult_Short_Base = 1;
+-		}
+-	} else {
+-
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = RawDataTest_Sub(RawData_Short_Diff, RecordResult_Short_Diff, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Diff_P, PS_Config_Lmt_Short_Diff_N,
+-											PS_Config_Lmt_Key_Short_Diff_P, PS_Config_Lmt_Key_Short_Diff_N);
+-			TestResult_Short_Base = RawDataTest_Sub(RawData_Short_Base, RecordResult_Short_Base, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Base_P, PS_Config_Lmt_Short_Base_N,
+-											PS_Config_Lmt_Key_Short_Base_P, PS_Config_Lmt_Key_Short_Base_N);
+-
+-			if ((TestResult_Short_Diff == -1) || (TestResult_Short_Base == -1))
+-				TestResult_Short = -1;
+-			else
+-				TestResult_Short = 0;
+-		} else {
+-			TestResult_Short = RawDataTest_Sub(RawData_Short, RecordResult_Short, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Rawdata_P, PS_Config_Lmt_Short_Rawdata_N,
+-											PS_Config_Lmt_Key_Short_Rawdata_P, PS_Config_Lmt_Key_Short_Rawdata_N);
+-		}
+-	}
+-
+-
+-	if (nvt_read_fw_open(RawData_Open,1) != 0) {
+-		TestResult_Open = 1;
+-	} else {
+-
+-		TestResult_Open = RawDataTest_SinglePoint_Sub(RawData_Open, RecordResult_Open, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Open_Rawdata_P, PS_Config_Lmt_Open_Rawdata_N);
+-	}
+-
+-	if (TestResult_FW_Rawdata == 0) {
+-		NVT_LOG("Rawdata test pass\n");
+-	} else if (TestResult_FW_Rawdata == -1) {
+-		NVT_LOG("Rawdata test fail\n");
+-	} else {
+-		NVT_LOG("Rawdata test invalid\n");
+-	}
+-
+-	if (TestResult_Noise == 0) {
+-		NVT_LOG("noise test pass\n");
+-	} else if (TestResult_Noise == -1) {
+-		NVT_LOG("noise test fail\n");
+-	} else {
+-		NVT_LOG("noise test invalid\n");
+-	}
+-
+-	if (TestResult_Short == 0) {
+-		NVT_LOG("short test pass\n");
+-	} else if (TestResult_Short == -1) {
+-		NVT_LOG("short test fail\n");
+-	} else {
+-		NVT_LOG("short test invalid\n");
+-	}
+-	if (TestResult_Open == 0) {
+-		NVT_LOG("open test pass\n");
+-	} else if (TestResult_Open == -1) {
+-		NVT_LOG("open test fail\n");
+-	} else {
+-		NVT_LOG("open test invalid\n");
+-	}
+-
+-	nvt_bootloader_reset();
+-
+-	mutex_unlock(&ts->lock);
+-
+-	buf[0]=0x00;
+-	buf[2]=0x00;
+-	if (CTP_I2C_READ(ts->client, I2C_HW_Address, buf, 2)<0)
+-	{
+-		NVT_ERR("i2c test fail\n");
+-	} else {
+-		NVT_LOG("i2c test pass\n");
+-	}
+-
+-	NVT_LOG("--\n");
+-
+-	nvt_mp_test_result_printed = 0;
+-	if ((TestResult_FW_Rawdata > 0) || (TestResult_Noise > 0) || (TestResult_Short > 0) || (TestResult_Open> 0))
+-	{
+-		return 0;
+-	}
+-	if ((TestResult_FW_Rawdata == 0) && (TestResult_Noise == 0) && (TestResult_Short == 0) && (TestResult_Open == 0)) {
+-		return 2;
+-	} else {
+-		return 1;
+-	}
+-}
+-
+ static const struct file_operations nvt_test_result_fops = {
+ 	.owner = THIS_MODULE,
+ 	.read = nvt_test_result_read,
+@@ -2157,7 +1911,6 @@ void nvt_mp_parse_dt(struct device_node *root, const char *node_compatible)
+ *******************************************************/
+ int32_t nvt_mp_proc_init(void)
+ {
+-	lct_ctp_selftest_int(tp_selftest);
+ 	proc_selftest_result = proc_create("nvt_test_result",0444,NULL, &nvt_test_result_fops);
+ 	if (proc_selftest_result == NULL) {
+ 		NVT_ERR("create /proc/nvt_test_result Failed!\n");
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c
+index a010ab1cdc84..ba41eca040d5 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c
+@@ -41,8 +41,6 @@
+ #include <linux/jiffies.h>
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
+ 
+-#include "../lct_tp_gesture.h"
+-
+ #if NVT_TOUCH_ESD_PROTECT
+ static struct delayed_work nvt_esd_check_work;
+ static struct workqueue_struct *nvt_esd_check_wq;
+@@ -1226,23 +1224,6 @@ static int8_t nvt_ts_check_chip_ver_trim(void)
+ 	return ret;
+ }
+ 
+-static int lct_tp_gesture_node_callback(bool flag)
+-{
+-	if (suspend_state) {
+-		NVT_ERR("ERROR: TP is suspend!\n");
+-		return -1;
+-	}
+-	if(flag) {
+-		enable_gesture_mode = true;
+-		NVT_LOG("enable gesture mode\n");
+-	} else {
+-		enable_gesture_mode = false;
+-		NVT_LOG("disable gesture mode\n");
+-	}
+-	return 0;
+-}
+-
+-
+ /*******************************************************
+ Description:
+ 	Novatek touchscreen driver probe function.
+@@ -1256,7 +1237,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
+ #if ((TOUCH_KEY_NUM > 0) || WAKEUP_GESTURE)
+ 	int32_t retry = 0;
+ #endif
+-	char fw_version[64];
+ 
+ 	NVT_LOG("start\n");
+ 
+@@ -1438,13 +1418,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
+ 			msecs_to_jiffies(NVT_TOUCH_ESD_CHECK_PERIOD));
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
+ 
+-
+-
+-	ret = init_lct_tp_gesture(lct_tp_gesture_node_callback);
+-	if (ret < 0) {
+-		NVT_ERR("Failed to add /proc/tp_work node!\n");
+-	}
+-
+ #if NVT_TOUCH_PROC
+ 	ret = nvt_flash_proc_init();
+ 	if (ret != 0) {
+@@ -1469,14 +1442,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
+ 	}
+ #endif
+ 
+-  	memset(fw_version, 0, sizeof(fw_version));
+-	sprintf(fw_version, "[FW]0x%02x,[IC]nvt36672", ts->fw_ver);
+-	if (strstr(g_lcd_id,"tianma nt36672") != NULL) {
+-		init_tp_fm_info(0, fw_version, "tianma");
+-	} else {
+-		init_tp_fm_info(0, fw_version, "huaxing");
+-	}
+-
+ #if defined(CONFIG_FB)
+ 	ts->fb_notif.notifier_call = fb_notifier_callback;
+ 	ret = fb_register_client(&ts->fb_notif);
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+index d562aa546358..6faf7044b65e 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+@@ -22,8 +22,6 @@
+ #include <linux/i2c.h>
+ #include <linux/input.h>
+ #include <linux/regulator/consumer.h>
+-#include "../lct_tp_fm_info.h"
+-#include "../lct_ctp_upgrade.h"
+ #ifdef CONFIG_HAS_EARLYSUSPEND
+ #include <linux/earlysuspend.h>
+ #endif
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_fw_update.c b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_fw_update.c
+index be4fcccbcf6c..47402305697a 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_fw_update.c
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_fw_update.c
+@@ -833,7 +833,6 @@ int32_t Verify_Flash(void)
+ int32_t Update_Firmware(void)
+ {
+ 	int32_t ret = 0;
+-	char update_version[64];
+ 
+ 	ret = Init_BootLoader();
+ 	if (ret) {
+@@ -869,9 +868,6 @@ int32_t Update_Firmware(void)
+ 	nvt_check_fw_reset_state(RESET_STATE_INIT);
+ 
+ 	nvt_get_fw_info();
+-	memset(update_version, 0, sizeof(update_version));
+-	sprintf(update_version, "[FW]0x%02x,[IC]nvt36672", ts->fw_ver);
+-	update_tp_fm_info(update_version);
+ 	return ret;
+ }
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c
+index e6dadec3150e..f5dbb0825b79 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c
+@@ -25,7 +25,6 @@
+ 
+ #include "nt36xxx.h"
+ #include "nt36xxx_mp_ctrlram.h"
+-#include "../lct_ctp_selftest.h"
+ #if NVT_TOUCH_MP
+ 
+ #define NORMAL_MODE 0x00
+@@ -1641,146 +1640,6 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 	return seq_open(file, &nvt_selftest_seq_ops);
+ }
+ 
+-static int32_t tp_selftest(void)
+-{
+-	struct device_node *np = ts->client->dev.of_node;
+-	uint8_t buf[8] = {0};
+-	unsigned char mpcriteria[32] = {0};
+-	TestResult_Short = 0;
+-	TestResult_Short_Diff = 0;
+-	TestResult_Short_Base = 0;
+-	TestResult_Open = 0;
+-	TestResult_FW_Rawdata = 0;
+-	TestResult_FWMutual = 0;
+-	TestResult_FW_CC = 0;
+-	TestResult_FW_CC_I = 0;
+-	TestResult_FW_CC_Q = 0;
+-	TestResult_Noise = 0;
+-	TestResult_FW_DiffMax = 0;
+-	TestResult_FW_DiffMin = 0;
+-
+-	NVT_LOG("++\n");
+-
+-	if (mutex_lock_interruptible(&ts->lock)) {
+-		return 0;
+-	}
+-
+-#if NVT_TOUCH_ESD_PROTECT
+-	nvt_esd_check_enable(false);
+-#endif /* #if NVT_TOUCH_ESD_PROTECT */
+-
+-	if (nvt_get_fw_info()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("get fw info failed!\n");
+-		return 0;
+-	}
+-	/* Parsing criteria from dts */
+-	if(of_property_read_bool(np, "novatek,mp-support-dt")) {
+-		/*
+-		 * Parsing Criteria by Novatek PID
+-		 * The string rule is "novatek-mp-criteria-<nvt_pid>"
+-		 * nvt_pid is 2 bytes (show hex).
+-		 *
+-		 * Ex. nvt_pid = 500A
+-		 *     mpcriteria = "novatek-mp-criteria-500A"
+-		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
+-
+-		nvt_mp_parse_dt(np, mpcriteria);
+-	} else {
+-		NVT_LOG("Not found novatek,mp-support-dt, use default setting\n");
+-
+-		nvt_print_criteria();
+-	}
+-
+-	if (nvt_switch_FreqHopEnDis(FREQ_HOP_DISABLE)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("switch frequency hopping disable failed!\n");
+-		return 0;
+-	}
+-
+-	if (nvt_check_fw_reset_state(RESET_STATE_NORMAL_RUN)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("check fw reset state failed!\n");
+-		return 0;
+-	}
+-
+-	msleep(100);
+-
+-
+-	if (nvt_read_fw_short(RawData_Short,0) != 0) {
+-		TestResult_Short = 1;
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = 1;
+-			TestResult_Short_Base = 1;
+-		}
+-	} else {
+-
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = RawDataTest_Sub(RawData_Short_Diff, RecordResult_Short_Diff, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Diff_P, PS_Config_Lmt_Short_Diff_N,
+-											PS_Config_Lmt_Key_Short_Diff_P, PS_Config_Lmt_Key_Short_Diff_N);
+-			TestResult_Short_Base = RawDataTest_Sub(RawData_Short_Base, RecordResult_Short_Base, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Base_P, PS_Config_Lmt_Short_Base_N,
+-											PS_Config_Lmt_Key_Short_Base_P, PS_Config_Lmt_Key_Short_Base_N);
+-
+-			if ((TestResult_Short_Diff == -1) || (TestResult_Short_Base == -1))
+-				TestResult_Short = -1;
+-			else
+-				TestResult_Short = 0;
+-		} else {
+-			TestResult_Short = RawDataTest_Sub(RawData_Short, RecordResult_Short, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Short_Rawdata_P, PS_Config_Lmt_Short_Rawdata_N,
+-											PS_Config_Lmt_Key_Short_Rawdata_P, PS_Config_Lmt_Key_Short_Rawdata_N);
+-		}
+-	}
+-
+-
+-	if (nvt_read_fw_open(RawData_Open,0) != 0) {
+-		TestResult_Open = 1;
+-	} else {
+-
+-		TestResult_Open = RawDataTest_SinglePoint_Sub(RawData_Open, RecordResult_Open, X_Channel, Y_Channel,
+-											PS_Config_Lmt_Open_Rawdata_P, PS_Config_Lmt_Open_Rawdata_N);
+-	}
+-	if (TestResult_Short == 0) {
+-		NVT_LOG("short test pass\n");
+-	} else if (TestResult_Short == -1) {
+-		NVT_LOG("short test fail\n");
+-	} else {
+-		NVT_LOG("short test invalid\n");
+-	}
+-	if (TestResult_Open == 0) {
+-		NVT_LOG("open test pass\n");
+-	} else if (TestResult_Open == -1) {
+-		NVT_LOG("open test fail\n");
+-	} else {
+-		NVT_LOG("open test invalid\n");
+-	}
+-
+-	nvt_bootloader_reset();
+-
+-	mutex_unlock(&ts->lock);
+-
+-	buf[0]=0x00;
+-	buf[2]=0x00;
+-	if (CTP_I2C_READ(ts->client, I2C_HW_Address, buf, 2)<0)
+-	{
+-		NVT_ERR("i2c test fail\n");
+-	} else {
+-		NVT_LOG("i2c test pass\n");
+-	}
+-
+-	NVT_LOG("--\n");
+-
+-	nvt_mp_test_result_printed = 0;
+-	if ((TestResult_Short == 0 )&& (TestResult_Open == 0)) {
+-		return 2;
+-	} else {
+-		return 1;
+-	}
+-}
+-
+ static const struct file_operations nvt_test_result_fops = {
+ 	.owner = THIS_MODULE,
+ 	.read = nvt_test_result_read,
+@@ -2052,7 +1911,6 @@ void nvt_mp_parse_dt(struct device_node *root, const char *node_compatible)
+ *******************************************************/
+ int32_t nvt_mp_proc_init(void)
+ {
+-	lct_ctp_selftest_int(tp_selftest);
+ 	proc_selftest_result = proc_create("nvt_test_result",0444,NULL, &nvt_test_result_fops);
+ 	if (proc_selftest_result == NULL) {
+ 		NVT_ERR("create /proc/nvt_test_result Failed!\n");
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c
+index 8e811c1d276b..17559fa1c0a9 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c
+@@ -41,18 +41,9 @@
+ #include <linux/jiffies.h>
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
+ 
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-#include "../lct_tp_work.h"
+-#endif
+-#include "../lct_tp_gesture.h"
+-#include "../lct_tp_grip_area.h"
+-
+ /* add verify LCD by wanghan start */
+ extern char g_lcd_id[128];
+ /* add verify LCD by wanghan end */
+-/* add touchpad information by wanghan start */
+-extern int lct_nvt_tp_info_node_init(void);
+-/* add touchpad information by wanghan end */
+ /* add resume work by wanghan start */
+ static struct work_struct g_resume_work;
+ /* add resume work by wanghan end */
+@@ -92,13 +83,6 @@ static struct workqueue_struct *nvt_fwu_wq;
+ extern void Boot_Update_Firmware(struct work_struct *work);
+ #endif
+ 
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-static int lct_tp_work_node_callback(bool flag);
+-#endif
+-static int lct_tp_gesture_node_callback(bool flag);
+-static int lct_tp_get_screen_angle_callback(void);
+-static int lct_tp_set_screen_angle_callback(unsigned int angle);
+-
+ /* add resume work by wanghan start */
+ static void do_nvt_ts_resume_work(struct work_struct *work);
+ /* add resume work by wanghan end */
+@@ -1448,29 +1432,6 @@ static int32_t nvt_ts_probe(struct i2c_client *client, const struct i2c_device_i
+ 			msecs_to_jiffies(NVT_TOUCH_ESD_CHECK_PERIOD));
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
+ 
+-
+-
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-	ret = init_lct_tp_work(lct_tp_work_node_callback);
+-	if (ret < 0) {
+-		NVT_ERR("Failed to add /proc/tp_work node!\n");
+-	}
+-#endif
+-
+-	ret = init_lct_tp_gesture(lct_tp_gesture_node_callback);
+-	if (ret < 0) {
+-		NVT_ERR("Failed to add /proc/tp_work node!\n");
+-	}
+-
+-	ret = init_lct_tp_grip_area(lct_tp_set_screen_angle_callback, lct_tp_get_screen_angle_callback);
+-	if (ret < 0) {
+-		NVT_ERR("Failed to add /proc/tp_grip_area node!\n");
+-	}
+-
+-	/* add touchpad information by wanghan start */
+-	lct_nvt_tp_info_node_init();
+-	/* add touchpad information by wanghan end */
+-
+ #if NVT_TOUCH_PROC
+ 	ret = nvt_flash_proc_init();
+ 	if (ret != 0) {
+@@ -1742,135 +1703,6 @@ static void do_nvt_ts_resume_work(struct work_struct *work)
+ }
+ /* add resume work by wanghan end */
+ 
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-static int lct_tp_work_node_callback(bool flag)
+-{
+-	int ret = 0;
+-
+-	if (enable_gesture_mode) {
+-		LOGV("ERROR: novatek gesture=%d!\n", enable_gesture_mode);
+-		return -1;
+-	}
+-	if (suspend_state) return 0;
+-	if (flag) {
+-		suspend_state = true;
+-		ret = nvt_ts_resume(&ts->client->dev);
+-		if (ret < 0) NVT_ERR("nvt_ts_resume faild! ret=%d\n", ret);
+-	} else {
+-		ret = nvt_ts_suspend(&ts->client->dev);
+-		if (ret < 0) NVT_ERR("nvt_ts_suspend faild! ret=%d\n", ret);
+-	}
+-	suspend_state = false;
+-
+-	return ret;
+-}
+-#endif
+-
+-static int lct_tp_gesture_node_callback(bool flag)
+-{
+-	int retval = 0;
+-
+-	if (suspend_state) {
+-		LOGV("ERROR: TP is suspend!\n");
+-		return -1;
+-	}
+-	if(flag) {
+-		enable_gesture_mode = true;
+-		LOGV("enable gesture mode\n");
+-	} else {
+-		enable_gesture_mode = false;
+-		LOGV("disable gesture mode\n");
+-	}
+-
+-	return retval;
+-}
+-
+-static int lct_tp_get_screen_angle_callback(void)
+-{
+-	uint8_t tmp[8] = {0};
+-	int32_t ret = -EIO;
+-	uint8_t edge_reject_switch;
+-
+-	if ( !bTouchIsAwake || (ts->touch_state != TOUCH_STATE_WORKING) ) {
+-		NVT_ERR("tp is suspended or flashing, can not to set\n");
+-		return ret;
+-	}
+-
+-	NVT_LOG("++\n");
+-
+-	mutex_lock(&ts->lock);
+-
+-	msleep(35);
+-
+-	tmp[0] = 0xFF;
+-	tmp[1] = (ts->mmap->EVENT_BUF_ADDR >> 16) & 0xFF;
+-	tmp[2] = (ts->mmap->EVENT_BUF_ADDR >> 8) & 0xFF;
+-	ret = CTP_I2C_WRITE(ts->client, I2C_FW_Address, tmp, 3);
+-	if (ret < 0) {
+-		NVT_ERR("Set event buffer index fail!\n");
+-		goto out;
+-	}
+-
+-	tmp[0] = 0x5C;
+-	tmp[1] = 0x00;
+-	ret = CTP_I2C_READ(ts->client, I2C_FW_Address, tmp, 2);
+-	if (ret < 0) {
+-		NVT_ERR("Read edge reject switch status fail!\n");
+-		goto out;
+-	}
+-
+-	edge_reject_switch = ((tmp[1] >> 5) & 0x03);
+-	NVT_LOG("edge_reject_switch = %d\n", edge_reject_switch);
+-	ret = edge_reject_switch;
+-
+-out:
+-	mutex_unlock(&ts->lock);
+-	NVT_LOG("--\n");
+-	return ret;
+-}
+-static int lct_tp_set_screen_angle_callback(unsigned int angle)
+-{
+-	uint8_t tmp[3];
+-	int ret = -EIO;
+-
+-	if ( !bTouchIsAwake || (ts->touch_state != TOUCH_STATE_WORKING) ) {
+-		NVT_ERR("tp is suspended or flashing, can not to set\n");
+-		return ret;
+-	}
+-
+-	NVT_LOG("++\n");
+-
+-	mutex_lock(&ts->lock);
+-
+-	tmp[0] = 0XFF;
+-	tmp[1] = (ts->mmap->EVENT_BUF_ADDR >> 16) & 0xFF;
+-	tmp[2] = (ts->mmap->EVENT_BUF_ADDR >> 8) & 0xFF;
+-	ret = CTP_I2C_WRITE(ts->client, I2C_FW_Address, tmp, 3);
+-	if (ret < 0) {
+-		NVT_LOG("i2c wite error!\n");
+-		goto out;
+-	}
+-	tmp[0] = EVENT_MAP_HOST_CMD;
+-	if (angle == 90) {
+-		tmp[1] = 0xBC;
+-	} else if (angle == 270) {
+-		tmp[1] = 0xBB;
+-	} else {
+-		tmp[1] = 0xBA;
+-	}
+-	ret = CTP_I2C_WRITE(ts->client, I2C_FW_Address, tmp, 2);
+-	if (ret < 0) {
+-		NVT_LOG("i2c read error!\n");
+-		goto out;
+-	}
+-	ret = 0;
+-
+-out:
+-	mutex_unlock(&ts->lock);
+-	NVT_LOG("--\n");
+-	return ret;
+-}
+-
+ #if defined(CONFIG_FB)
+ static int fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+ {
+@@ -1883,12 +1715,6 @@ static int fb_notifier_callback(struct notifier_block *self, unsigned long event
+ 		blank = evdata->data;
+ 		if (*blank == FB_BLANK_POWERDOWN) {
+ 			NVT_LOG("touch suspend\n");
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-			if (!get_lct_tp_work_status()) {
+-				suspend_state = true;
+-				return 0;
+-			}
+-#endif
+ 			flush_work(&g_resume_work);
+ 			mutex_lock(&ts->pm_mutex);
+ 			nvt_ts_suspend(&ts->client->dev);
+@@ -1898,12 +1724,6 @@ static int fb_notifier_callback(struct notifier_block *self, unsigned long event
+ 		blank = evdata->data;
+ 		if (*blank == FB_BLANK_UNBLANK) {
+ 			NVT_LOG("touch resume\n");
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-			if (!get_lct_tp_work_status()) {
+-				suspend_state = false;
+-				return 0;
+-			}
+-#endif
+ 			schedule_work(&g_resume_work);
+ 		}
+ 	}
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+index 78ef7367b1b1..9ac041b7a77c 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+@@ -28,8 +28,6 @@
+ 
+ #include "nt36xxx_mem_map.h"
+ 
+-#include "../lct_tp_info.h"
+-
+ #define NVT_DEBUG 0
+ 
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_ext_proc.c b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_ext_proc.c
+index 9d41338b351a..1da954e00466 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_ext_proc.c
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_ext_proc.c
+@@ -42,11 +42,6 @@
+ 
+ #define XDATA_SECTOR_SIZE   256
+ 
+-
+-extern int32_t Init_BootLoader(void);
+-extern int32_t Resume_PD(void);
+-
+-
+ static uint8_t xdata_tmp[2048] = {0};
+ static int32_t xdata[2048] = {0};
+ static int32_t xdata_i[2048] = {0};
+@@ -592,124 +587,6 @@ static const struct file_operations nvt_diff_fops = {
+ 	.release = seq_release,
+ };
+ 
+-extern bool suspend_state;
+-/* add touchpad information by wanghan start */
+-static int update_tp_info(const char *cmd)
+-{
+-	int32_t ret = -1;
+-	uint8_t buf[16] = {0};
+-	char tp_info_buf[64];
+-
+-	if ( suspend_state || (ts->touch_state != TOUCH_STATE_WORKING) ) {
+-		NVT_ERR("tp is suspended or flashing, can not to set\n");
+-		return ret;
+-	}
+-
+-	if(strcmp(cmd, TP_CALLBACK_CMD_INFO))
+-		return ret;
+-
+-	if (mutex_lock_interruptible(&ts->lock)) {
+-		LOGV("Touch is locking, Update info failed!\n");
+-		return -ERESTARTSYS;
+-	}
+-
+-	LOGV("Update TP info\n");
+-
+-	buf[0] = 0xFF;
+-	buf[1] = (ts->mmap->EVENT_BUF_ADDR >> 16) & 0xFF;
+-	buf[2] = (ts->mmap->EVENT_BUF_ADDR >> 8) & 0xFF;
+-	ret = CTP_I2C_WRITE(ts->client, I2C_BLDR_Address, buf, 3);
+-	if (ret < 0) {
+-		NVT_ERR("i2c write error!(%d)\n", ret);
+-		mutex_unlock(&ts->lock);
+-		return ret;
+-	}
+-
+-
+-	buf[0] = EVENT_MAP_FWINFO;
+-	buf[1] = 0x00;
+-	buf[2] = 0x00;
+-	ret = CTP_I2C_READ(ts->client, I2C_BLDR_Address, buf, 3);
+-	if (ret < 0) {
+-		NVT_ERR("i2c read error!(%d)\n", ret);
+-		mutex_unlock(&ts->lock);
+-		return ret;
+-	}
+-	mutex_unlock(&ts->lock);
+-
+-	NVT_LOG("IC FW Ver = 0x%02X, FW Ver Bar = 0x%02X\n", buf[1], buf[2]);
+-	if (strstr(g_lcd_id, "tianma nt36672a") != NULL) {
+-		sprintf(tp_info_buf, "[Vendor]tianma,[FW]0x%02x,[IC]nvt36672a\n", buf[1]);
+-	} else if (strstr(g_lcd_id, "shenchao nt36672a") != NULL) {
+-		sprintf(tp_info_buf, "[Vendor]shenchao,[FW]0x%02x,[IC]nvt36672a\n", buf[1]);
+-	} else {
+-		return -ENODEV;
+-	}
+-	update_lct_tp_info(tp_info_buf, NULL);
+-	return 0;
+-}
+-
+-static int32_t nvt_get_xiaomi_lockdown_info(void)
+-{
+-	uint8_t data_buf[8] = {0};
+-	int ret = 0;
+-
+-	ret = nvt_get_oem_data(data_buf, 0x1E000, 8);
+-
+-	if (ret < 0) {
+-		NVT_ERR("get oem data failed!\n");
+-	} else {
+-		tp_maker_cg_lamination = data_buf[0];
+-		NVT_LOG("The maker of Touch Panel & CG Lamination: 0x%02X\n", tp_maker_cg_lamination);
+-		display_maker = data_buf[1];
+-		NVT_LOG("Display maker: 0x%02X\n", display_maker);
+-		cg_ink_color = data_buf[2];
+-		NVT_LOG("CG ink color: 0x%02X\n", cg_ink_color);
+-		hw_version = data_buf[3];
+-		NVT_LOG("HW version: 0x%02X\n", hw_version);
+-		project_id = ((data_buf[4] << 8) | data_buf[5]);
+-		NVT_LOG("Project ID: 0x%04X\n", project_id);
+-		cg_maker = data_buf[6];
+-		NVT_LOG("CG maker: 0x%02X\n", cg_maker);
+-		reservation_byte = data_buf[7];
+-		NVT_LOG("Reservation byte: 0x%02X\n", reservation_byte);
+-	}
+-
+-	return ret;
+-}
+-
+-int lct_nvt_tp_info_node_init(void)
+-{
+-	char tp_info_buf[64];
+-	char tp_lockdown_info_buf[64];
+-
+-	nvt_get_xiaomi_lockdown_info();
+-	memset(tp_info_buf, 0, sizeof(tp_info_buf));
+-	if (IS_ERR_OR_NULL(g_lcd_id)){
+-		NVT_ERR("g_lcd_id is ERROR!\n");
+-		return -1;
+-	} else {
+-		LOGV("LCM information : %s\n", g_lcd_id);
+-		if (strstr(g_lcd_id, "tianma nt36672a") != NULL) {
+-			sprintf(tp_info_buf, "[Vendor]tianma,[FW]0x%02x,[IC]nvt36672a\n", ts->fw_ver);
+-			goto tp_node_init;
+-		} else if (strstr(g_lcd_id, "shenchao nt36672a") != NULL) {
+-			sprintf(tp_info_buf, "[Vendor]shenchao,[FW]0x%02x,[IC]nvt36672a\n", ts->fw_ver);
+-			goto tp_node_init;
+-		} else {
+-			init_lct_tp_info(NULL, NULL);
+-			return -ENODEV;
+-		}
+-	}
+-tp_node_init:
+-	sprintf(tp_lockdown_info_buf, "%02X%02X%02X%02X%04X%02X%02X\n", tp_maker_cg_lamination, display_maker, cg_ink_color, hw_version, project_id, cg_maker, reservation_byte);
+-	init_lct_tp_info(tp_info_buf, tp_lockdown_info_buf);
+-	set_lct_tp_info_callback(update_tp_info);
+-
+-	return 0;
+-}
+-/* add touchpad information by wanghan end */
+-
+ /*Novatek AC power plug swith*/
+ static int32_t nvt_set_pwr_plug_switch(uint8_t pwr_plug_switch)
+ {
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c
+index 6ce2af189046..fdeb40f6ca86 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c
+@@ -25,9 +25,6 @@
+ 
+ #include "nt36xxx.h"
+ #include "nt36xxx_mp_ctrlram.h"
+-/* add nova tp selftest by wanghan 2018-8-21 start*/
+-#include "../lct_tp_selftest.h"
+-/* add nova tp selftest by wanghan 2018-8-21 end*/
+ 
+ #if NVT_TOUCH_MP
+ 
+@@ -1330,235 +1327,6 @@ const struct seq_operations nvt_selftest_seq_ops = {
+ 	.show   = c_show_selftest
+ };
+ 
+-/* add nova tp selftest by wanghan 2018-8-21 start*/
+-static int lct_nova_tp_selftest(unsigned char cmd)
+-{
+-	struct device_node *np = ts->client->dev.of_node;
+-	unsigned char mpcriteria[32] = {0};
+-
+-	TestResult_Short = 0;
+-	TestResult_Short_Diff = 0;
+-	TestResult_Short_Base = 0;
+-	TestResult_Open = 0;
+-	TestResult_FW_Rawdata = 0;
+-	TestResult_FWMutual = 0;
+-	TestResult_FW_CC = 0;
+-	TestResult_FW_CC_I = 0;
+-	TestResult_FW_CC_Q = 0;
+-	TestResult_Noise = 0;
+-	TestResult_FW_DiffMax = 0;
+-	TestResult_FW_DiffMin = 0;
+-
+-	NVT_LOG("++\n");
+-
+-	if (mutex_lock_interruptible(&ts->lock)) {
+-		return -ERESTARTSYS;
+-	}
+-
+-#if NVT_TOUCH_ESD_PROTECT
+-	nvt_esd_check_enable(false);
+-#endif /* #if NVT_TOUCH_ESD_PROTECT */
+-
+-	if (nvt_get_fw_info()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("get fw info failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	/* Parsing criteria from dts */
+-	if(of_property_read_bool(np, "novatek,mp-support-dt")) {
+-		/*
+-		 * Parsing Criteria by Novatek PID
+-		 * The string rule is "novatek-mp-criteria-<nvt_pid>"
+-		 * nvt_pid is 2 bytes (show hex).
+-		 *
+-		 * Ex. nvt_pid = 500A
+-		 *     mpcriteria = "novatek-mp-criteria-500A"
+-		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
+-
+-		nvt_mp_parse_dt(np, mpcriteria);
+-	} else {
+-		NVT_LOG("Not found novatek,mp-support-dt, use default setting\n");
+-
+-		nvt_print_criteria();
+-	}
+-
+-	if (nvt_switch_FreqHopEnDis(FREQ_HOP_DISABLE)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("switch frequency hopping disable failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	if (nvt_check_fw_reset_state(RESET_STATE_NORMAL_RUN)) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("check fw reset state failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	msleep(100);
+-
+-
+-	if (nvt_clear_fw_status()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("clear fw status failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-	nvt_change_mode(MP_MODE_CC);
+-
+-	if (nvt_check_fw_status()) {
+-		mutex_unlock(&ts->lock);
+-		NVT_ERR("check fw status failed!\n");
+-		return -EAGAIN;
+-	}
+-
+-
+-	if (nvt_read_baseline(RawData_FWMutual) != 0) {
+-		TestResult_FWMutual = 1;
+-	} else {
+-		TestResult_FWMutual = RawDataTest_SinglePoint_Sub(RawData_FWMutual, RecordResult_FWMutual, X_Channel, Y_Channel,
+-				PS_Config_Lmt_FW_Rawdata_P, PS_Config_Lmt_FW_Rawdata_N);
+-	}
+-	if (nvt_read_CC(RawData_FW_CC) != 0) {
+-		TestResult_FW_CC = 1;
+-		if (ts->carrier_system) {
+-			TestResult_FW_CC_I = 1;
+-			TestResult_FW_CC_Q = 1;
+-		}
+-	} else {
+-		if (ts->carrier_system) {
+-			TestResult_FW_CC_I = RawDataTest_SinglePoint_Sub(RawData_FW_CC_I, RecordResult_FW_CC_I, X_Channel, Y_Channel,
+-					PS_Config_Lmt_FW_CC_I_P, PS_Config_Lmt_FW_CC_I_N);
+-			TestResult_FW_CC_Q = RawDataTest_SinglePoint_Sub(RawData_FW_CC_Q, RecordResult_FW_CC_Q, X_Channel, Y_Channel,
+-					PS_Config_Lmt_FW_CC_Q_P, PS_Config_Lmt_FW_CC_Q_N);
+-			if ((TestResult_FW_CC_I == -1) || (TestResult_FW_CC_Q == -1))
+-				TestResult_FW_CC = -1;
+-			else
+-				TestResult_FW_CC = 0;
+-		} else {
+-			TestResult_FW_CC = RawDataTest_SinglePoint_Sub(RawData_FW_CC, RecordResult_FW_CC, X_Channel, Y_Channel,
+-					PS_Config_Lmt_FW_CC_P, PS_Config_Lmt_FW_CC_N);
+-		}
+-	}
+-
+-	if ((TestResult_FWMutual == 1) || (TestResult_FW_CC == 1)) {
+-		TestResult_FW_Rawdata = 1;
+-	} else {
+-		if ((TestResult_FWMutual == -1) || (TestResult_FW_CC == -1))
+-			TestResult_FW_Rawdata = -1;
+-		else
+-			TestResult_FW_Rawdata = 0;
+-	}
+-
+-
+-	nvt_change_mode(NORMAL_MODE);
+-
+-
+-	if (nvt_read_fw_noise(RawData_Diff) != 0) {
+-		TestResult_Noise = 1;
+-		TestResult_FW_DiffMax = 1;
+-		TestResult_FW_DiffMin = 1;
+-	} else {
+-		TestResult_FW_DiffMax = RawDataTest_SinglePoint_Sub(RawData_Diff_Max, RecordResult_FW_DiffMax, X_Channel, Y_Channel,
+-				PS_Config_Lmt_FW_Diff_P, PS_Config_Lmt_FW_Diff_N);
+-
+-
+-		if (ts->carrier_system) {
+-			TestResult_FW_DiffMin = 0;
+-		} else {
+-			TestResult_FW_DiffMin = RawDataTest_SinglePoint_Sub(RawData_Diff_Min, RecordResult_FW_DiffMin, X_Channel, Y_Channel,
+-					PS_Config_Lmt_FW_Diff_P, PS_Config_Lmt_FW_Diff_N);
+-		}
+-
+-		if ((TestResult_FW_DiffMax == -1) || (TestResult_FW_DiffMin == -1))
+-			TestResult_Noise = -1;
+-		else
+-			TestResult_Noise = 0;
+-	}
+-
+-
+-	if (nvt_read_fw_short(RawData_Short) != 0) {
+-		TestResult_Short = 1;
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = 1;
+-			TestResult_Short_Base = 1;
+-		}
+-	} else {
+-
+-		if (ts->carrier_system) {
+-			TestResult_Short_Diff = RawDataTest_SinglePoint_Sub(RawData_Short_Diff, RecordResult_Short_Diff, X_Channel, Y_Channel,
+-					PS_Config_Lmt_Short_Diff_P, PS_Config_Lmt_Short_Diff_N);
+-			TestResult_Short_Base = RawDataTest_SinglePoint_Sub(RawData_Short_Base, RecordResult_Short_Base, X_Channel, Y_Channel,
+-					PS_Config_Lmt_Short_Base_P, PS_Config_Lmt_Short_Base_N);
+-
+-			if ((TestResult_Short_Diff == -1) || (TestResult_Short_Base == -1))
+-				TestResult_Short = -1;
+-			else
+-				TestResult_Short = 0;
+-		} else {
+-			TestResult_Short = RawDataTest_SinglePoint_Sub(RawData_Short, RecordResult_Short, X_Channel, Y_Channel,
+-					PS_Config_Lmt_Short_Rawdata_P, PS_Config_Lmt_Short_Rawdata_N);
+-		}
+-	}
+-
+-
+-	if (nvt_read_fw_open(RawData_Open) != 0) {
+-		TestResult_Open = 1;
+-	} else {
+-
+-		TestResult_Open = RawDataTest_SinglePoint_Sub(RawData_Open, RecordResult_Open, X_Channel, Y_Channel,
+-				PS_Config_Lmt_Open_Rawdata_P, PS_Config_Lmt_Open_Rawdata_N);
+-	}
+-
+-
+-	nvt_bootloader_reset();
+-
+-	mutex_unlock(&ts->lock);
+-
+-	NVT_LOG("--\n");
+-
+-	if (cmd == TP_SELFTEST_CMD_LONGCHEER_MMI)
+-		goto Longcheer_mmi;
+-	else if (cmd == TP_SELFTEST_CMD_XIAOMI_I2C)
+-		goto xiaomi_i2c;
+-	else if (cmd == TP_SELFTEST_CMD_XIAOMI_OPEN)
+-		goto xiaomi_open;
+-	else if (cmd == TP_SELFTEST_CMD_XIAOMI_SHORT)
+-		goto xiaomi_short;
+-	else
+-		return 0;
+-
+-Longcheer_mmi:
+-xiaomi_i2c:
+-	if ((TestResult_FWMutual == 0)&& (TestResult_FW_CC == 0) && (TestResult_Noise == 0)&& (TestResult_Short ==0) && (TestResult_Open == 0)){
+-		NVT_LOG("Pass\n");
+-		return 2;
+-	}
+-	else {
+-		NVT_LOG("FWMutual=%d, FW_CC=%d, Noise=%d, Short=%d, Open=%d, Fail!\n",
+-				TestResult_FWMutual, TestResult_FW_CC, TestResult_Noise, TestResult_Short, TestResult_Open);
+-		return 1;
+-	}
+-xiaomi_open:
+-	if (TestResult_Open == 0){
+-		NVT_LOG("Open Test Pass!\n");
+-		return 2;
+-	} else {
+-		NVT_LOG("Open Test Fail!\n");
+-		return 1;
+-	}
+-xiaomi_short:
+-	if (TestResult_Short == 0){
+-		NVT_LOG("Short Test Pass!\n");
+-		return 2;
+-	} else {
+-		NVT_LOG("Short Test Fail!\n");
+-		return 1;
+-	}
+-}
+-/* add nova tp selftest by wanghan 2018-8-21 end*/
+-
+ /*******************************************************
+ Description:
+ Novatek touchscreen /proc/nvt_selftest open function.
+@@ -2001,9 +1769,6 @@ Executive outcomes. 0---succeed. -1---failed.
+  *******************************************************/
+ int32_t nvt_mp_proc_init(void)
+ {
+-	/* add nova tp selftest by wanghan 2018-8-21 start*/
+-	lct_tp_selftest_init(lct_nova_tp_selftest);
+-	/* add nova tp selftest by wanghan 2018-8-21 end*/
+ 	NVT_proc_selftest_entry = proc_create("nvt_selftest", 0444, NULL, &nvt_selftest_fops);
+ 	if (NVT_proc_selftest_entry == NULL) {
+ 		NVT_ERR("create /proc/nvt_selftest Failed!\n");
+diff --git a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_core.c b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_core.c
+index f09449eff72a..9854e07e0530 100644
+--- a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_core.c
++++ b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_core.c
+@@ -45,7 +45,6 @@
+ #ifdef KERNEL_ABOVE_2_6_38
+ #include <linux/input/mt.h>
+ #endif
+-#include "../lct_tp_gesture.h"
+ 
+ #define INPUT_PHYS_NAME "synaptics_dsx/touch_input"
+ #define STYLUS_PHYS_NAME "synaptics_dsx/stylus"
+@@ -4255,27 +4254,6 @@ void synaptics_rmi4_new_function(struct synaptics_rmi4_exp_fn *exp_fn,
+ }
+ EXPORT_SYMBOL(synaptics_rmi4_new_function);
+ 
+-static int lct_tp_gesture_node_callback(bool flag)
+-{
+-	unsigned int input;
+-	if (rmi4_data->suspend) {
+-		pr_err("ERROR: TP is suspend!\n");
+-		return -1;
+-	}
+-	if(flag) {
+-		synaptics_gesture_func_on = true;
+-		input = 1;
+-		pr_err("enable gesture mode\n");
+-	} else {
+-		synaptics_gesture_func_on = false;
+-		input = 0;
+-		pr_err("disable gesture mode\n");
+-	}
+-	if (rmi4_data->f11_wakeup_gesture || rmi4_data->f12_wakeup_gesture)
+-		rmi4_data->enable_wakeup_gesture = input;
+-	return 0;
+-}
+-
+ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ {
+ 	int retval;
+@@ -4425,11 +4403,6 @@ static int synaptics_rmi4_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	retval = init_lct_tp_gesture(lct_tp_gesture_node_callback);
+-	if (retval < 0) {
+-		dev_err(&pdev->dev, "Failed to add /proc/tp_gesture node!\n");
+-	}
+-
+ 	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
+ 		retval = sysfs_create_file(&rmi4_data->input_dev->dev.kobj,
+ 				&attrs[attr_count].attr);
+diff --git a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c
+index 49ca2c607ef9..9f767305c53b 100644
+--- a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c
++++ b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_fw_update.c
+@@ -42,8 +42,6 @@
+ #include <linux/platform_device.h>
+ #include <linux/input/synaptics_dsx.h>
+ #include "synaptics_dsx_core.h"
+-#include "../lct_tp_fm_info.h"
+-#include "../lct_ctp_upgrade.h"
+ #include <linux/proc_fs.h>
+ 
+ #define FW_IHEX_NAME "synaptics/tianma_td4310_miui_e7s.bin"
+@@ -4510,7 +4508,6 @@ static int fwu_start_reflash(void)
+ 	const struct firmware *fw_entry = NULL;
+ 	struct synaptics_rmi4_data *rmi4_data = fwu->rmi4_data;
+ 	unsigned char config_ver[20]={0};
+-	char fw_version[64];
+ 
+ 	if (rmi4_data->sensor_sleep) {
+ 		dev_err(rmi4_data->pdev->dev.parent,
+@@ -4739,13 +4736,8 @@ static int fwu_start_reflash(void)
+ 			config_ver,
+ 			1);
+ 	printk("config_ver info =%02x\n",config_ver[0]);
+-	memset(fw_version, 0, sizeof(fw_version));
+-	sprintf(fw_version, "[FW]0x%02x,[IC]td4310", config_ver[0]);
+ 	if ((tp_lockdown_info[0] == '4')&&(tp_lockdown_info[1]=='1')) {
+-		init_tp_fm_info(0, fw_version, "shenchao");
+ 		tp_flag = 1;
+-	}else{
+-		init_tp_fm_info(0, fw_version, "tianma");
+ 	}
+ 
+ 	return retval;
+diff --git a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_test_reporting.c b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_test_reporting.c
+index c26bc3822dc6..a8c16ed4d4ff 100644
+--- a/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_test_reporting.c
++++ b/drivers/input/touchscreen/synaptics_dsx_e7s/synaptics_dsx_test_reporting.c
+@@ -46,7 +46,6 @@
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
+ #include "synaptics_dsx_core.h"
+-#include "../lct_ctp_selftest.h"
+ 
+ #define SYSFS_FOLDER_NAME "f54"
+ #define SYN_RAWDATA_FILE "/data/nvt_test/SYN_tddi_rawdata.txt"
+@@ -5263,843 +5262,6 @@ static ssize_t test_sysfs_syn_selftest_result_show(struct device *dev,
+ 	return snprintf(buf, PAGE_SIZE, "%s\n", (cnt == 4) ? "PASS" : "FAIL");
+ }
+ 
+-
+-static int test_sysfs_tddi_ee_short_func(void)
+-{
+-	struct device *dev;
+-	struct device_attribute *attr;
+-	
+-	size_t count;
+-	int fail_count = 0;
+-	int retval;
+-	int i, j, offset;
+-	int tx_num = f54->tx_assigned;
+-	int rx_num = f54->rx_assigned;
+-	signed short *tddi_rt95_part_one = NULL;
+-	signed short *tddi_rt95_part_two = NULL;
+-	unsigned int buffer_size = tx_num * rx_num * 2;
+-	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
+-
+-#ifdef F54_SHOW_MAX_MIN
+-	signed short min = 0;
+-	signed short max = 0;
+-#endif
+-
+-	/* allocate the g_tddi_ee_short_data_output */
+-	if (g_tddi_ee_short_data_output)
+-		kfree(g_tddi_ee_short_data_output);
+-
+-	g_tddi_ee_short_data_output = kzalloc(tx_num * rx_num, GFP_KERNEL);
+-	if (!g_tddi_ee_short_data_output) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for g_tddi_ee_short_data_output\n",
+-				__func__);
+-		return 0;
+-	}
+-
+-
+-	tddi_rt95_part_one = kzalloc(buffer_size, GFP_KERNEL);
+-	if (!tddi_rt95_part_one) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for tddi_rt95_part_one\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	tddi_rt95_part_two = kzalloc(buffer_size, GFP_KERNEL);
+-	if (!tddi_rt95_part_two) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for td43xx_rt95_part_two\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	g_flag_readrt_err = false;
+-
+-	/* step 1 */
+-	/* get report image 95 */
+-	retval = test_sysfs_read_report(dev, attr, "95", count,
+-				false, false);
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read report 95. exit\n", __func__);
+-		retval = 0;
+-		g_flag_readrt_err = true;
+-		goto exit;
+-	}
+-
+-
+-	/* step 2 */
+-	/* use the upper half as part 1 image */
+-	/* the data should be lower than TEST_LIMIT_PART1 ( fail, if > TEST_LIMIT_PART1 ) */
+-	for (i = 0, offset = 0; i < tx_num * rx_num; i++) {
+-		tddi_rt95_part_one[i] = (signed short)(f54->report_data[offset]) |
+-								((signed short)(f54->report_data[offset + 1]) << 8);
+-		offset += 2;
+-	}
+-
+-#ifdef F54_SHOW_MAX_MIN
+-	min = max = tddi_rt95_part_one[0];
+-#endif
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-#ifdef F54_SHOW_MAX_MIN
+-			min = min_t(signed short, tddi_rt95_part_one[i*rx_num + j], min);
+-			max = max_t(signed short, tddi_rt95_part_one[i*rx_num + j], max);
+-#endif
+-			if (tp_flag == 1) {	
+-				if (tddi_rt95_part_one[i*rx_num + j] > EE_SHORT_TEST_LIMIT_PART1_SHENCHAO) {
+-				dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:EBBG fail at (tx%-2d, rx%-2d) = %-4d in part 1 image (limit = %d)\n",
+-							__func__, i, j, tddi_rt95_part_one[i*rx_num + j], EE_SHORT_TEST_LIMIT_PART1_SHENCHAO);
+-
+-					tddi_rt95_part_one[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					tddi_rt95_part_one[i*rx_num + j] = _TEST_PASS;
+-				}			
+-			} 
+-			else {
+-				if (tddi_rt95_part_one[i*rx_num + j] > EE_SHORT_TEST_LIMIT_PART1) {
+-				dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:Tianma fail at (tx%-2d, rx%-2d) = %-4d in part 1 image (limit = %d)\n",
+-							__func__, i, j, tddi_rt95_part_one[i*rx_num + j], EE_SHORT_TEST_LIMIT_PART1);
+-
+-					tddi_rt95_part_one[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					tddi_rt95_part_one[i*rx_num + j] = _TEST_PASS;
+-				}
+-			}
+-		}
+-	}
+-#ifdef F54_SHOW_MAX_MIN
+-	pr_info("%s : image part 1 data range (max, min) = (%-4d, %-4d)\n", __func__, max, min);
+-#endif
+-
+-	/* step 3 */
+-	/* use the lower half as part 2 image */
+-	/* and perform the calculation */
+-	/* the calculated data should be over than TEST_LIMIT_PART2 ( fail, if < TEST_LIMIT_PART2 ) */
+-	for (i = 0, offset = buffer_size; i < tx_num * rx_num; i++) {
+-		tddi_rt95_part_two[i] = (signed short)(f54->report_data[offset]) |
+-								((signed short)(f54->report_data[offset + 1]) << 8);
+-		offset += 2;
+-	}
+-
+-
+-	tddi_ratio_calculation(tddi_rt95_part_two);
+-
+-#ifdef F54_SHOW_MAX_MIN
+-	min = max = tddi_rt95_part_two[0];
+-#endif
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-#ifdef F54_SHOW_MAX_MIN
+-			min = min_t(signed short, tddi_rt95_part_two[i*rx_num + j], min);
+-			max = max_t(signed short, tddi_rt95_part_two[i*rx_num + j], max);
+-#endif
+-			if (tp_flag == 1) {
+-				if (tddi_rt95_part_two[i*rx_num + j] < EE_SHORT_TEST_LIMIT_PART2_SHENCHAO) {
+-				dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:EBBG fail at (tx%-2d, rx%-2d) = %-4d in part 2 image (limit = %d)\n",
+-							__func__, i, j, tddi_rt95_part_two[i*rx_num + j], EE_SHORT_TEST_LIMIT_PART2_SHENCHAO);
+-	
+-					tddi_rt95_part_two[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					tddi_rt95_part_two[i*rx_num + j] = _TEST_PASS;
+-				}
+-			}
+-			else {
+-				if (tddi_rt95_part_two[i*rx_num + j] < EE_SHORT_TEST_LIMIT_PART2) {
+-				dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:Tianma fail at (tx%-2d, rx%-2d) = %-4d in part 2 image (limit = %d)\n",
+-							__func__, i, j, tddi_rt95_part_two[i*rx_num + j], EE_SHORT_TEST_LIMIT_PART2);
+-	
+-					tddi_rt95_part_two[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					tddi_rt95_part_two[i*rx_num + j] = _TEST_PASS;
+-				}
+-			}
+-		}
+-	}
+-
+-#ifdef F54_SHOW_MAX_MIN
+-	pr_info("%s : image part 2 data range (max, min) = (%-4d, %-4d)\n", __func__, max, min);
+-#endif
+-
+-	/* step 4 */
+-	/* filling out the g_tddi_ee_short_data_output */
+-	/* 1: fail / 0 : pass */
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-			g_tddi_ee_short_data_output[i * rx_num + j] =
+-				(unsigned char)(tddi_rt95_part_one[i * rx_num + j]) || tddi_rt95_part_two[i * rx_num + j];
+-		}
+-	}
+-
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-			if (g_tddi_ee_short_data_output[i * rx_num + j] != _TEST_PASS) {
+-
+-				fail_count += 1;
+-			}
+-		}
+-	}
+-
+-	kfree(g_tddi_ee_short_data_output);
+-	g_tddi_ee_short_data_output = NULL;
+-
+-	retval = ((fail_count == 0) ? 2 : 1);
+-
+-exit:
+-	kfree(tddi_rt95_part_one);
+-	kfree(tddi_rt95_part_two);
+-
+-	return retval;
+-}
+-
+-static int test_sysfs_tddi_amp_electrode_open_func(void)
+-{
+-	struct device *dev;
+-	struct device_attribute *attr;
+-	
+-	size_t count;
+-	int fail_count = 0;
+-	int retval = 0;
+-	int i, j, k;
+-	int tx_num = f54->tx_assigned;
+-	int rx_num = f54->rx_assigned;
+-	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
+-	struct f54_control control = f54->control;
+-
+-	struct f54_control_91  original_f54_ctrl91;
+-	struct f54_control_99  original_f54_ctrl99;
+-	struct f54_control_182 original_f54_ctrl182;
+-
+-	unsigned char *p_report_data_8 = NULL;
+-	signed short  *p_rt92_image_1 = NULL;
+-	signed short  *p_rt92_image_2 = NULL;
+-	signed short  *p_rt92_delta_image = NULL;
+-
+-#ifdef F54_SHOW_MAX_MIN
+-	signed short min = 0;
+-	signed short max = 0;
+-#endif
+-
+-
+-	if (g_tddi_amp_open_data_output)
+-		kfree(g_tddi_amp_open_data_output);
+-	g_tddi_amp_open_data_output = kzalloc(tx_num * rx_num, GFP_KERNEL);
+-	if (!g_tddi_amp_open_data_output) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for g_tddi_amp_open_data_output\n",
+-				__func__);
+-		return 0;
+-	}
+-
+-	g_flag_readrt_err = false;
+-
+-
+-	p_report_data_8 = kzalloc(tx_num * rx_num * 2, GFP_KERNEL);
+-	if (!p_report_data_8) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for p_report_data_8\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	p_rt92_delta_image = kzalloc(tx_num * rx_num * sizeof(signed short), GFP_KERNEL);
+-	if (!p_rt92_delta_image) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for p_rt92_delta_image\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	p_rt92_image_1 = kzalloc(tx_num * rx_num * sizeof(signed short), GFP_KERNEL);
+-	if (!p_rt92_image_1) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for p_rt92_image_1\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	p_rt92_image_2 = kzalloc(tx_num * rx_num * sizeof(signed short), GFP_KERNEL);
+-	if (!p_rt92_image_2) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to alloc mem for p_rt92_image_2\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-
+-	/* keep the original reference high/low capacitance */
+-	retval = synaptics_rmi4_reg_read(rmi4_data,
+-			control.reg_91->address,
+-			original_f54_ctrl91.data,
+-			sizeof(original_f54_ctrl91.data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read original data from f54_ctrl91\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	/* keep the original integration and reset duration */
+-	retval = synaptics_rmi4_reg_read(rmi4_data,
+-			control.reg_99->address,
+-			original_f54_ctrl99.data,
+-			sizeof(original_f54_ctrl99.data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read original data from f54_ctrl99\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	/* keep the original timing control */
+-	retval = synaptics_rmi4_reg_read(rmi4_data,
+-			control.reg_182->address,
+-			original_f54_ctrl182.data,
+-			sizeof(original_f54_ctrl182.data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read original data from f54_ctrl182\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	/* step 1 */
+-	/* Wide refcap hi/ lo and feedback, Write 0x0F to F54_ANALOG_CTRL91 */
+-	control.reg_91->reflo_transcap_capacitance = 0x0f;
+-	control.reg_91->refhi_transcap_capacitance = 0x0f;
+-	control.reg_91->receiver_feedback_capacitance = 0x0f;
+-	control.reg_91->reference_receiver_feedback_capacitance = original_f54_ctrl91.reference_receiver_feedback_capacitance;
+-	control.reg_91->gain_ctrl = original_f54_ctrl91.gain_ctrl;
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_91->address,
+-			control.reg_91->data,
+-			sizeof(control.reg_91->data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to set f54_ctrl91 in step 1\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	/* step 2 */
+-	/* Increase RST_DUR to 1.53us, Write 0x5c to F54_ANALOG_CTRL99 */
+-	control.reg_99->integration_duration_lsb = original_f54_ctrl99.integration_duration_lsb;
+-	control.reg_99->integration_duration_msb = original_f54_ctrl99.integration_duration_msb;
+-	control.reg_99->reset_duration = 0x5c;
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_99->address,
+-			control.reg_99->data,
+-			sizeof(control.reg_99->data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to set f54_ctrl99 in step 2\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	/* step 3 */
+-	/* Write 0x02 to F54_ANALOG_CTRL182 (00)/00 and (00)/02 */
+-	control.reg_182->cbc_timing_ctrl_tx_lsb = ELEC_OPEN_TEST_TX_ON_COUNT & 0xff;
+-	control.reg_182->cbc_timing_ctrl_tx_msb = (ELEC_OPEN_TEST_TX_ON_COUNT >> 8) & 0xff;
+-	control.reg_182->cbc_timing_ctrl_rx_lsb = ELEC_OPEN_TEST_RX_ON_COUNT & 0xff;
+-	control.reg_182->cbc_timing_ctrl_rx_msb = (ELEC_OPEN_TEST_RX_ON_COUNT >> 8) & 0xff;
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_182->address,
+-			control.reg_182->data,
+-			sizeof(control.reg_182->data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to set f54_reg_182 in step 3\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	/* step 4 */
+-	/* Change the INT_DUR as ELEC_OPEN_INT_DUR_ONE */
+-	retval = synaptics_rmi4_reg_read(rmi4_data,
+-			control.reg_99->address,
+-			control.reg_99->data,
+-			sizeof(control.reg_99->data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read data from f54_ctrl99 in step 4\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	if (tp_flag == 1) {
+-		control.reg_99->integration_duration_lsb = ELEC_OPEN_INT_DUR_ONE_SHENCHAO;
+-		control.reg_99->integration_duration_msb = (ELEC_OPEN_INT_DUR_ONE_SHENCHAO >> 8) & 0xff;
+-	} else {
+-		control.reg_99->integration_duration_lsb = ELEC_OPEN_INT_DUR_ONE;
+-		control.reg_99->integration_duration_msb = (ELEC_OPEN_INT_DUR_ONE >> 8) & 0xff;
+-	}
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_99->address,
+-			control.reg_99->data,
+-			sizeof(control.reg_99->data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to seet ELEC_OPEN_INT_DUR_ONE(%d) in step 4\n",
+-				__func__, ELEC_OPEN_INT_DUR_ONE);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	retval = test_do_command(COMMAND_FORCE_UPDATE);
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to do force update in step 4\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	/* step 5 */
+-	/* Capture raw capacitance (rt92) image 1 */
+-	/* Run Report Type 92 */
+-	retval = test_sysfs_read_report(dev, attr, "92", count,
+-				false, false);
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read report 92 in step 5. exit\n",
+-				__func__);
+-		retval = 0;
+-		g_flag_readrt_err = false;
+-		goto exit;
+-	}
+-	secure_memcpy(p_report_data_8, tx_num * rx_num * 2,
+-		f54->report_data, f54->report_size, f54->report_size);
+-
+-	k = 0;
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-			p_rt92_image_1[i * rx_num + j] =
+-				(signed short)(p_report_data_8[k] & 0xff ) | (signed short)(p_report_data_8[k + 1] << 8);
+-
+-			k += 2;
+-		}
+-	}
+-	memset(p_report_data_8, 0x00, tx_num * rx_num * 2);
+-
+-	/* step 6 */
+-	/* Change the INT_DUR into ELEC_OPEN_INT_DUR_TWO */
+-	retval = synaptics_rmi4_reg_read(rmi4_data,
+-			control.reg_99->address,
+-			control.reg_99->data,
+-			sizeof(control.reg_99->data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read data from f54_ctrl99 in step 6\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	if (tp_flag == 1) {
+-		control.reg_99->integration_duration_lsb = ELEC_OPEN_INT_DUR_TWO_SHENCHAO;
+-		control.reg_99->integration_duration_msb = (ELEC_OPEN_INT_DUR_TWO_SHENCHAO >> 8) & 0xff;
+-	} else {
+-		control.reg_99->integration_duration_lsb = ELEC_OPEN_INT_DUR_TWO;
+-		control.reg_99->integration_duration_msb = (ELEC_OPEN_INT_DUR_TWO >> 8) & 0xff;
+-	}
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_99->address,
+-			control.reg_99->data,
+-			sizeof(control.reg_99->data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to seet ELEC_OPEN_INT_DUR_TWO(%d) in step 6\n",
+-				__func__, ELEC_OPEN_INT_DUR_TWO);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	retval = test_do_command(COMMAND_FORCE_UPDATE);
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to do force update in step 6\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	/* step 7 */
+-	/* Capture raw capacitance (rt92) image 2 */
+-	/* Run Report Type 92 */
+-	retval = test_sysfs_read_report(dev, attr, "92", count,
+-				false, false);
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to read report 92 in step 7. exit\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	secure_memcpy(p_report_data_8, tx_num * rx_num * 2,
+-		f54->report_data, f54->report_size, f54->report_size);
+-
+-	k = 0;
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-			p_rt92_image_2[i * rx_num + j] =
+-				(signed short)(p_report_data_8[k] & 0xff ) | (signed short)(p_report_data_8[k + 1] << 8);
+-
+-			k += 2;
+-		}
+-	}
+-
+-	/* step 8 */
+-	/* generate the delta image, which is equeal to image2 - image1 */
+-	/* unit is femtofarad (fF) */
+-	for (i = 0; i < tx_num * rx_num; i++) {
+-		p_rt92_delta_image[i] = p_rt92_image_2[i] - p_rt92_image_1[i];
+-	}
+-
+-	/* step 9 */
+-	/* restore the original configuration */
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_91->address,
+-			original_f54_ctrl91.data,
+-			sizeof(original_f54_ctrl91.data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to restore f54_ctrl91 data\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_99->address,
+-			original_f54_ctrl99.data,
+-			sizeof(original_f54_ctrl99.data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to restore f54_ctrl99 data\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			control.reg_182->address,
+-			original_f54_ctrl182.data,
+-			sizeof(original_f54_ctrl182.data));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to restore f54_ctrl182 data\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-	retval = test_do_command(COMMAND_FORCE_UPDATE);
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to do force update in step 9\n",
+-				__func__);
+-		retval = 0;
+-		goto exit;
+-	}
+-
+-	memset(p_rt92_image_1, 0x00, tx_num * rx_num * 2);
+-
+-	/* step 10 */
+-	/* phase 1, data verification */
+-	/* the delta value should be lower than the test limit */
+-
+-#ifdef F54_SHOW_MAX_MIN
+-	min = max = p_rt92_delta_image[0];
+-#endif
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-#ifdef F54_SHOW_MAX_MIN
+-			min = min_t(signed short, p_rt92_delta_image[i*rx_num + j], min);
+-			max = max_t(signed short, p_rt92_delta_image[i*rx_num + j], max);
+-#endif
+-			if (tp_flag == 1) {
+-				if ((p_rt92_delta_image[i * rx_num + j] < ELEC_OPEN_TEST_LIMIT_ONE_LOWER_SHENCHAO) ||
+-					(p_rt92_delta_image[i * rx_num + j] > ELEC_OPEN_TEST_LIMIT_ONE_UPPER_SHENCHAO)){
+-					dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:EBBG fail at (tx%-2d, rx%-2d) = %-4d at phase 1 (limit: %d - %d)\n",
+-	 						__func__, i, j, p_rt92_delta_image[i*rx_num + j], 
+-							ELEC_OPEN_TEST_LIMIT_ONE_LOWER_SHENCHAO, ELEC_OPEN_TEST_LIMIT_ONE_UPPER_SHENCHAO);
+-
+-					p_rt92_image_1[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					p_rt92_image_1[i*rx_num + j] = _TEST_PASS;
+-				}				
+-			}
+-			else {
+-				if ((p_rt92_delta_image[i * rx_num + j] < ELEC_OPEN_TEST_LIMIT_ONE_LOWER) ||
+-					(p_rt92_delta_image[i * rx_num + j] > ELEC_OPEN_TEST_LIMIT_ONE_UPPER)){
+-
+-					dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:Tianma fail at (tx%-2d, rx%-2d) = %-4d at phase 1 (limit: %d - %d)\n",
+-	 						__func__, i, j, p_rt92_delta_image[i*rx_num + j], 
+-							ELEC_OPEN_TEST_LIMIT_ONE_LOWER, ELEC_OPEN_TEST_LIMIT_ONE_UPPER);
+-
+-					p_rt92_image_1[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					p_rt92_image_1[i*rx_num + j] = _TEST_PASS;
+-				}
+-			}
+-		}
+-	}
+-#ifdef F54_SHOW_MAX_MIN
+-	pr_info("%s : ph.1 data range (max, min) = (%-4d, %-4d)\n", __func__, max, min);
+-#endif
+-
+-	memset(p_rt92_image_2, 0x00, tx_num * rx_num * 2);
+-
+-	/* step 11 */
+-	/* phase 2, data calculation and verification */
+-	/* the calculated ratio should be lower than the test limit */
+-
+-
+-	tddi_ratio_calculation(p_rt92_delta_image);
+-
+-#ifdef F54_SHOW_MAX_MIN
+-	min = max = p_rt92_delta_image[0];
+-#endif
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-#ifdef F54_SHOW_MAX_MIN
+-			min = min_t(signed short, p_rt92_delta_image[i*rx_num + j], min);
+-			max = max_t(signed short, p_rt92_delta_image[i*rx_num + j], max);
+-#endif
+-			if (tp_flag == 1) {
+-				if ((p_rt92_delta_image[i * rx_num + j] < ELEC_OPEN_TEST_LIMIT_TWO_LOWER_SHENCHAO) ||
+-					(p_rt92_delta_image[i * rx_num + j] > ELEC_OPEN_TEST_LIMIT_TWO_UPPER_SHENCHAO)){
+-					dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:EBBG fail at (tx%-2d, rx%-2d) = %-4d at phase 2 (limit: %d - %d)\n",
+-							__func__, i, j, p_rt92_delta_image[i*rx_num + j], 
+-							ELEC_OPEN_TEST_LIMIT_TWO_LOWER_SHENCHAO, ELEC_OPEN_TEST_LIMIT_TWO_UPPER_SHENCHAO);
+-
+-					p_rt92_image_2[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					p_rt92_image_2[i*rx_num + j] = _TEST_PASS;
+-				}				
+-			}
+-			else {
+-				if ((p_rt92_delta_image[i * rx_num + j] < ELEC_OPEN_TEST_LIMIT_TWO_LOWER) ||
+-					(p_rt92_delta_image[i * rx_num + j] > ELEC_OPEN_TEST_LIMIT_TWO_UPPER)){
+-
+-					dev_err(f54->rmi4_data->pdev->dev.parent,
+-						"%s:Tianma fail at (tx%-2d, rx%-2d) = %-4d at phase 2 (limit: %d - %d)\n",
+-							__func__, i, j, p_rt92_delta_image[i*rx_num + j], 
+-							ELEC_OPEN_TEST_LIMIT_TWO_LOWER, ELEC_OPEN_TEST_LIMIT_TWO_UPPER);
+-
+-					p_rt92_image_2[i*rx_num + j] = _TEST_FAIL;
+-				}
+-				else {
+-					p_rt92_image_2[i*rx_num + j] = _TEST_PASS;
+-				}
+-			}
+-		}
+-	}
+-#ifdef F54_SHOW_MAX_MIN
+-	pr_info("%s : ph.2 data range (max, min) = (%-4d, %-4d)\n", __func__, max, min);
+-#endif
+-
+-	/* step 12 */
+-	/* filling out the g_tddi_amp_open_data_output */
+-	/* 1: fail / 0 : pass */
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-			g_tddi_amp_open_data_output[i * rx_num + j] =
+-				(unsigned char)(p_rt92_image_1[i * rx_num + j]) || p_rt92_image_2[i * rx_num + j];
+-		}
+-	}
+-	for (i = 0; i < tx_num; i++) {
+-		for (j = 0; j < rx_num; j++) {
+-			if (g_tddi_amp_open_data_output[i * rx_num + j] != _TEST_PASS) {
+-
+-				fail_count += 1;
+-			}
+-		}
+-	}
+-
+-	kfree(g_tddi_amp_open_data_output);
+-	g_tddi_amp_open_data_output = NULL;
+-
+-	
+-	retval = ((fail_count == 0) ? 2 : 1);
+-
+-exit:
+-
+-	kfree(p_report_data_8);
+-	kfree(p_rt92_image_1);
+-	kfree(p_rt92_image_2);
+-	kfree(p_rt92_delta_image);
+-
+-	return retval;
+-}
+-
+-static int test_sysfs_resume_touch_func(void)
+-{
+-	int retval;
+-	unsigned char device_ctrl;
+-
+-	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
+-
+-	retval = synaptics_rmi4_reg_read(rmi4_data,
+-			rmi4_data->f01_ctrl_base_addr,
+-			&device_ctrl,
+-			sizeof(device_ctrl));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to restore no sleep setting\n",
+-				__func__);
+-		return 0;
+-	}
+-
+-	device_ctrl = device_ctrl & ~NO_SLEEP_ON;
+-	device_ctrl |= rmi4_data->no_sleep_setting;
+-
+-	retval = synaptics_rmi4_reg_write(rmi4_data,
+-			rmi4_data->f01_ctrl_base_addr,
+-			&device_ctrl,
+-			sizeof(device_ctrl));
+-	if (retval < 0) {
+-		dev_err(rmi4_data->pdev->dev.parent,
+-				"%s: Failed to restore no sleep setting\n",
+-				__func__);
+-		return 0;
+-	}
+-
+-	test_set_interrupt(false);
+-
+-	if (f54->skip_preparation)
+-		return 2;
+-
+-	switch (f54->report_type) {
+-	case F54_16BIT_IMAGE:
+-	case F54_RAW_16BIT_IMAGE:
+-	case F54_SENSOR_SPEED:
+-	case F54_ADC_RANGE:
+-	case F54_ABS_RAW_CAP:
+-	case F54_ABS_DELTA_CAP:
+-	case F54_ABS_HYBRID_DELTA_CAP:
+-	case F54_ABS_HYBRID_RAW_CAP:
+-	case F54_FULL_RAW_CAP_TDDI:
+-	/* tddi f54 test reporting + */
+-	case F54_NOISE_TDDI:
+-	case F54_EE_SHORT_TDDI:
+-	/* tddi f54 test reporting - */
+-		break;
+-	case F54_AMP_RAW_ADC:
+-		if (f54->query_49.has_ctrl188) {
+-			retval = synaptics_rmi4_reg_read(rmi4_data,
+-					f54->control.reg_188->address,
+-					f54->control.reg_188->data,
+-					sizeof(f54->control.reg_188->data));
+-			if (retval < 0) {
+-				dev_err(rmi4_data->pdev->dev.parent,
+-						"%s: Failed to set start production test\n",
+-						__func__);
+-				return 0;
+-			}
+-			f54->control.reg_188->start_production_test = 0;
+-			retval = synaptics_rmi4_reg_write(rmi4_data,
+-					f54->control.reg_188->address,
+-					f54->control.reg_188->data,
+-					sizeof(f54->control.reg_188->data));
+-			if (retval < 0) {
+-				dev_err(rmi4_data->pdev->dev.parent,
+-						"%s: Failed to set start production test\n",
+-						__func__);
+-				return 0;
+-			}
+-		}
+-		break;
+-	default:
+-		rmi4_data->reset_device(rmi4_data, false);
+-	}
+-
+-	return 2;
+-}
+-
+-static int test_proc_tp_selftest_func(void)
+-{
+-	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
+-	unsigned char config_ver[20]={0};
+-	int retval = 0;
+-	int retval_a = 0;
+-	int retval_b = 0;
+-	int retval_c = 0;
+-
+-
+-	SYN_LOG("proc ENTER tp_selftest-ee_short\n");
+-	retval_a = test_sysfs_tddi_ee_short_func();
+-	if (retval_a == 2) {
+-		SYN_LOG("tp_selftest-ee_short pass\n");
+-	} else if (retval_a == 1) {
+-		SYN_LOG("tp_selftest-ee_short failed\n");	
+-	} else {
+-		SYN_LOG("tp_selftest-ee_short invalid\n");
+-		return 0;
+-	}
+-
+-
+-	SYN_LOG("proc ENTER tp_selftest-electrode_open\n");
+-	retval_b = test_sysfs_tddi_amp_electrode_open_func();
+-	if (retval_b == 2) {
+-		SYN_LOG("tp_selftest-electrode_open pass\n");
+-	} else if (retval_b == 1) {
+-		SYN_LOG("tp_selftest-electrode_open failed\n");	
+-	} else {
+-		SYN_LOG("tp_selftest-electrode_open invalid\n");
+-		return 0;
+-	}
+-
+-
+-	SYN_LOG("resume touch\n");
+-	retval_c = test_sysfs_resume_touch_func();
+-	if (retval_c == 2) {
+-		SYN_LOG("resume touch pass\n");
+-	} else {
+-		SYN_LOG("resume touch invalid\n");
+-		return 0;
+-	}
+-	
+-
+-	retval = synaptics_rmi4_reg_read(rmi4_data,
+-			0x000c,
+-			config_ver,
+-			1);
+-	if (retval < 0)
+-	{
+-		SYN_LOG("i2c comm test failed\n");
+-	}
+-	
+-	if ((retval_a == 2)&&(retval_b == 2)) {
+-		return 2;
+-	} else {
+-		return 1;
+-	}
+-}
+-
+-
+ /* tddi f54 test reporting - */
+ 
+ 
+@@ -6296,7 +5458,6 @@ static int test_set_sysfs(void)
+ 		goto exit_attributes;
+ 	}
+ 	tp_selftest_creat_sys_entry();
+-	lct_ctp_selftest_int(test_proc_tp_selftest_func);
+ 	return 0;
+ 
+ exit_attributes:
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_core.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_core.c
+index a0d6da496651..bb3c8c6493db 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_core.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_core.c
+@@ -35,16 +35,8 @@
+ #include <linux/interrupt.h>
+ #include "synaptics_tcm_core.h"
+ 
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-#include "../lct_tp_work.h"
+-#endif
+-#include "../lct_tp_gesture.h"
+-#include "../lct_tp_grip_area.h"
+-
+ /* add check F7A LCM by wanghan start */
+ extern char g_lcd_id[128];
+-bool lct_syna_verify_flag = true;
+-EXPORT_SYMBOL(lct_syna_verify_flag);
+ bool synaptics_gesture_enable_flag = false;
+ bool gesture_delay = false;
+ EXPORT_SYMBOL(synaptics_gesture_enable_flag);
+@@ -3054,12 +3046,6 @@ static int syna_tcm_fb_notifier_cb(struct notifier_block *nb,
+ 		transition = evdata->data;
+ 		if (action == FB_EARLY_EVENT_BLANK) {
+ 			if(*transition == FB_BLANK_POWERDOWN) {
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-				if (!get_lct_tp_work_status()) {
+-					tcm_hcd->in_suspend=true;
+-					return 0;
+-				}
+-#endif
+ 				LOGV("touch early_suspend\n");
+ 				flush_work(&g_resume_work);
+ 				mutex_lock(&tcm_hcd->pm_mutex);
+@@ -3071,12 +3057,6 @@ static int syna_tcm_fb_notifier_cb(struct notifier_block *nb,
+ 			}
+ 		} else if (action == FB_EVENT_BLANK) {
+ 			if (*transition == FB_BLANK_POWERDOWN) {
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-				if (!get_lct_tp_work_status()) {
+-					tcm_hcd->in_suspend=true;
+-					return 0;
+-				}
+-#endif
+ 				LOGV("touch suspend\n");
+ 				mutex_lock(&tcm_hcd->pm_mutex);
+ 				retval = syna_tcm_suspend(&tcm_hcd->pdev->dev);
+@@ -3084,12 +3064,6 @@ static int syna_tcm_fb_notifier_cb(struct notifier_block *nb,
+ 				mutex_unlock(&tcm_hcd->pm_mutex);
+ 			} else if (*transition == FB_BLANK_UNBLANK) {
+ 				LOGV("touch resume\n");
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-				if (!get_lct_tp_work_status()) {
+-					tcm_hcd->in_suspend=false;
+-					return 0;
+-				}
+-#endif
+ 				schedule_work(&g_resume_work);
+ 			}
+ 		}
+@@ -3136,123 +3110,6 @@ static void do_syna_resume_work(struct work_struct *work)
+ 
+ 	return;
+ }
+-/* add resume work by wanghan end */
+-
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-static int lct_tp_work_node_callback(bool flag)
+-{
+-	int retval = 0;
+-	struct syna_tcm_hcd *tcm_hcd = g_tcm_hcd;
+-
+-	if (synaptics_gesture_enable_flag) {
+-		LOGV("ERROR: synaptics_gesture=%d!\n", synaptics_gesture_enable_flag);
+-		return -1;
+-	}
+-	if (tcm_hcd->in_suspend) return 0;
+-	mutex_lock(&tcm_hcd->pm_mutex);
+-	if (flag) {
+-		tcm_hcd->in_suspend = true;
+-		retval = tcm_hcd->reset(tcm_hcd, false, true);
+-		if (retval < 0) LOGE(tcm_hcd->pdev->dev.parent, "Failed to do reset\n");
+-		retval = syna_tcm_resume(&(tcm_hcd->pdev->dev));
+-		if (retval < 0) LOGV("syna_tcm_resume Failed! retval = %d\n", retval);
+-	} else {
+-		flush_work(&g_resume_work);
+-		retval = syna_tcm_early_suspend(&tcm_hcd->pdev->dev);
+-		if (retval < 0) LOGV("syna_tcm_early_suspend Failed! retval = %d\n", retval);
+-		retval = syna_tcm_suspend(&tcm_hcd->pdev->dev);
+-		if (retval < 0) LOGV("syna_tcm_suspend Failed! retval = %d\n", retval);
+-	}
+-	tcm_hcd->in_suspend = false;
+-	mutex_unlock(&tcm_hcd->pm_mutex);
+-
+-	return retval;
+-}
+-#endif
+-
+-static int lct_tp_gesture_node_callback(bool flag)
+-{
+-	int retval = 0;
+-	struct syna_tcm_hcd *tcm_hcd = g_tcm_hcd;
+-
+-	if (tcm_hcd->in_suspend) {
+-		LOGV("ERROR: TP is suspend!\n");
+-		return -1;
+-	}
+-	if(flag) {
+-		synaptics_gesture_enable_flag  = true;
+-		LOGV("enable gesture mode\n");
+-	} else {
+-		synaptics_gesture_enable_flag = false;
+-		LOGV("disable gesture mode\n");
+-	}
+-
+-	return retval;
+-}
+-
+-static int lct_tp_get_screen_angle_callback(void)
+-{
+-	int retval = -EIO;
+-	unsigned short grip_mode_var = 0;
+-	struct syna_tcm_hcd *tcm_hcd = g_tcm_hcd;
+-
+-	if (tcm_hcd->in_suspend || tcm_hcd->upgrading) {
+-		LOGV("tp is suspended or upgrading, no need to set!\n");
+-		return retval;
+-	}
+-
+-	retval = tcm_hcd->get_dynamic_config(tcm_hcd,
+-			DC_Enable_Landscape_Grip_Mode,
+-			&grip_mode_var);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent,
+-				"Failed to get dynamic config enable landscape grip mode\n");
+-		goto exit;
+-	}
+-
+-	LOGV("grip_mode_var = %d\n", grip_mode_var);
+-	if (grip_mode_var == 2)
+-		retval = 270;
+-	else if (grip_mode_var == 3)
+-		retval = 90;
+-	else
+-		retval = 0;
+-
+-exit:
+-	return retval;
+-}
+-
+-static int lct_tp_set_screen_angle_callback(unsigned int angle)
+-{
+-	int retval = -EIO;
+-	unsigned short grip_mode_var = 0;
+-	struct syna_tcm_hcd *tcm_hcd = g_tcm_hcd;
+-
+-	if (tcm_hcd->in_suspend || tcm_hcd->upgrading) {
+-		LOGV("tp is suspended or upgrading, no need to set!\n");
+-		return retval;
+-	}
+-
+-	if (angle == 90) {
+-		grip_mode_var = 2;
+-	} else if (angle == 270) {
+-		grip_mode_var = 3;
+-	}
+-	retval = tcm_hcd->set_dynamic_config(tcm_hcd,
+-			DC_Enable_Landscape_Grip_Mode,
+-			grip_mode_var);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent,
+-				"Failed to set dynamic config enable landscape grip mode\n");
+-		goto exit;
+-	}
+-	LOGV("set dynamic config 'grip_mode_var = %d' okay!\n", grip_mode_var);
+-
+-	retval = 0;
+-
+-exit:
+-	return retval;
+-}
+ 
+ static int syna_tcm_probe(struct platform_device *pdev)
+ {
+@@ -3372,23 +3229,6 @@ static int syna_tcm_probe(struct platform_device *pdev)
+ 		goto err_config_gpio;
+ 	}
+ 
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-	retval = init_lct_tp_work(lct_tp_work_node_callback);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "Failed to add /proc/tp_work node!\n");
+-	}
+-#endif
+-
+-	retval = init_lct_tp_gesture(lct_tp_gesture_node_callback);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "Failed to add /proc/tp_gesture node!\n");
+-	}
+-
+-	retval = init_lct_tp_grip_area(lct_tp_set_screen_angle_callback, lct_tp_get_screen_angle_callback);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "Failed to add /proc/tp_gesture node!\n");
+-	}
+-
+ 	LOGV("create sysfs directory\n");
+ 	sysfs_dir = kobject_create_and_add(PLATFORM_DRIVER_NAME,
+ 			&pdev->dev.kobj);
+@@ -3596,10 +3436,6 @@ static int syna_tcm_probe(struct platform_device *pdev)
+ 
+ 	kfree(tcm_hcd);
+ 
+-	/* add check F7A LCM by wanghan start */
+-	lct_syna_verify_flag = false;
+-	/* add check F7A LCM by wanghan end */
+-
+ 	return retval;
+ }
+ 
+@@ -3720,61 +3556,6 @@ static struct platform_driver syna_tcm_driver = {
+ 	.remove = syna_tcm_remove,
+ };
+ 
+-/* add check F7A_LCM_ID by wanghan start */
+-static int lct_syna_set_gpio(int gpio, bool config)
+-{
+-	int retval;
+-	char label[16];
+-
+-	if (config) {
+-		retval = snprintf(label, 16, "f7a_gpio_%d\n", gpio);
+-		if (retval < 0) return retval;
+-		retval = gpio_request(gpio, label);
+-		if (retval < 0) return retval;
+-		retval = gpio_direction_input(gpio);
+-		if (retval < 0) return retval;
+-	} else {
+-		gpio_free(gpio);
+-	}
+-
+-	return 0;
+-}
+-
+-int lct_syna_check_lcd(void)
+-{
+-	int retval;
+-	int lcm_id0, lcm_id1;
+-	retval = lct_syna_set_gpio(F7A_LCM_ID0, true);
+-	if (retval < 0) {
+-		LOGV("Failed to configure LCM_ID0 GPIO\n");
+-		goto err_lcm_id0;
+-	}
+-	retval = lct_syna_set_gpio(F7A_LCM_ID1, true);
+-	if (retval < 0) {
+-		LOGV("Failed to configure LCM_ID1 GPIO\n");
+-		goto err_lcm_id1;
+-	}
+-
+-	lcm_id0 = gpio_get_value(F7A_LCM_ID0);
+-	lcm_id1 = gpio_get_value(F7A_LCM_ID1);
+-	LOGV("F7A_LCM_ID0 = %d, F7A_LCM_ID1 = %d\n", lcm_id0, lcm_id1);
+-	if ( (lcm_id0 != F7A_LCM_ID0_STATE) || (lcm_id1 != F7A_LCM_ID1_STATE) ) {
+-		retval = -ENODEV;
+-		goto err_lcm;
+-	}
+-	LOGV("F7A LCM_ID is right!");
+-	retval = 0;
+-
+-err_lcm:
+-	lct_syna_set_gpio(F7A_LCM_ID1, false);
+-err_lcm_id1:
+-	lct_syna_set_gpio(F7A_LCM_ID0, false);
+-err_lcm_id0:
+-	return retval;
+-}
+-/* add check F7A_LCM_ID by wanghan end */
+-
+-
+ #define DOES_NOT_SUPPORT_SHUTDOWN_CHARGING
+ 
+ #ifdef DOES_NOT_SUPPORT_SHUTDOWN_CHARGING
+@@ -3792,12 +3573,6 @@ static int __init syna_tcm_module_init(void)
+ 	}
+ #endif
+ 
+-	retval = lct_syna_check_lcd();
+-	if(retval < 0){
+-		LOGV("Verify BOE LCM ID Failed, not BOE TP!\n");
+-		goto err;
+-	}
+-
+ 	if (IS_ERR_OR_NULL(g_lcd_id)){
+ 		LOGV("g_lcd_id is ERROR!\n");
+ 		goto err;
+@@ -3821,7 +3596,6 @@ static int __init syna_tcm_module_init(void)
+ 	return retval;
+ 
+ err:
+-	lct_syna_verify_flag = false;
+ 	retval = -ENODEV;
+ 	return retval;
+ }
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_device.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_device.c
+index 22ab06020073..07770466e943 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_device.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_device.c
+@@ -35,10 +35,6 @@
+ #include <linux/uaccess.h>
+ #include "synaptics_tcm_core.h"
+ 
+-/* add check F7A LCM by wanghan start */
+-extern bool lct_syna_verify_flag;
+-/* add check F7A LCM by wanghan end */
+-
+ #define CHAR_DEVICE_NAME "tcm"
+ 
+ #define CONCURRENT true
+@@ -694,10 +690,6 @@ static int __init device_module_init(void)
+ {
+ 	int retval;
+ 
+-	/* add check F7A LCM by wanghan start */
+-	if(!lct_syna_verify_flag)
+-		return -ENODEV;
+-	/* add check F7A LCM by wanghan end */
+ 	LOGV("__init device module\n");
+ 	retval = syna_tcm_add_module(&device_module, true);
+ 	if(retval) {
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_diagnostics.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_diagnostics.c
+index a2a1783bcd0d..38f9518b7657 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_diagnostics.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_diagnostics.c
+@@ -32,10 +32,6 @@
+ 
+ #include "synaptics_tcm_core.h"
+ 
+-/* add check F7A LCM by wanghan start */
+-extern bool lct_syna_verify_flag;
+-/* add check F7A LCM by wanghan end */
+-
+ #define SYSFS_DIR_NAME "diagnostics"
+ 
+ enum pingpong_state {
+@@ -553,10 +549,6 @@ static int __init diag_module_init(void)
+ {
+ 	int retval;
+ 
+-	/* add check F7A LCM by wanghan start */
+-	if(!lct_syna_verify_flag)
+-		return -ENODEV;
+-	/* add check F7A LCM by wanghan end */
+ 	LOGV("__init diagnostics module\n");
+ 	retval = syna_tcm_add_module(&diag_module, true);
+ 	if(retval) {
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_recovery.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_recovery.c
+index 5c3af22698c3..ac196d035a1e 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_recovery.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_recovery.c
+@@ -32,10 +32,6 @@
+ 
+ #include "synaptics_tcm_core.h"
+ 
+-/* add check F7A LCM by wanghan start */
+-extern bool lct_syna_verify_flag;
+-/* add check F7A LCM by wanghan end */
+-
+ #define SET_UP_RECOVERY_MODE true
+ 
+ #define ENABLE_SYSFS_INTERFACE true
+@@ -886,10 +882,6 @@ static int __init recovery_module_init(void)
+ {
+ 	int retval;
+ 
+-	/* add check F7A LCM by wanghan start */
+-	if(!lct_syna_verify_flag)
+-		return -ENODEV;
+-	/* add check F7A LCM by wanghan end */
+ 	LOGV("__init recovery module\n");
+ 	retval = syna_tcm_add_module(&recovery_module, true);
+ 	if(retval) {
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_reflash.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_reflash.c
+index d6dd45d47e70..735c4e0e0d43 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_reflash.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_reflash.c
+@@ -34,14 +34,6 @@
+ #include <linux/firmware.h>
+ #include "synaptics_tcm_core.h"
+ 
+-/* add tp vendor information by wanghan add */
+-#include "../lct_tp_info.h"
+-/* add tp vendor information by wanghan end */
+-
+-/* add check F7A LCM by wanghan start */
+-extern bool lct_syna_verify_flag;
+-/* add check F7A LCM by wanghan end */
+-
+ #define STARTUP_REFLASH
+ 
+ #define FORCE_REFLASH false
+@@ -1892,26 +1884,6 @@ reflash_update(app_firmware)
+ 
+ #define SYNA_TP_INFO_SIZE       128
+ 
+-static int lct_syna_tp_info_update(struct syna_tcm_hcd *tcm_hcd)
+-{
+-	char tp_info_buf[SYNA_TP_INFO_SIZE];
+-	unsigned char *image_config_id;
+-	struct app_config_header *header;
+-	const unsigned char *app_config_data;
+-
+-	app_config_data = reflash_hcd->image_info.app_config.data;
+-	header = (struct app_config_header *)app_config_data;
+-	image_config_id = header->customer_config_id;
+-	memset(tp_info_buf, 0, sizeof(tp_info_buf));
+-	sprintf(tp_info_buf, "[Vendor]boe,[FW]0x%c%c,[IC]td4320\n",
+-			image_config_id[14],
+-			image_config_id[15]);
+-	update_lct_tp_info(tp_info_buf, NULL);
+-
+-	return 0;
+-}
+-/* add tp vendor information by wanghan end */
+-
+ static int reflash_do_reflash(void)
+ {
+ 	int retval;
+@@ -1972,12 +1944,6 @@ static int reflash_do_reflash(void)
+ 
+ 	LOGN(tcm_hcd->pdev->dev.parent,
+ 			"End of reflash\n");
+-	/* add tp vendor information by wanghan add */
+-	if (update_area != NONE) {
+-		lct_syna_tp_info_update(tcm_hcd);
+-		LOGV("Update /proc/tp_info\n");
+-	}
+-	/* add tp vendor information by wanghan end */
+ 
+ 	retval = 0;
+ 
+@@ -1993,127 +1959,12 @@ static int reflash_do_reflash(void)
+ 	return retval;
+ }
+ 
+-/* add tp vendor information by wanghan add */
+-static int lct_syna_tp_lockdown_info_update(char *buf, struct syna_tcm_hcd *tcm_hcd)
+-{
+-	int retval;
+-
+-	mutex_lock(&tcm_hcd->extif_mutex);
+-	mutex_lock(&reflash_hcd->reflash_mutex);
+-
+-	retval = reflash_read_data(CUSTOM_OTP, true, NULL);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent,
+-				"Failed to read lockdown data\n");
+-		goto exit;
+-	}
+-	sprintf(buf, "%02x%02x%02x%02x%02x%02x%02x\n",
+-			(uint8_t)(reflash_hcd->read.buf[0]),
+-			(uint8_t)(reflash_hcd->read.buf[1]),
+-			(uint8_t)(reflash_hcd->read.buf[2]),
+-			(uint8_t)(reflash_hcd->read.buf[3]),
+-			(uint8_t)(reflash_hcd->read.buf[4]),
+-			(uint8_t)(reflash_hcd->read.buf[5]),
+-			(uint8_t)(reflash_hcd->read.buf[6]));
+-	LOGV("get lockdown info : %s\n", buf);
+-
+-exit:
+-	mutex_unlock(&reflash_hcd->reflash_mutex);
+-	mutex_unlock(&tcm_hcd->extif_mutex);
+-
+-	return 0;
+-}
+-
+-
+-#define LCT_SYNA_TP_LOCKDOWN_CALLBACK_RUN_ONLY_ONCE 1
+-
+-int lct_syna_tp_callback(const char *cmd)
+-{
+-#if LCT_SYNA_TP_LOCKDOWN_CALLBACK_RUN_ONLY_ONCE
+-	static bool run_only_once_flag = false;
+-#endif
+-	int retval;
+-	char tp_lockdown_info_buf[SYNA_TP_INFO_SIZE];
+-	struct syna_tcm_hcd *tcm_hcd = reflash_hcd->tcm_hcd;
+-
+-#if LCT_SYNA_TP_LOCKDOWN_CALLBACK_RUN_ONLY_ONCE
+-	if (run_only_once_flag) return 0;
+-#endif
+-	if(strcmp(cmd, TP_CALLBACK_CMD_LOCKDOWN))
+-		return -1;
+-	memset(tp_lockdown_info_buf, 0, sizeof(tp_lockdown_info_buf));
+-	retval = lct_syna_tp_lockdown_info_update(tp_lockdown_info_buf, tcm_hcd);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "failed to get tp lockdown info!\n");
+-		return retval;
+-	}
+-	update_lct_tp_info(NULL, tp_lockdown_info_buf);
+-#if LCT_SYNA_TP_LOCKDOWN_CALLBACK_RUN_ONLY_ONCE
+-	run_only_once_flag = true;
+-#endif
+-
+-	return 0;
+-}
+-
+-static int lct_syna_tp_node_init(struct syna_tcm_hcd *tcm_hcd)
+-{
+-	int retval;
+-	char tp_info_buf[SYNA_TP_INFO_SIZE];
+-
+-	memset(tp_info_buf, 0, sizeof(tp_info_buf));
+-	sprintf(tp_info_buf, "[Vendor]boe,[FW]0x%c%c,[IC]td4320\n",
+-			tcm_hcd->app_info.customer_config_id[14],
+-			tcm_hcd->app_info.customer_config_id[15]);
+-	retval = init_lct_tp_info(tp_info_buf, NULL);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "init_lct_tp_info is failed!\n");
+-		return -1;
+-	}
+-	retval = lct_syna_tp_callback(TP_CALLBACK_CMD_LOCKDOWN);
+-	if (retval) {
+-		LOGV("ERROR : lct_syna_tp_callback failed!\n");
+-	}
+-	set_lct_tp_info_callback(lct_syna_tp_callback);
+-
+-	return 0;
+-}
+-/* add tp vendor information by wanghan end */
+-
+ #ifdef STARTUP_REFLASH
+ static void reflash_startup_work(struct work_struct *work)
+ {
+ 	int retval;
+-
+-
+-
+ 	struct syna_tcm_hcd *tcm_hcd = reflash_hcd->tcm_hcd;
+ 
+-	/* add tp vendor information by wanghan add */
+-	retval = lct_syna_tp_node_init(tcm_hcd);
+-	if (retval < 0){
+-		LOGE(tcm_hcd->pdev->dev.parent,
+-				"Failed to initializing tp_info & tp_lockdown_info node\n");
+-	}
+-	/* add tp vendor information by wanghan end */
+-
+-#ifdef CONFIG_KERNEL_CUSTOM_FACTORY
+-	LOGV("Close the TP FW upgrade feature in longcheer factory version\n");
+-	return;
+-#endif
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+ 	pm_stay_awake(&tcm_hcd->pdev->dev);
+ 
+ 	mutex_lock(&reflash_hcd->reflash_mutex);
+@@ -2326,10 +2177,6 @@ static int __init reflash_module_init(void)
+ {
+ 	int retval;
+ 
+-	/* add check F7A LCM by wanghan start */
+-	if(!lct_syna_verify_flag)
+-		return -ENODEV;
+-	/* add check F7A LCM by wanghan end */
+ 	LOGV("__init reflash module\n");
+ 	retval = syna_tcm_add_module(&reflash_module, true);
+ 	if (retval < 0)
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_testing.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_testing.c
+index 299d32253617..166ff34eb53d 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_testing.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_testing.c
+@@ -34,20 +34,9 @@
+ #include "synaptics_tcm_core.h"
+ #include "synaptics_tcm_testing.h"
+ /* add syna tp selftest by wanghan 2018-8-21 start*/
+-#include "../lct_tp_selftest.h"
+ #include <asm/uaccess.h>
+ /* add syna tp selftest by wanghan 2018-8-21 end*/
+ 
+-/* add check F7A LCM by wanghan start */
+-extern bool lct_syna_verify_flag;
+-static int32_t lct_syna_save_rawdata_to_csv(unsigned char *buf, uint8_t x_ch, uint8_t y_ch, const char *file_path, uint32_t offset);
+-#define LCT_TP_SYNA_COL          18
+-#define LCT_TP_SYNA_ROW          36
+-#define LCT_TP_SYNA_DYR_SCV      "/data/synaptics_test/synaptics_dynamic_range.csv"
+-#define LCT_TP_SYNA_NOISE_SCV    "/data/synaptics_test/synaptics_noise.csv"
+-#define LCT_TP_SYNA_PT11_SCV     "/data/synaptics_test/synaptics_pt11.csv"
+-/* add check F7A LCM by wanghan end */
+-
+ #define SYSFS_DIR_NAME "testing"
+ 
+ #define REPORT_TIMEOUT_MS 500
+@@ -889,9 +878,6 @@ static int testing_dynamic_range(void)
+ 		printk("\n");
+ 	}
+ 	LOGV("--------------------------------------------\n");
+-	if (lct_syna_save_rawdata_to_csv(buf, LCT_TP_SYNA_COL, LCT_TP_SYNA_ROW, LCT_TP_SYNA_DYR_SCV, 0) < 0) {
+-		LOGV("Save '%s' Failed!\n", LCT_TP_SYNA_DYR_SCV);
+-	}
+ 
+ 	UNLOCK_BUFFER(testing_hcd->resp);
+ 
+@@ -1103,9 +1089,6 @@ static int testing_noise(void)
+ 		printk("\n");
+ 	}
+ 	LOGV("--------------------------------------------\n");
+-	if (lct_syna_save_rawdata_to_csv(buf, LCT_TP_SYNA_COL, LCT_TP_SYNA_ROW, LCT_TP_SYNA_NOISE_SCV, 0) < 0) {
+-		LOGV("Save '%s' Failed!\n", LCT_TP_SYNA_DYR_SCV);
+-	}
+ 
+ 	UNLOCK_BUFFER(testing_hcd->resp);
+ 
+@@ -1373,9 +1356,6 @@ static int testing_pt11(void)
+ 		printk("\n");
+ 	}
+ 	LOGV("--------------------------------------------\n");
+-	if (lct_syna_save_rawdata_to_csv(buf, LCT_TP_SYNA_COL, LCT_TP_SYNA_ROW, LCT_TP_SYNA_PT11_SCV, 0) < 0) {
+-		LOGV("Save '%s' Failed!\n", LCT_TP_SYNA_DYR_SCV);
+-	}
+ 
+ 	UNLOCK_BUFFER(testing_hcd->resp);
+ 
+@@ -1852,148 +1832,11 @@ static void testing_report(void)
+ 	return;
+ }
+ 
+-/* add syna tp selftest by wanghan 2018-8-21 start*/
+-int lct_syna_tp_selftest(unsigned char cmd)
+-{
+-	int retval;
+-	bool drt_result, pt11_result;
+-	struct syna_tcm_hcd *tcm_hcd = testing_hcd->tcm_hcd;
+-
+-
+-	drt_result = true;
+-	pt11_result = true;
+-
+-
+-	mutex_lock(&tcm_hcd->extif_mutex);
+-	retval = testing_dynamic_range();
+-	mutex_unlock(&tcm_hcd->extif_mutex);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "Failed to do testing_dynamic_range test\n");
+-		return -1;
+-	}
+-	if(!(testing_hcd->result)) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "Dynamic Range Selftest Failed\n");
+-		drt_result = false;
+-	}
+-
+-
+-	LOGV("Delay 1000ms\n");
+-	msleep(1000);
+-
+-
+-	mutex_lock(&tcm_hcd->extif_mutex);
+-	retval = testing_pt11();
+-	mutex_unlock(&tcm_hcd->extif_mutex);
+-	if (retval < 0) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "Failed to do testing_pt11 test\n");
+-		return -1;
+-	}
+-	if(!(testing_hcd->result)) {
+-		LOGE(tcm_hcd->pdev->dev.parent, "PT11 Selftest Failed\n");
+-		pt11_result = false;
+-	}
+-
+-	if (cmd == TP_SELFTEST_CMD_LONGCHEER_MMI)
+-		goto Longcheer_mmi;
+-	else if (cmd == TP_SELFTEST_CMD_XIAOMI_I2C)
+-		goto xiaomi_i2c;
+-	else if (cmd == TP_SELFTEST_CMD_XIAOMI_OPEN)
+-		goto xiaomi_open;
+-	else if (cmd == TP_SELFTEST_CMD_XIAOMI_SHORT)
+-		goto xiaomi_short;
+-	else
+-		return 0;
+-
+-Longcheer_mmi:
+-xiaomi_i2c:
+-	if (drt_result && pt11_result) {
+-		LOGV("tp selftest Passed\n");
+-		return 2;
+-	} else {
+-		LOGV("tp selftest Failed\n");
+-		return 1;
+-	}
+-xiaomi_open:
+-xiaomi_short:
+-	if (pt11_result) {
+-		LOGV("PT11 Test Passed\n");
+-		return 2;
+-	} else {
+-		LOGV("PT11 Test Failed\n");
+-		return 1;
+-	}
+-}
+-
+-static int32_t lct_syna_save_rawdata_to_csv(unsigned char *buf, uint8_t x_ch, uint8_t y_ch, const char *file_path, uint32_t offset)
+-{
+-	int retval, data;
+-	loff_t pos = 0;
+-	char *fbufp = NULL;
+-	mm_segment_t org_fs;
+-	struct file *fp = NULL;
+-	uint32_t output_len = 0;
+-	int32_t x = 0, y = 0, iArrayIndex = 0;
+-
+-	fbufp = (char *)kzalloc(1024*8, GFP_KERNEL);
+-	if (!fbufp) {
+-		LOGV("kzalloc for fbufp failed!\n");
+-		return -ENOMEM;
+-	}
+-
+-	for (y = 0; y < y_ch; y++) {
+-		for (x = 0; x < x_ch; x++) {
+-			iArrayIndex = y * x_ch + x;
+-			data = (short)le2_to_uint(&buf[iArrayIndex * 2]);
+-			sprintf(fbufp + iArrayIndex * 7 + y * 2, "%5d, ", data);
+-		}
+-		sprintf(fbufp + (iArrayIndex + 1) * 7 + y * 2, "\r\n");
+-	}
+-
+-	org_fs = get_fs();
+-	set_fs(KERNEL_DS);
+-	fp = filp_open(file_path, O_RDWR | O_CREAT, 0666);
+-	if (IS_ERR_OR_NULL(fp)) {
+-		LOGV("open %s failed, fp = %p\n", file_path, fp);
+-		retval = -1;
+-		goto err_open_fail;
+-	}
+-
+-	output_len = y_ch * x_ch * 7 + y_ch * 2;
+-
+-	pos = offset;
+-	retval = vfs_write(fp, (char __user *)fbufp, output_len, &pos);
+-	if (retval <= 0) {
+-		LOGV("write %s failed, retval = %d\n", file_path, retval);
+-		retval = -1;
+-		goto err_vfs_write_fail;
+-	}
+-
+-	retval = 0;
+-
+-err_vfs_write_fail:
+-	if (fp) {
+-		filp_close(fp, NULL);
+-		fp = NULL;
+-	}
+-err_open_fail:
+-	set_fs(org_fs);
+-	if (fbufp) {
+-		kfree(fbufp);
+-		fbufp = NULL;
+-	}
+-
+-	return retval;
+-}
+-/* add syna tp selftest by wanghan 2018-8-21 end*/
+-
+ static int testing_init(struct syna_tcm_hcd *tcm_hcd)
+ {
+ 	int retval;
+ 	int idx;
+ 
+-	/* add syna tp selftest by wanghan 2018-8-21 start*/
+-	lct_tp_selftest_init(lct_syna_tp_selftest);
+-	/* add syna tp selftest by wanghan 2018-8-21 end*/
+ 	testing_hcd = kzalloc(sizeof(*testing_hcd), GFP_KERNEL);
+ 	if (!testing_hcd) {
+ 		LOGE(tcm_hcd->pdev->dev.parent,
+@@ -2127,10 +1970,6 @@ static int __init testing_module_init(void)
+ {
+ 	int retval;
+ 
+-	/* add check F7A LCM by wanghan start */
+-	if(!lct_syna_verify_flag)
+-		return -ENODEV;
+-	/* add check F7A LCM by wanghan end */
+ 	LOGV("__init testing module\n");
+ 	retval = syna_tcm_add_module(&testing_module, true);
+ 	if(retval) {
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_touch.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_touch.c
+index b60a8f39d570..1e63948e6bd3 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_touch.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_touch.c
+@@ -35,7 +35,6 @@
+ #include "synaptics_tcm_core.h"
+ 
+ /* add check F7A LCM by wanghan start */
+-extern bool lct_syna_verify_flag;
+ extern bool synaptics_gesture_enable_flag;
+ /* add check F7A LCM by wanghan end */
+ 
+@@ -1280,10 +1279,6 @@ static int __init touch_module_init(void)
+ {
+ 	int retval;
+ 
+-	/* add check F7A LCM by wanghan start */
+-	if(!lct_syna_verify_flag)
+-		return -ENODEV;
+-	/* add check F7A LCM by wanghan end */
+ 	LOGV("__init touch module\n");
+ 	retval =  syna_tcm_add_module(&touch_module, true);
+ 	if(retval) {
+diff --git a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_zeroflash.c b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_zeroflash.c
+index beb7e44b3ac3..ecb6d6d9cb6c 100644
+--- a/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_zeroflash.c
++++ b/drivers/input/touchscreen/synaptics_tcm_f7a/synaptics_tcm_zeroflash.c
+@@ -35,10 +35,6 @@
+ #include <linux/firmware.h>
+ #include "synaptics_tcm_core.h"
+ 
+-/* add check F7A LCM by wanghan start */
+-extern bool lct_syna_verify_flag;
+-/* add check F7A LCM by wanghan end */
+-
+ #define FW_IMAGE_NAME "synaptics/hdl_firmware.img"
+ 
+ #define BOOT_CONFIG_ID "BOOT_CONFIG"
+@@ -1009,10 +1005,6 @@ static int __init zeroflash_module_init(void)
+ {
+ 	int retval;
+ 
+-	/* add check F7A LCM by wanghan start */
+-	if(!lct_syna_verify_flag)
+-		return -ENODEV;
+-	/* add check F7A LCM by wanghan end */
+ 	LOGV("__init zeroflash module\n");
+ 	retval = syna_tcm_add_module(&zeroflash_module, true);
+ 	if(retval) {
+-- 
+2.49.0
+

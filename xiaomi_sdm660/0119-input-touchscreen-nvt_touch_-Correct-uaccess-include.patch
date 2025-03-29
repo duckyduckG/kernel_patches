@@ -1,0 +1,85 @@
+From 7a0f3d5c4456b61748dbe7bbd756929107b0c0dc Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Thu, 5 Mar 2020 19:27:26 +0100
+Subject: [PATCH 119/178] input: touchscreen: nvt_touch_*: Correct uaccess
+ include
+
+* Needed to provide the copy_from_user function
+
+Change-Id: I7c74a2d0190786c390cf103e3956ab5862e3caee
+---
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx.c   | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c | 2 +-
+ drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c | 2 +-
+ drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
+index d13e1a86bc8d..93d58251aa8c 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
+@@ -23,7 +23,7 @@
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+ #include <linux/proc_fs.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <linux/input/mt.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c
+index a37cee5e9319..4fee78c49291 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.c
+@@ -23,7 +23,7 @@
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+ #include <linux/proc_fs.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <linux/input/mt.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
+diff --git a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c
+index 4dcb6c970452..a748ed03297b 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.c
+@@ -23,7 +23,7 @@
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+ #include <linux/proc_fs.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <linux/input/mt.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c
+index 86e9690a8bae..8fe7183b323b 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.c
+@@ -23,7 +23,7 @@
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+ #include <linux/proc_fs.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <linux/input/mt.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c
+index 41df8683b08d..4b1d6b7cb429 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.c
+@@ -23,7 +23,7 @@
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
+ #include <linux/proc_fs.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include <linux/input/mt.h>
+ #include <linux/of_gpio.h>
+ #include <linux/of_irq.h>
+-- 
+2.49.0
+

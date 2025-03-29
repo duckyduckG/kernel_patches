@@ -1,0 +1,1662 @@
+From 6c0c1f34d37531ecfc849f4d6961d9b7f38bc315 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Wed, 21 Aug 2019 03:52:23 +0200
+Subject: [PATCH 146/178] media: msm: camera_v2-legacy: Import xiaomi longcheer
+ changes
+
+* Cleaned up by removing KERNEL_CUSTOM_FACTORY and KERNEL_CUSTOM_F7A references
+* Also updated ifdefs to new device configs
+
+Change-Id: I1b43f270c2c2e3ad642462276227927e00f6eac6
+---
+ .../common/msm_camera_io_util.c               |   3 +
+ .../camera_v2-legacy/isp/msm_isp_axi_util.c   |  11 +-
+ .../sensor/actuator/msm_actuator.c            |   5 +
+ .../msm/camera_v2-legacy/sensor/cci/msm_cci.c |   4 +
+ .../camera_v2-legacy/sensor/csid/msm_csid.c   |   4 +
+ .../sensor/eeprom/msm_eeprom.c                | 437 ++++++++++
+ .../camera_v2-legacy/sensor/flash/msm_flash.c |   5 +
+ .../msm/camera_v2-legacy/sensor/msm_sensor.c  | 109 +++
+ .../msm/camera_v2-legacy/sensor/msm_sensor.h  |   4 +
+ .../sensor/msm_sensor_driver.c                | 782 ++++++++++++++++++
+ 10 files changed, 1363 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/common/msm_camera_io_util.c b/drivers/media/platform/msm/camera_v2-legacy/common/msm_camera_io_util.c
+index 21438074bcc3..d802b16485fe 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/common/msm_camera_io_util.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/common/msm_camera_io_util.c
+@@ -580,6 +580,9 @@ int msm_camera_enable_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
+ 				continue;
+ 		} else
+ 			j = i;
++#ifdef CONFIG_MACH_LONGCHEER
++		if (reg_ptr[j] != NULL)
++#endif
+ 		regulator_disable(reg_ptr[j]);
+ 		if (cam_vreg[j].delay > 20)
+ 			msleep(cam_vreg[j].delay);
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c b/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c
+index 2b2c8fe80d69..25ad61e989bf 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/isp/msm_isp_axi_util.c
+@@ -566,8 +566,13 @@ static void msm_isp_cfg_framedrop_reg(
+ 	if (!runtime_init_frame_drop)
+ 		framedrop_period = stream_info->current_framedrop_period;
+ 
+-	if (MSM_VFE_STREAM_STOP_PERIOD != framedrop_period)
++	if (MSM_VFE_STREAM_STOP_PERIOD != framedrop_period) {
+ 		framedrop_pattern = 0x1;
++#ifdef CONFIG_MACH_LONGCHEER
++		if (framedrop_period > 1)
++			framedrop_pattern = framedrop_pattern << (framedrop_period - 1);
++#endif
++	}
+ 
+ 	if (WARN_ON(framedrop_period == 0))
+ 		pr_err("%s framedrop_period is 0\n", __func__);
+@@ -4053,6 +4058,10 @@ int msm_isp_update_axi_stream(struct vfe_device *vfe_dev, void *arg)
+ 			UPDATE_STREAM_REQUEST_FRAMES &&
+ 			update_cmd->update_type !=
+ 			UPDATE_STREAM_REMOVE_BUFQ &&
++#ifdef CONFIG_MACH_LONGCHEER
++			update_cmd->update_type !=
++			UPDATE_STREAM_REQUEST_FRAMES_VER2 &&
++#endif
+ 			update_cmd->update_type !=
+ 			UPDATE_STREAM_SW_FRAME_DROP) {
+ 			pr_err("%s: Invalid stream state %d, update cmd %d\n",
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/actuator/msm_actuator.c b/drivers/media/platform/msm/camera_v2-legacy/sensor/actuator/msm_actuator.c
+index 97ae4cdbd10a..1e766de0bdeb 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/actuator/msm_actuator.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/actuator/msm_actuator.c
+@@ -26,8 +26,13 @@ DEFINE_MSM_MUTEX(msm_actuator_mutex);
+ #define CDBG(fmt, args...) pr_debug(fmt, ##args)
+ #endif
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++#define PARK_LENS_LONG_STEP 3
++#define PARK_LENS_MID_STEP 3
++#else
+ #define PARK_LENS_LONG_STEP 7
+ #define PARK_LENS_MID_STEP 5
++#endif
+ #define PARK_LENS_SMALL_STEP 3
+ #define MAX_QVALUE 4096
+ 
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/cci/msm_cci.c b/drivers/media/platform/msm/camera_v2-legacy/sensor/cci/msm_cci.c
+index f2c765a4649f..3ee898269c39 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/cci/msm_cci.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/cci/msm_cci.c
+@@ -32,7 +32,11 @@
+ #define CYCLES_PER_MICRO_SEC_DEFAULT 4915
+ #define CCI_MAX_DELAY 1000000
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++#define CCI_TIMEOUT msecs_to_jiffies(800)
++#else
+ #define CCI_TIMEOUT msecs_to_jiffies(100)
++#endif
+ 
+ /* TODO move this somewhere else */
+ #define MSM_CCI_DRV_NAME "msm_cci"
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/csid/msm_csid.c b/drivers/media/platform/msm/camera_v2-legacy/sensor/csid/msm_csid.c
+index 3baf01d1d7ac..7993106227b1 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/csid/msm_csid.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/csid/msm_csid.c
+@@ -61,7 +61,11 @@
+ #define FALSE  0
+ 
+ #define MAX_LANE_COUNT 4
++#ifdef CONFIG_MACH_LONGCHEER
++#define CSID_TIMEOUT msecs_to_jiffies(800)
++#else
+ #define CSID_TIMEOUT msecs_to_jiffies(100)
++#endif
+ 
+ #undef CDBG
+ #define CDBG(fmt, args...) pr_debug(fmt, ##args)
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/eeprom/msm_eeprom.c b/drivers/media/platform/msm/camera_v2-legacy/sensor/eeprom/msm_eeprom.c
+index 29ae87dab4b0..f72303491f64 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/eeprom/msm_eeprom.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/eeprom/msm_eeprom.c
+@@ -26,6 +26,16 @@ DEFINE_MSM_MUTEX(msm_eeprom_mutex);
+ static struct v4l2_file_operations msm_eeprom_v4l2_subdev_fops;
+ #endif
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++struct vendor_eeprom s_vendor_eeprom[CAMERA_VENDOR_EEPROM_COUNT_MAX];
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++extern char sensor_fusion_id[512];
++#define S5K2L7_SENSOR_ID_ADD 12
++#define S5K2L7_SENSOR_FUSE_ID_START 16
++#define S5K2L7_SENSOR_ID 0x1B
++#endif
++#endif
++
+ /**
+   * msm_get_read_mem_size - Get the total size for allocation
+   * @eeprom_map_array:	mem map
+@@ -315,6 +325,35 @@ static int msm_eeprom_parse_memory_map(struct device_node *of,
+ 	return rc;
+ }
+ 
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++static int set_s5k2l7_fuse_id_from_eeprom(uint8_t *memptr)
++{
++	char s_fuse_id_temp[80] = {0};
++	if (memptr[S5K2L7_SENSOR_ID_ADD] == S5K2L7_SENSOR_ID) {
++		sprintf(s_fuse_id_temp,
++				"back: %04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x\n",
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 0],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 1],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 2],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 3],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 4],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 5],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 6],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 7],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 8],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 9],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 10],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 11],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 12],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 13],
++				memptr[S5K2L7_SENSOR_FUSE_ID_START + 14]);
++		strcat(sensor_fusion_id, s_fuse_id_temp);
++		CDBG("GP sensor_fusion_id = %s\n", sensor_fusion_id);
++	}
++	return 0;
++}
++#endif
++
+ /**
+   * eeprom_parse_memory_map - Parse mem map
+   * @e_ctrl:	ctrl structure
+@@ -416,6 +455,11 @@ static int eeprom_parse_memory_map(struct msm_eeprom_ctrl_t *e_ctrl,
+ 	memptr = e_ctrl->cal_data.mapdata;
+ 	for (i = 0; i < e_ctrl->cal_data.num_data; i++)
+ 		CDBG("memory_data[%d] = 0x%X\n", i, memptr[i]);
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++	if (set_s5k2l7_fuse_id_from_eeprom(memptr) != 0) {
++		pr_err("set 2l7 fuse id error!\n");
++	}
++#endif
+ 	return rc;
+ 
+ clean_up:
+@@ -659,7 +703,11 @@ static int msm_eeprom_config(struct msm_eeprom_ctrl_t *e_ctrl,
+ 		if (e_ctrl->userspace_probe == 0) {
+ 			pr_err("%s:%d Eeprom already probed at kernel boot",
+ 				__func__, __LINE__);
++#ifdef CONFIG_MACH_LONGCHEER
++			rc = 0;
++#else
+ 			rc = -EINVAL;
++#endif
+ 			break;
+ 		}
+ 		if (e_ctrl->cal_data.num_data == 0) {
+@@ -1519,7 +1567,11 @@ static int msm_eeprom_config32(struct msm_eeprom_ctrl_t *e_ctrl,
+ 		if (e_ctrl->userspace_probe == 0) {
+ 			pr_err("%s:%d Eeprom already probed at kernel boot",
+ 				__func__, __LINE__);
++#ifdef CONFIG_MACH_LONGCHEER
++			rc = 0;
++#else
+ 			rc = -EINVAL;
++#endif
+ 			break;
+ 		}
+ 		if (e_ctrl->cal_data.num_data == 0) {
+@@ -1577,6 +1629,384 @@ static long msm_eeprom_subdev_fops_ioctl32(struct file *file, unsigned int cmd,
+ 
+ #endif
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++static camera_vendor_module_id lavender_s5k5e8_ofilm_i_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t INFO_NUM = 16;
++	uint8_t AWB_NUM = 8;
++	uint8_t LENSID_OFFSET = 9;
++	uint8_t SENSOR_OFFSET = 13;
++	uint8_t MODULE_OFFSET = 2;
++	uint8_t GROUP_MEMBER_NUM = 1 + INFO_NUM + AWB_NUM + 1;
++
++	uint32_t LSC_NUM = 360;
++	uint32_t FLAG_OFFSET;
++
++	uint8_t mid = 0;
++	uint8_t lensid = 0;
++	uint8_t sensorid = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		FLAG_OFFSET = LSC_NUM + i * GROUP_MEMBER_NUM;
++		printk("i=%d flag offset %d\n", i, FLAG_OFFSET);
++		flag = buffer[FLAG_OFFSET];
++		if (0x55 != flag) {
++			mid = MID_NULL;
++			pr_err("Invalid flag = 0x%x\n", flag);
++			continue;
++		}
++		lensid = buffer[FLAG_OFFSET + LENSID_OFFSET];
++		mid = buffer[FLAG_OFFSET + MODULE_OFFSET];
++		sensorid = buffer[FLAG_OFFSET + SENSOR_OFFSET];
++		printk("%s flag = 0x%x, mid = 0x%x, lensid = 0x%x, sensorid = 0x%x \n", __func__, flag, mid, lensid, sensorid);
++		break;
++	}
++
++	if ((MID_OFILM != mid) || (SENSOR_S5K5E8 != sensorid))
++		mid = MID_NULL;
++	return mid;
++}
++
++static camera_vendor_module_id lavender_s5k5e8_sunny_ii_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t INFO_NUM = 16;
++	uint8_t AWB_NUM = 8;
++	uint8_t LENSID_OFFSET = 9;
++	uint8_t SENSOR_OFFSET = 13;
++	uint8_t MODULE_OFFSET = 2;
++	uint8_t GROUP_MEMBER_NUM = 1 + INFO_NUM + AWB_NUM + 1;
++
++	uint32_t LSC_NUM = 360;
++	uint32_t FLAG_OFFSET;
++
++	uint8_t mid = 0;
++	uint8_t lensid = 0;
++	uint8_t sensorid = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		FLAG_OFFSET = LSC_NUM + i * GROUP_MEMBER_NUM;
++		printk("i=%d flag offset %d\n", i, FLAG_OFFSET);
++		flag = buffer[FLAG_OFFSET];
++		if (0x55 != flag) {
++			mid = MID_NULL;
++			pr_err("Invalid flag = 0x%x\n", flag);
++			continue;
++		}
++		lensid = buffer[FLAG_OFFSET + LENSID_OFFSET];
++		mid = buffer[FLAG_OFFSET + MODULE_OFFSET];
++		sensorid = buffer[FLAG_OFFSET + SENSOR_OFFSET];
++		printk("%s flag = 0x%x, mid = 0x%x, lensid = 0x%x, sensorid = 0x%x \n", __func__, flag, mid, lensid, sensorid);
++		break;
++	}
++
++	if ((MID_SUNNY != mid) || (SENSOR_S5K5E8 != sensorid))
++		mid = MID_NULL;
++	return mid;
++}
++
++static camera_vendor_module_id lavender_ov02a10_ofilm_i_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t mid = 0;
++	uint8_t FLAG_OFFSET = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		flag = buffer[FLAG_OFFSET];
++		mid = buffer[FLAG_OFFSET + 1];
++		printk("%s flag = 0x%x, mid = 0x%x\n", __func__, flag, mid);
++		break;
++	}
++
++	if (MID_OFILM != mid)
++		mid = MID_NULL;
++	return mid;
++}
++
++static camera_vendor_module_id lavender_ov02a10_sunny_ii_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t mid = 0;
++	uint8_t FLAG_OFFSET = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		flag = buffer[FLAG_OFFSET];
++		mid = buffer[FLAG_OFFSET + 1];
++		printk("%s flag = 0x%x, mid = 0x%x\n", __func__, flag, mid);
++		break;
++	}
++
++	if (MID_SUNNY != mid)
++		mid = MID_NULL;
++	return mid;
++}
++#endif
++
++#ifdef CONFIG_MACH_XIAOMI_WHYRED
++static camera_vendor_module_id whyred_s5k5e8_ofilm_i_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t INFO_NUM = 16;
++	uint8_t AWB_NUM = 8;
++	uint8_t LENSID_OFFSET = 9;
++	uint8_t SENSOR_OFFSET = 13;
++	uint8_t MODULE_OFFSET = 2;
++	uint8_t GROUP_MEMBER_NUM = 1 + INFO_NUM + AWB_NUM + 1;
++
++	uint32_t LSC_NUM = 360;
++	uint32_t FLAG_OFFSET;
++
++	uint8_t mid = 0;
++	uint8_t lensid = 0;
++	uint8_t sensorid = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		FLAG_OFFSET = LSC_NUM + i * GROUP_MEMBER_NUM;
++		printk("i=%d flag offset %d\n", i, FLAG_OFFSET);
++		flag = buffer[FLAG_OFFSET];
++		if (0x55 != flag) {
++			mid = MID_NULL;
++			pr_err("Invalid flag = 0x%x\n", flag);
++			continue;
++		}
++		lensid = buffer[FLAG_OFFSET + LENSID_OFFSET];
++		mid = buffer[FLAG_OFFSET + MODULE_OFFSET];
++		sensorid = buffer[FLAG_OFFSET + SENSOR_OFFSET];
++		printk("%s flag = 0x%x, mid = 0x%x, lensid = 0x%x, sensorid = 0x%x \n", __func__, flag, mid, lensid, sensorid);
++		break;
++	}
++
++	if ((MID_OFILM != mid) || (SENSOR_S5K5E8 != sensorid))
++		mid = MID_NULL;
++	return mid;
++}
++
++static camera_vendor_module_id whyred_s5k5e8_qtech_ii_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t INFO_NUM = 16;
++	uint8_t AWB_NUM = 8;
++	uint8_t LENSID_OFFSET = 9;
++	uint8_t SENSOR_OFFSET = 13;
++	uint8_t MODULE_OFFSET = 2;
++	uint8_t GROUP_MEMBER_NUM = 1 + INFO_NUM + AWB_NUM + 1;
++
++	uint32_t LSC_NUM = 360;
++	uint32_t FLAG_OFFSET;
++
++	uint8_t mid = 0;
++	uint8_t lensid = 0;
++	uint8_t sensorid = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		FLAG_OFFSET = LSC_NUM + i * GROUP_MEMBER_NUM;
++		printk("i=%d flag offset %d\n", i, FLAG_OFFSET);
++		flag = buffer[FLAG_OFFSET];
++		if (0x55 != flag) {
++			mid = MID_NULL;
++			pr_err("Invalid flag = 0x%x\n", flag);
++			continue;
++		}
++		lensid = buffer[FLAG_OFFSET + LENSID_OFFSET];
++		mid = buffer[FLAG_OFFSET + MODULE_OFFSET];
++		sensorid = buffer[FLAG_OFFSET + SENSOR_OFFSET];
++		printk("%s flag = 0x%x, mid = 0x%x, lensid = 0x%x, sensorid = 0x%x \n", __func__, flag, mid, lensid, sensorid);
++		break;
++	}
++
++	if ((MID_QTECH != mid) || (SENSOR_S5K5E8 != sensorid))
++		mid = MID_NULL;
++	return mid;
++}
++#endif
++
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++static camera_vendor_module_id tulip_s5k5e8_ofilm_i_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t INFO_NUM = 16;
++	uint8_t AWB_NUM = 8;
++	uint8_t LENSID_OFFSET = 9;
++	uint8_t SENSOR_OFFSET = 13;
++	uint8_t MODULE_OFFSET = 2;
++	uint8_t GROUP_MEMBER_NUM = 1 + INFO_NUM + AWB_NUM + 1;
++
++	uint32_t LSC_NUM = 360;
++	uint32_t FLAG_OFFSET;
++
++	uint8_t mid = 0;
++	uint8_t lensid = 0;
++	uint8_t sensorid = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		FLAG_OFFSET = LSC_NUM + i * GROUP_MEMBER_NUM;
++		printk("i=%d flag offset %d\n", i, FLAG_OFFSET);
++		flag = buffer[FLAG_OFFSET];
++		if (0x55 != flag) {
++			mid = MID_NULL;
++			pr_err("Invalid flag = 0x%x\n", flag);
++			continue;
++		}
++		lensid = buffer[FLAG_OFFSET + LENSID_OFFSET];
++		mid = buffer[FLAG_OFFSET + MODULE_OFFSET];
++		sensorid = buffer[FLAG_OFFSET + SENSOR_OFFSET];
++		printk("%s flag = 0x%x, mid = 0x%x, lensid = 0x%x, sensorid = 0x%x \n", __func__, flag, mid, lensid, sensorid);
++		break;
++	}
++
++	if ((MID_OFILM != mid) || (SENSOR_S5K5E8 != sensorid))
++		mid = MID_NULL;
++	return mid;
++}
++
++static camera_vendor_module_id tulip_s5k5e8_qtech_ii_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t INFO_NUM = 16;
++	uint8_t AWB_NUM = 8;
++	uint8_t LENSID_OFFSET = 9;
++	uint8_t SENSOR_OFFSET = 13;
++	uint8_t MODULE_OFFSET = 2;
++	uint8_t GROUP_MEMBER_NUM = 1 + INFO_NUM + AWB_NUM + 1;
++
++	uint32_t LSC_NUM = 360;
++	uint32_t FLAG_OFFSET;
++
++	uint8_t mid = 0;
++	uint8_t lensid = 0;
++	uint8_t sensorid = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		FLAG_OFFSET = LSC_NUM + i * GROUP_MEMBER_NUM;
++		printk("i=%d flag offset %d\n", i, FLAG_OFFSET);
++		flag = buffer[FLAG_OFFSET];
++		if (0x55 != flag) {
++			mid = MID_NULL;
++			pr_err("Invalid flag = 0x%x\n", flag);
++			continue;
++		}
++		lensid = buffer[FLAG_OFFSET + LENSID_OFFSET];
++		mid = buffer[FLAG_OFFSET + MODULE_OFFSET];
++		sensorid = buffer[FLAG_OFFSET + SENSOR_OFFSET];
++		printk("%s flag = 0x%x, mid = 0x%x, lensid = 0x%x, sensorid = 0x%x \n", __func__, flag, mid, lensid, sensorid);
++		break;
++	}
++
++	if ((MID_QTECH != mid) || (SENSOR_S5K5E8 != sensorid))
++		mid = MID_NULL;
++	return mid;
++}
++
++static camera_vendor_module_id tulip_ov02a10_ofilm_ii_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t mid = 0;
++	uint8_t FLAG_OFFSET = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		flag = buffer[FLAG_OFFSET];
++		mid = buffer[FLAG_OFFSET + 1];
++		printk("%s flag = 0x%x, mid = 0x%x\n", __func__, flag, mid);
++		break;
++	}
++
++	if (MID_OFILM != mid)
++		mid = MID_NULL;
++	return mid;
++}
++
++static camera_vendor_module_id tulip_ov02a10_sunny_i_get_otp_vendor_module_id
++	(struct msm_eeprom_ctrl_t *e_ctrl)
++{
++	uint8_t mid = 0;
++	uint8_t FLAG_OFFSET = 0;
++	uint8_t flag = 0;
++	uint8_t *buffer = e_ctrl->cal_data.mapdata;
++	int8_t i;
++
++	for (i = 2; i >= 0; --i) {
++		flag = buffer[FLAG_OFFSET];
++		mid = buffer[FLAG_OFFSET + 1];
++		printk("%s flag = 0x%x, mid = 0x%x\n", __func__, flag, mid);
++		break;
++	}
++
++	if (MID_SUNNY != mid)
++		mid = MID_NULL;
++	return mid;
++}
++#endif
++
++static uint8_t get_otp_vendor_module_id(struct msm_eeprom_ctrl_t *e_ctrl, const char *eeprom_name)
++{
++	camera_vendor_module_id module_id = MID_NULL;
++
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	if (strcmp(eeprom_name, "lavender_s5k5e8_ofilm_i") == 0)
++		module_id = lavender_s5k5e8_ofilm_i_get_otp_vendor_module_id(e_ctrl);
++	else if (strcmp(eeprom_name, "lavender_s5k5e8_sunny_ii") == 0)
++		module_id = lavender_s5k5e8_sunny_ii_get_otp_vendor_module_id(e_ctrl);
++	else if (strcmp(eeprom_name, "lavender_ov02a10_ofilm_i") == 0)
++		module_id = lavender_ov02a10_ofilm_i_get_otp_vendor_module_id(e_ctrl);
++	else if (strcmp(eeprom_name, "lavender_ov02a10_sunny_ii") == 0)
++		module_id = lavender_ov02a10_sunny_ii_get_otp_vendor_module_id(e_ctrl);
++#endif
++
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++	if (strcmp(eeprom_name, "tulip_s5k5e8_ofilm_i") == 0)
++		module_id = tulip_s5k5e8_ofilm_i_get_otp_vendor_module_id(e_ctrl);
++	else if (strcmp(eeprom_name, "tulip_s5k5e8_qtech_ii") == 0)
++		module_id = tulip_s5k5e8_qtech_ii_get_otp_vendor_module_id(e_ctrl);
++	else if (strcmp(eeprom_name, "tulip_ov02a10_ofilm_ii") == 0)
++		module_id = tulip_ov02a10_ofilm_ii_get_otp_vendor_module_id(e_ctrl);
++	else if (strcmp(eeprom_name, "tulip_ov02a10_sunny_i") == 0)
++		module_id = tulip_ov02a10_sunny_i_get_otp_vendor_module_id(e_ctrl);
++#endif
++
++#ifdef CONFIG_MACH_XIAOMI_WHYRED
++	if (strcmp(eeprom_name, "whyred_s5k5e8_ofilm_i") == 0)
++		module_id = whyred_s5k5e8_ofilm_i_get_otp_vendor_module_id(e_ctrl);
++	else if (strcmp(eeprom_name, "whyred_s5k5e8_qtech_ii") == 0)
++		module_id = whyred_s5k5e8_qtech_ii_get_otp_vendor_module_id(e_ctrl);
++#endif
++
++	if (module_id >= MID_MAX)
++		module_id = MID_NULL;
++	printk("%s %d eeprom_name=%s, module_id=0x%x\n", __func__, __LINE__,
++			eeprom_name, module_id);
++	return ((uint8_t)module_id);
++}
++#endif
++
+ static int msm_eeprom_platform_probe(struct platform_device *pdev)
+ {
+ 	int rc = 0;
+@@ -1726,6 +2156,13 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
+ 			CDBG("memory_data[%d] = 0x%X\n", j,
+ 				e_ctrl->cal_data.mapdata[j]);
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++		if (eb_info->eeprom_name != NULL) {
++			s_vendor_eeprom[pdev->id].module_id = get_otp_vendor_module_id(e_ctrl, eb_info->eeprom_name);
++			strcpy(s_vendor_eeprom[pdev->id].eeprom_name, eb_info->eeprom_name);
++		}
++#endif
++
+ 		e_ctrl->is_supported |= msm_eeprom_match_crc(&e_ctrl->cal_data);
+ 
+ 		rc = msm_camera_power_down(power_info,
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/flash/msm_flash.c b/drivers/media/platform/msm/camera_v2-legacy/sensor/flash/msm_flash.c
+index 454c98cc96eb..cb87b691a1c5 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/flash/msm_flash.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/flash/msm_flash.c
+@@ -1073,6 +1073,11 @@ static int32_t msm_flash_get_pmic_source_info(
+ 				continue;
+ 			}
+ 
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++			if (fctrl->torch_max_current[i] < 1000)
++				fctrl->torch_max_current[i] = 1000;
++#endif
++
+ 			of_node_put(torch_src_node);
+ 
+ 			CDBG("max_current[%d] %d\n",
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.c b/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.c
+index fcef05374098..1e4a5e52d28f 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.c
+@@ -203,6 +203,17 @@ int msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
+ 			sensor_i2c_client);
+ 		if (rc < 0)
+ 			return rc;
++#ifdef CONFIG_MACH_LONGCHEER
++		if (!s_ctrl->is_probe_succeed) {
++			rc = msm_sensor_match_vendor_id(s_ctrl);
++			if (rc < 0) {
++				msm_camera_power_down(power_info,
++					s_ctrl->sensor_device_type, sensor_i2c_client);
++				msleep(20);
++				continue;
++			}
++		}
++#endif
+ 		rc = msm_sensor_check_id(s_ctrl);
+ 		if (rc < 0) {
+ 			msm_camera_power_down(power_info,
+@@ -217,6 +228,104 @@ int msm_sensor_power_up(struct msm_sensor_ctrl_t *s_ctrl)
+ 	return rc;
+ }
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
++{
++	int rc = 0;
++	uint16_t vendorid = 0;
++	struct msm_camera_i2c_client *sensor_i2c_client;
++	struct msm_camera_slave_info *slave_info;
++	const char *sensor_name;
++	uint16_t temp_sid = 0;
++	uint16_t vcmid = 0;
++	int have_vcmid = 0;
++	enum cci_i2c_master_t temp_master = MASTER_0;
++
++	if (!s_ctrl) {
++		pr_err("%s:%d failed: %pK\n",
++			__func__, __LINE__, s_ctrl);
++		return -EINVAL;
++	}
++	sensor_i2c_client = s_ctrl->sensor_i2c_client;
++	slave_info = s_ctrl->sensordata->slave_info;
++	sensor_name = s_ctrl->sensordata->sensor_name;
++
++	if (!sensor_i2c_client || !slave_info || !sensor_name) {
++		pr_err("%s:%d failed: %pK %pK %pK\n",
++			__func__, __LINE__, sensor_i2c_client, slave_info,
++			sensor_name);
++		return -EINVAL;
++	}
++
++	if (s_ctrl->sensordata->vendor_id_info->eeprom_slave_addr == 0) {
++		pr_err("%s: %s: read 3\n", __func__, sensor_name);
++		return rc;
++	}
++
++	temp_master = sensor_i2c_client->cci_client->cci_i2c_master;
++	switch (s_ctrl->sensordata->vendor_id_info->cci_i2c_master) {
++		case MSM_MASTER_0:
++			sensor_i2c_client->cci_client->cci_i2c_master = MASTER_0;
++			break;
++		case MSM_MASTER_1:
++			sensor_i2c_client->cci_client->cci_i2c_master = MASTER_1;
++			break;
++		default:
++			break;
++	}
++	temp_sid = sensor_i2c_client->cci_client->sid;
++
++	sensor_i2c_client->cci_client->sid =
++		s_ctrl->sensordata->vendor_id_info->eeprom_slave_addr >> 1;
++
++	rc = msm_camera_cci_i2c_read(
++		sensor_i2c_client,
++		s_ctrl->sensordata->vendor_id_info->vendor_id_addr,
++		&vendorid,
++		s_ctrl->sensordata->vendor_id_info->data_type);
++
++	if (s_ctrl->sensordata->vcm_id_info->vcm_id_addr != 0) {
++	    msm_camera_cci_i2c_read(
++		sensor_i2c_client,
++		s_ctrl->sensordata->vcm_id_info->vcm_id_addr,
++		&vcmid,
++		s_ctrl->sensordata->vcm_id_info->data_type);
++		have_vcmid = 1;
++	}
++
++	sensor_i2c_client->cci_client->sid = temp_sid;
++	sensor_i2c_client->cci_client->cci_i2c_master = temp_master;
++	if (rc < 0) {
++		pr_err("%s: %s: read vendor id failed\n", __func__, sensor_name);
++		return rc;
++	}
++	if (s_ctrl->sensordata->vendor_id_info->vendor_id != vendorid) {
++		pr_err("%s:%s match vendor id failed read vendor id:0x%x expected id 0x%x eeprom_slave_addr 0x%x vendor_id_addr 0x%x\n",
++			__func__, s_ctrl->sensordata->sensor_name,vendorid, s_ctrl->sensordata->vendor_id_info->vendor_id,
++		s_ctrl->sensordata->vendor_id_info->eeprom_slave_addr,
++		s_ctrl->sensordata->vendor_id_info->vendor_id_addr);
++		rc = -1;
++		return rc;
++	} else {
++		if (have_vcmid) {
++			if (s_ctrl->sensordata->vcm_id_info->vcm_id != vcmid) {
++				pr_err("%s:match vcmid if failed read vcm id: 0x%x expected id 0x%x:\n",
++					__func__, vcmid, s_ctrl->sensordata->vcm_id_info->vcm_id);
++				rc = -1;
++				return rc;
++			} else {
++				pr_err("%s: read vcmid id: 0x%x expected id 0x%x:\n",
++					__func__, vcmid, s_ctrl->sensordata->vcm_id_info->vcm_id);
++			}
++		}
++	}
++	pr_err("%s: read vendor id: 0x%x expected id 0x%x:\n",
++			__func__, vendorid, s_ctrl->sensordata->vendor_id_info->vendor_id);
++
++	return rc;
++}
++#endif
++
+ static uint16_t msm_sensor_id_by_mask(struct msm_sensor_ctrl_t *s_ctrl,
+ 	uint16_t chipid)
+ {
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.h b/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.h
+index 8f55f453bf03..c78044f86265 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.h
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor.h
+@@ -104,6 +104,10 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl);
+ 
+ int msm_sensor_update_cfg(struct msm_sensor_ctrl_t *s_ctrl);
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl);
++#endif
++
+ int msm_sensor_free_sensor_data(struct msm_sensor_ctrl_t *s_ctrl);
+ 
+ int32_t msm_sensor_init_default_params(struct msm_sensor_ctrl_t *s_ctrl);
+diff --git a/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor_driver.c b/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor_driver.c
+index 70c6c1f6dca2..990fcf7fb80e 100644
+--- a/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor_driver.c
++++ b/drivers/media/platform/msm/camera_v2-legacy/sensor/msm_sensor_driver.c
+@@ -17,6 +17,10 @@
+ #include "camera.h"
+ #include "msm_cci.h"
+ #include "msm_camera_dt_util.h"
++#ifdef CONFIG_MACH_LONGCHEER
++#include <soc/qcom/camera2.h>
++extern struct vendor_eeprom s_vendor_eeprom[CAMERA_VENDOR_EEPROM_COUNT_MAX];
++#endif
+ 
+ /* Logging macro */
+ #undef CDBG
+@@ -171,6 +175,9 @@ static int32_t msm_sensor_fill_eeprom_subdevid_by_name(
+ {
+ 	int32_t rc = 0;
+ 	const char *eeprom_name;
++#ifdef CONFIG_MACH_LONGCHEER
++	const char *lct_eeprom_name;
++#endif
+ 	struct device_node *src_node = NULL;
+ 	uint32_t val = 0, eeprom_name_len;
+ 	int32_t *eeprom_subdev_id, i, userspace_probe = 0;
+@@ -205,6 +212,9 @@ static int32_t msm_sensor_fill_eeprom_subdevid_by_name(
+ 	for (i = 0; i < count; i++) {
+ 		userspace_probe = 0;
+ 		eeprom_name = NULL;
++#ifdef CONFIG_MACH_LONGCHEER
++		lct_eeprom_name = NULL;
++#endif
+ 		src_node = of_parse_phandle(of_node, "qcom,eeprom-src", i);
+ 		if (!src_node) {
+ 			pr_err("eeprom src node NULL\n");
+@@ -220,12 +230,29 @@ static int32_t msm_sensor_fill_eeprom_subdevid_by_name(
+ 				s_ctrl->sensordata->eeprom_name);
+ 			of_node_put(src_node);
+ 			userspace_probe = 1;
++#ifdef CONFIG_MACH_LONGCHEER
++			if (count > 5)
++#else
+ 			if (count > 1)
++#endif
+ 				return -EINVAL;
+ 		}
+ 		if (!userspace_probe &&
+ 			strcmp(eeprom_name, s_ctrl->sensordata->eeprom_name))
+ 			continue;
++#ifdef CONFIG_MACH_LONGCHEER
++		if (userspace_probe) {
++			rc = of_property_read_string(src_node,
++					"qcom,lct_eeprom-name", &lct_eeprom_name);
++			if (rc >= 0) {
++				if (strcmp(s_ctrl->sensordata->eeprom_name,
++						lct_eeprom_name)) {
++					rc = 0;
++					continue;
++				}
++			}
++		}
++#endif
+ 
+ 		rc = of_property_read_u32(src_node, "cell-index", &val);
+ 		if (rc < 0) {
+@@ -739,6 +766,633 @@ static int32_t msm_sensor_driver_is_special_support(
+ 	return rc;
+ }
+ 
++#ifdef CONFIG_MACH_LONGCHEER
++static struct kobject *msm_sensor_device = NULL;
++static char module_info[256] = {0};
++
++void msm_sensor_set_module_info(struct msm_sensor_ctrl_t *s_ctrl)
++{
++	printk(" s_ctrl->sensordata->camera_type = %d\n",
++			s_ctrl->sensordata->sensor_info->position);
++
++	switch (s_ctrl->sensordata->sensor_info->position) {
++		case BACK_CAMERA_B:
++			strcat(module_info, "back: ");
++			break;
++		case AUX_CAMERA_B:
++			strcat(module_info, "back_aux: ");
++			break;
++		case FRONT_CAMERA_B:
++			strcat(module_info, "front: ");
++			break;
++		case FRONT_AUX_CAMERA_B:
++			strcat(module_info, "front_aux: ");
++			break;
++		default:
++			strcat(module_info, "unknown: ");
++			break;
++	}
++	strcat(module_info, s_ctrl->sensordata->sensor_name);
++	strcat(module_info, "\n");
++}
++
++static ssize_t msm_sensor_module_id_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	ssize_t rc = 0;
++
++	sprintf(buf, "%s\n", module_info);
++	rc = strlen(buf) + 1;
++
++	return rc;
++}
++
++static DEVICE_ATTR(sensor, 0444, msm_sensor_module_id_show, NULL);
++
++int32_t msm_sensor_init_device_name(void)
++{
++	int32_t rc = 0;
++
++	CDBG("%s %d\n", __func__, __LINE__);
++
++	if (msm_sensor_device != NULL) {
++		pr_err("Macle android_camera already created\n");
++		return 0;
++	}
++	msm_sensor_device = kobject_create_and_add("android_camera", NULL);
++	if (msm_sensor_device == NULL) {
++		printk("%s: subsystem_register failed\n", __func__);
++		rc = -ENOMEM;
++		return rc;
++	}
++	rc = sysfs_create_file(msm_sensor_device, &dev_attr_sensor.attr);
++	if (rc) {
++		printk("%s: sysfs_create_file failed\n", __func__);
++		kobject_del(msm_sensor_device);
++	}
++
++	return 0;
++}
++
++static uint16_t msm_sensor_get_sensor_id_ovti_13855(
++		struct msm_sensor_ctrl_t *s_ctrl, char *sensor_fusion_id)
++{
++	int rc = 0;
++	int i = 0;
++	uint16_t sensorid[16] = {0};
++	uint16_t temp = 0;
++	uint32_t start_add = 0x7000;
++	struct msm_camera_i2c_client *sensor_i2c_client;
++
++	CDBG("%s:%d E \n", __func__, __LINE__);
++
++	sensor_i2c_client = s_ctrl->sensor_i2c_client;
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0100,
++		0x01, MSM_CAMERA_I2C_BYTE_DATA);
++	if (rc < 0) {
++		pr_err("%s:lct write 0x0100 failed\n", __func__);
++		return rc;
++	}
++
++	sensor_i2c_client->i2c_func_tbl->i2c_read(
++		sensor_i2c_client, 0x5000,
++		&temp, MSM_CAMERA_I2C_WORD_DATA);
++
++	temp &= ~(1<<3);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x5000,
++		temp, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x3d84,
++		0x40, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x3d88,
++		0x70, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x3d89,
++		0x00, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x3d8a,
++		0x70, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x3d8b,
++		0x0f, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x3d81,
++		0x01, MSM_CAMERA_I2C_BYTE_DATA);
++
++	mdelay(1);
++	for (i = 0; i < 16; i++) {
++		sensor_i2c_client->i2c_func_tbl->i2c_read(
++			sensor_i2c_client, start_add,
++			&sensorid[i], MSM_CAMERA_I2C_WORD_DATA);
++		CDBG("%s:lct read from start_add %x sensrid[%d] %d\n", __func__,
++				start_add, i, sensorid[i]);
++		start_add += 1;
++	}
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0100,
++		0x00, MSM_CAMERA_I2C_BYTE_DATA);
++	sprintf(sensor_fusion_id,
++		"%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x",
++		sensorid[0],
++		sensorid[1],
++		sensorid[2],
++		sensorid[3],
++		sensorid[4],
++		sensorid[5],
++		sensorid[6],
++		sensorid[7],
++		sensorid[8],
++		sensorid[9],
++		sensorid[10],
++		sensorid[11],
++		sensorid[12],
++		sensorid[13],
++		sensorid[14],
++		sensorid[15]);
++
++	return rc;
++}
++
++static uint16_t msm_sensor_get_sensor_id_sony_486(
++		struct msm_sensor_ctrl_t *s_ctrl, char *sensor_fusion_id)
++{
++	int rc = 0;
++	int i = 0;
++	uint16_t sensorid[11] = {0};
++	uint32_t start_add = 0x0A27;
++	struct msm_camera_i2c_client *sensor_i2c_client;
++
++	CDBG("%s:%d E \n", __func__, __LINE__);
++	sensor_i2c_client = s_ctrl->sensor_i2c_client;
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0100,
++		0x01, MSM_CAMERA_I2C_WORD_DATA);
++	mdelay(1);
++	if (rc < 0) {
++		pr_err("%s:lct write 0x0100 failed\n", __func__);
++		return rc;
++	}
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A02,
++		0x0B, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A00,
++		0x01, MSM_CAMERA_I2C_BYTE_DATA);
++	mdelay(20);
++
++	for (i = 0; i < 11; i++) {
++		rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
++			sensor_i2c_client, start_add,
++			&sensorid[i], MSM_CAMERA_I2C_WORD_DATA);
++		CDBG("%s:lct++++++++++++ read from start_add %x sensrid[%d] %d\n",
++				__func__, start_add, i, sensorid[i]);
++		start_add += 1;
++	}
++
++	sprintf(sensor_fusion_id,
++		"%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x",
++		sensorid[0],
++		sensorid[1],
++		sensorid[2],
++		sensorid[3],
++		sensorid[4],
++		sensorid[5],
++		sensorid[6],
++		sensorid[7],
++		sensorid[8],
++		sensorid[9],
++		sensorid[10]);
++
++	return rc;
++}
++
++static uint16_t msm_sensor_get_sensor_id_sony_376(
++		struct msm_sensor_ctrl_t *s_ctrl, char *sensor_fusion_id)
++{
++	int rc = 0;
++	int i = 0;
++	uint16_t sensorid[11] = {0};
++	uint32_t start_add = 0x0A20;
++	struct msm_camera_i2c_client *sensor_i2c_client;
++
++	CDBG("%s:%d E \n", __func__, __LINE__);
++	sensor_i2c_client = s_ctrl->sensor_i2c_client;
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0100,
++		0x01, MSM_CAMERA_I2C_WORD_DATA);
++	mdelay(1);
++	if (rc < 0) {
++		pr_err("%s:lct write 0x0100 failed\n", __func__);
++		return rc;
++	}
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A02,
++		0x27, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A00,
++		0x01, MSM_CAMERA_I2C_BYTE_DATA);
++	mdelay(20);
++
++	for (i = 0; i < 11; i++) {
++		rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
++			sensor_i2c_client, start_add,
++			&sensorid[i], MSM_CAMERA_I2C_WORD_DATA);
++		CDBG("%s:lct++++++++++++ read from start_add %x sensrid[%d] %d\n",
++				__func__, start_add, i, sensorid[i]);
++		start_add += 1;
++	}
++
++	sprintf(sensor_fusion_id,
++		"%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x",
++		sensorid[0],
++		sensorid[1],
++		sensorid[2],
++		sensorid[3],
++		sensorid[4],
++		sensorid[5],
++		sensorid[6],
++		sensorid[7],
++		sensorid[8],
++		sensorid[9],
++		sensorid[10]);
++
++	return rc;
++}
++
++static uint16_t msm_sensor_get_sensor_id_samsung_5e8(
++		struct msm_sensor_ctrl_t *s_ctrl, char *sensor_fusion_id)
++{
++	int rc = 0;
++	int i = 0;
++	uint16_t sensorid[16] = {0};
++	uint32_t start_add = 0x0a04;
++	struct msm_camera_i2c_client *sensor_i2c_client;
++
++	CDBG("%s:%d E \n", __func__, __LINE__);
++	sensor_i2c_client = s_ctrl->sensor_i2c_client;
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0100,
++		0x00, MSM_CAMERA_I2C_BYTE_DATA);
++	mdelay(1);
++	if (rc < 0) {
++		pr_err("%s:lct write 0x0100 failed\n", __func__);
++		return rc;
++	}
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0a00,
++		0x04, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0a02,
++		0x00, MSM_CAMERA_I2C_BYTE_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0a00,
++		0x01, MSM_CAMERA_I2C_BYTE_DATA);
++
++	mdelay(1);
++
++	for (i = 0; i < 16; i++) {
++		sensor_i2c_client->i2c_func_tbl->i2c_read(
++			sensor_i2c_client, start_add,
++			&sensorid[i], MSM_CAMERA_I2C_WORD_DATA);
++		CDBG("%s:lct read from reg_add %x sensorid[%d] %d\n",
++				__func__, start_add, i, sensorid[i]);
++		start_add += 1;
++	}
++
++	sprintf(sensor_fusion_id,
++		"%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x",
++		sensorid[0],
++		sensorid[1],
++		sensorid[2],
++		sensorid[3],
++		sensorid[4],
++		sensorid[5],
++		sensorid[6],
++		sensorid[7],
++		sensorid[8],
++		sensorid[9],
++		sensorid[10],
++		sensorid[12],
++		sensorid[13],
++		sensorid[14],
++		sensorid[15]);
++
++	return rc;
++}
++
++static uint16_t msm_sensor_get_sensor_id_samsung_2L7(
++		struct msm_sensor_ctrl_t *s_ctrl, char *sensor_fusion_id)
++{
++	int rc = 0;
++	int i = 0;
++	uint16_t sensorid[16] = {0};
++	uint32_t start_add = 0x0A24;
++	struct msm_camera_i2c_client *sensor_i2c_client;
++
++	CDBG("%s:%d E \n", __func__, __LINE__);
++	sensor_i2c_client = s_ctrl->sensor_i2c_client;
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0100,
++		0x0100, MSM_CAMERA_I2C_BYTE_DATA);
++	mdelay(1);
++	if (rc < 0) {
++		pr_err("%s:lct write 0x0100 failed\n", __func__);
++		return rc;
++	}
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A02,
++		0x0000, MSM_CAMERA_I2C_WORD_DATA);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A00,
++		0x0100, MSM_CAMERA_I2C_WORD_DATA);
++	mdelay(95);
++
++	for (i = 0; i < 16; i++) {
++		rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
++			sensor_i2c_client, start_add,
++			&sensorid[i], MSM_CAMERA_I2C_WORD_DATA);
++		CDBG("%s:lct read from start_add %x sensrid[%d] %d\n",
++				__func__, start_add, i, sensorid[i]);
++		start_add += 1;
++	}
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0a00,
++		0x0000, MSM_CAMERA_I2C_WORD_DATA);
++
++	sprintf(sensor_fusion_id,
++		"%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x",
++		sensorid[0],
++		sensorid[1],
++		sensorid[2],
++		sensorid[3],
++		sensorid[4],
++		sensorid[5],
++		sensorid[6],
++		sensorid[7],
++		sensorid[8],
++		sensorid[9],
++		sensorid[10],
++		sensorid[12],
++		sensorid[13],
++		sensorid[14],
++		sensorid[15]);
++
++	return rc;
++}
++
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++static uint16_t msm_sensor_get_sensor_id_samsung_3T1(
++		struct msm_sensor_ctrl_t *s_ctrl, char *sensor_fusion_id)
++{
++	int rc = 0;
++	int i = 0;
++	uint16_t sensorid[16] = {0};
++	uint32_t start_add = 0x0A24;
++	struct msm_camera_i2c_client *sensor_i2c_client;
++
++	CDBG("%s:%d E \n", __func__, __LINE__);
++	sensor_i2c_client = s_ctrl->sensor_i2c_client;
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0100,
++		0x01, MSM_CAMERA_I2C_BYTE_DATA);
++	mdelay(2);
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A02,
++		0x0000, MSM_CAMERA_I2C_BYTE_DATA);
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A00,
++		0x01, MSM_CAMERA_I2C_BYTE_DATA);
++	mdelay(1);
++
++	for (i = 0; i < 16; i++) {
++		rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
++			sensor_i2c_client, start_add,
++			&sensorid[i], MSM_CAMERA_I2C_WORD_DATA);
++		CDBG("%s:lct read from start_add %x sensrid[%d] %d\n",
++				__func__, start_add, i, sensorid[i]);
++		start_add += 1;
++		mdelay(1);
++	}
++
++	rc = sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0A00,
++		0x000, MSM_CAMERA_I2C_BYTE_DATA);
++	mdelay(95);
++
++	sensor_i2c_client->i2c_func_tbl->i2c_write(
++		sensor_i2c_client, 0x0a00,
++		0x0000, MSM_CAMERA_I2C_WORD_DATA);
++
++	sprintf(sensor_fusion_id,
++		"%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x%04x",
++		sensorid[0],
++		sensorid[1],
++		sensorid[2],
++		sensorid[3],
++		sensorid[4],
++		sensorid[5],
++		sensorid[6],
++		sensorid[7],
++		sensorid[8],
++		sensorid[9],
++		sensorid[10],
++		sensorid[11],
++		sensorid[12],
++		sensorid[13],
++		sensorid[14]);
++
++	return rc;
++}
++#endif
++
++static struct kobject *msm_sensorid_device = NULL;
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++char sensor_fusion_id[512] = {0};
++#else
++static char sensor_fusion_id[512] = {0};
++#endif
++
++void msm_sensor_set_sensor_id(struct msm_sensor_ctrl_t *s_ctrl)
++{
++	char sensor_fusion_id_tmp[90] = {0};
++	int rc = 0;
++	CDBG("lct s_ctrl->sensordata->camera_type = %d\n",
++			s_ctrl->sensordata->sensor_info->position);
++
++	switch (s_ctrl->sensordata->sensor_info->position) {
++#ifndef CONFIG_MACH_XIAOMI_TULIP
++		case BACK_CAMERA_B:
++			strcat(sensor_fusion_id, "back: ");
++			break;
++#endif
++		case AUX_CAMERA_B:
++			strcat(sensor_fusion_id, "back_aux: ");
++			break;
++		case FRONT_CAMERA_B:
++			strcat(sensor_fusion_id, "front: ");
++			break;
++		case FRONT_AUX_CAMERA_B:
++			strcat(sensor_fusion_id, "front_aux: ");
++			break;
++		default:
++#ifndef CONFIG_MACH_XIAOMI_TULIP
++			strcat(sensor_fusion_id, "unknow: ");
++#endif
++			break;
++	}
++
++	if ((!strcmp("whyred_imx486_ofilm_global_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("whyred_imx486_qtech_global_ii", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("wayne_imx486_sunny_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("wayne_imx486_ofilm_ii", s_ctrl->sensordata->sensor_name))) {
++		rc = msm_sensor_get_sensor_id_sony_486(s_ctrl, sensor_fusion_id_tmp);
++		if (rc < 0) {
++			pr_err("%s:%d lct read sensor %s fusion id failed\n",
++					__func__, __LINE__,
++					s_ctrl->sensordata->sensor_name);
++		}
++	}
++	if ((!strcmp("whyred_imx376_ofilm_global_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("whyred_imx376_sunny_global_ii", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("wayne_imx376_sunny_back_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("wayne_imx376_ofilm_back_ii", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("wayne_imx376_sunny_front_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("wayne_imx376_ofilm_front_ii", s_ctrl->sensordata->sensor_name))) {
++		rc = msm_sensor_get_sensor_id_sony_376(s_ctrl, sensor_fusion_id_tmp);
++		if (rc < 0) {
++			pr_err("%s:%d lct read sensor %s fusion id failed\n",
++					__func__, __LINE__,
++					s_ctrl->sensordata->sensor_name);
++		}
++	}
++	if ((!strcmp("whyred_s5k5e8_ofilm_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("whyred_s5k5e8_qtech_ii", s_ctrl->sensordata->sensor_name))
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++	 || (!strcmp("tulip_s5k5e8_ofilm_i", s_ctrl->sensordata->sensor_name))
++	 || (!strcmp("tulip_s5k5e8_qtech_ii", s_ctrl->sensordata->sensor_name))
++#endif
++	  ) {
++		rc = msm_sensor_get_sensor_id_samsung_5e8(s_ctrl, sensor_fusion_id_tmp);
++		if (rc < 0) {
++			pr_err("%s:%d lct read sensor %s fusion id failed\n",
++					__func__, __LINE__,
++					s_ctrl->sensordata->sensor_name);
++		}
++	}
++	if ((!strcmp("whyred_s5k2l7_ofilm_cn_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("whyred_s5k2l7_qtech_cn_ii", s_ctrl->sensordata->sensor_name))) {
++		rc = msm_sensor_get_sensor_id_samsung_2L7(s_ctrl, sensor_fusion_id_tmp);
++		if (rc < 0) {
++			pr_err("%s:%d lct read sensor %s fusion id failed\n",
++					__func__, __LINE__,
++					s_ctrl->sensordata->sensor_name);
++		}
++	}
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++	if ((!strcmp("tulip_s5k3T1_sunny_i", s_ctrl->sensordata->sensor_name)) ||
++	    (!strcmp("tulip_s5k3T1_ofilm_ii", s_ctrl->sensordata->sensor_name))) {
++		rc = msm_sensor_get_sensor_id_samsung_3T1(s_ctrl, sensor_fusion_id_tmp);
++		if (rc < 0){
++			pr_err("%s:%d lct read sensor %s fusion id failed\n",
++					__func__, __LINE__,
++					s_ctrl->sensordata->sensor_name);
++		}
++	}
++#endif
++	if (!strcmp("whyred_ov13855_sunny_cn_i", s_ctrl->sensordata->sensor_name)) {
++		rc = msm_sensor_get_sensor_id_ovti_13855(s_ctrl,sensor_fusion_id_tmp);
++		if (rc < 0){
++			pr_err("%s:%d lct read sensor %s fusion id failed\n",
++					__func__, __LINE__,
++					s_ctrl->sensordata->sensor_name);
++		}
++	}
++
++	CDBG("%s:%d lct read sensor fusion id %s\n", __func__, __LINE__,
++			sensor_fusion_id_tmp);
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++	if (s_ctrl->sensordata->sensor_info->position != BACK_CAMERA_B) {
++#endif
++	strcat(sensor_fusion_id, sensor_fusion_id_tmp);
++	strcat(sensor_fusion_id, "\n");
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++	}
++#endif
++}
++
++static ssize_t msm_sensor_id_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	ssize_t rc = 0;
++
++	sprintf(buf, "%s", sensor_fusion_id);
++
++	rc = strlen(buf)
++#ifndef CONFIG_MACH_XIAOMI_TULIP
++		+ 1
++#endif
++	;
++
++	return rc;
++}
++
++static DEVICE_ATTR(sensorid, 0444, msm_sensor_id_show, NULL);
++
++int32_t msm_sensorid_init_device_name(void)
++{
++	int32_t rc = 0;
++
++	CDBG("%s %d\n", __func__,__LINE__);
++
++	if (msm_sensorid_device != NULL) {
++		pr_err("Macle android_camera already created\n");
++		return 0;
++	}
++	msm_sensorid_device = kobject_create_and_add("camera_sensorid", NULL);
++	if (msm_sensorid_device == NULL) {
++		printk("%s: subsystem_register failed\n", __func__);
++		rc = -ENOMEM;
++		return rc;
++	}
++	rc = sysfs_create_file(msm_sensorid_device, &dev_attr_sensorid.attr);
++	if (rc) {
++		printk("%s: sysfs_create_file failed\n", __func__);
++		kobject_del(msm_sensorid_device);
++	}
++
++	return 0;
++}
++#endif
++
+ /* static function definition */
+ int32_t msm_sensor_driver_probe(void *setting,
+ 	struct msm_sensor_info_t *probed_info, char *entity_name)
+@@ -752,6 +1406,10 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 	unsigned long                        mount_pos = 0;
+ 	uint32_t                             is_yuv;
+ 
++#if defined(CONFIG_MACH_XIAOMI_LAVENDER) || defined(CONFIG_MACH_XIAOMI_TULIP) || defined(CONFIG_MACH_XIAOMI_WHYRED)
++	uint32_t                             i = 0;
++#endif
++
+ 	/* Validate input parameters */
+ 	if (!setting) {
+ 		pr_err("failed: slave_info %pK", setting);
+@@ -800,6 +1458,10 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 
+ 		slave_info->i2c_freq_mode = slave_info32->i2c_freq_mode;
+ 		slave_info->sensor_id_info = slave_info32->sensor_id_info;
++#ifdef CONFIG_MACH_LONGCHEER
++		slave_info->vendor_id_info = slave_info32->vendor_id_info;
++		slave_info->vcm_id_info = slave_info32->vcm_id_info;
++#endif
+ 
+ 		slave_info->slave_addr = slave_info32->slave_addr;
+ 		slave_info->power_setting_array.size =
+@@ -847,6 +1509,99 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 		goto free_slave_info;
+ 	}
+ 
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	if ((strcmp(slave_info->eeprom_name, "lavender_s5k5e8_ofilm_i") == 0) ||
++	    (strcmp(slave_info->eeprom_name, "lavender_s5k5e8_sunny_ii") == 0) ||
++	    (strcmp(slave_info->eeprom_name, "lavender_ov02a10_ofilm_i") == 0) ||
++	    (strcmp(slave_info->eeprom_name, "lavender_ov02a10_sunny_ii") == 0)) {
++		for (i = 0; i < CAMERA_VENDOR_EEPROM_COUNT_MAX; i++) {
++			if (s_vendor_eeprom[i].eeprom_name != NULL) {
++				printk(" slave_info->eeprom_name=%s, s_vendor_eeprom[%d]=%s, module_id=%d,\n",
++					slave_info->eeprom_name, i, s_vendor_eeprom[i].eeprom_name, s_vendor_eeprom[i].module_id);
++				if (strcmp(slave_info->eeprom_name, s_vendor_eeprom[i].eeprom_name) == 0) {
++					if (((strcmp(slave_info->eeprom_name, "lavender_s5k5e8_ofilm_i") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_OFILM)) ||
++					    ((strcmp(slave_info->eeprom_name, "lavender_s5k5e8_sunny_ii") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_SUNNY)) ||
++					    ((strcmp(slave_info->eeprom_name, "lavender_ov02a10_ofilm_i") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_OFILM)) ||
++					    ((strcmp(slave_info->eeprom_name, "lavender_ov02a10_sunny_ii") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_SUNNY))) {
++							printk("Lc module found!probe continue!\n");
++						break;
++					}
++				}
++			}
++		}
++
++		if (i >= CAMERA_VENDOR_EEPROM_COUNT_MAX) {
++			pr_err(" Lc module not found!probe break failed!\n");
++			rc = -EFAULT;
++			goto free_slave_info;
++		}
++	}
++#endif
++
++#ifdef CONFIG_MACH_XIAOMI_TULIP
++	if ((strcmp(slave_info->eeprom_name,"tulip_s5k5e8_ofilm_i") == 0) ||
++	    (strcmp(slave_info->eeprom_name,"tulip_s5k5e8_qtech_ii") == 0) ||
++	    (strcmp(slave_info->eeprom_name,"tulip_ov02a10_ofilm_ii") == 0) ||
++	    (strcmp(slave_info->eeprom_name,"tulip_ov02a10_sunny_i") == 0)) {
++		for (i = 0; i < CAMERA_VENDOR_EEPROM_COUNT_MAX; i++) {
++			if (s_vendor_eeprom[i].eeprom_name != NULL) {
++				printk(" slave_info->eeprom_name=%s, s_vendor_eeprom[%d]=%s, module_id=%d\n",
++					slave_info->eeprom_name, i, s_vendor_eeprom[i].eeprom_name, s_vendor_eeprom[i].module_id);
++				if (strcmp(slave_info->eeprom_name, s_vendor_eeprom[i].eeprom_name) == 0) {
++					if (((strcmp(slave_info->eeprom_name, "tulip_s5k5e8_ofilm_i") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_OFILM)) ||
++					    ((strcmp(slave_info->eeprom_name, "tulip_s5k5e8_qtech_ii") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_QTECH)) ||
++					    ((strcmp(slave_info->eeprom_name, "tulip_ov02a10_ofilm_ii") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_OFILM)) ||
++					    ((strcmp(slave_info->eeprom_name, "tulip_ov02a10_sunny_i") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_SUNNY))) {
++							printk("Lc module found!probe continue!\n");
++						break;
++					}
++				}
++			}
++		}
++
++		if (i >= CAMERA_VENDOR_EEPROM_COUNT_MAX) {
++			pr_err(" Lc module not found!probe break failed!\n");
++			rc = -EFAULT;
++			goto free_slave_info;
++		}
++	}
++#endif
++
++#ifdef CONFIG_MACH_XIAOMI_WHYRED
++	if ((strcmp(slave_info->eeprom_name,"whyred_s5k5e8_ofilm_i") == 0) ||
++	    (strcmp(slave_info->eeprom_name,"whyred_s5k5e8_qtech_ii") == 0)) {
++		for (i = 0; i < CAMERA_VENDOR_EEPROM_COUNT_MAX; i++) {
++			if (s_vendor_eeprom[i].eeprom_name != NULL) {
++				printk(" slave_info->eeprom_name=%s, s_vendor_eeprom[%d]=%s, module_id=%d\n",
++					slave_info->eeprom_name, i, s_vendor_eeprom[i].eeprom_name, s_vendor_eeprom[i].module_id);
++				if (strcmp(slave_info->eeprom_name, s_vendor_eeprom[i].eeprom_name) == 0) {
++					if (((strcmp(slave_info->eeprom_name,"whyred_s5k5e8_ofilm_i") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_OFILM)) ||
++					    ((strcmp(slave_info->eeprom_name,"whyred_s5k5e8_qtech_ii") == 0) &&
++						(s_vendor_eeprom[i].module_id == MID_QTECH))) {
++							printk("Lc module found!probe continue!\n");
++						break;
++					}
++				}
++			}
++		}
++
++		if (i >= CAMERA_VENDOR_EEPROM_COUNT_MAX) {
++			pr_err(" Lc module not found!probe break failed!\n");
++			rc = -EFAULT;
++			goto free_slave_info;
++		}
++	}
++#endif
++
+ 	/* Print slave info */
+ 	CDBG("camera id %d Slave addr 0x%X addr_type %d\n",
+ 		slave_info->camera_id, slave_info->slave_addr,
+@@ -902,6 +1657,11 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 		if (slave_info->sensor_id_info.sensor_id ==
+ 			s_ctrl->sensordata->cam_slave_info->
+ 				sensor_id_info.sensor_id &&
++#ifdef CONFIG_MACH_LONGCHEER
++			slave_info->vendor_id_info.vendor_id ==
++			s_ctrl->sensordata->cam_slave_info->
++				vendor_id_info.vendor_id &&
++#endif
+ 			!(strcmp(slave_info->sensor_name,
+ 			s_ctrl->sensordata->cam_slave_info->sensor_name))) {
+ 			pr_err("slot%d: sensor name: %s sensor id%d already probed\n",
+@@ -1002,6 +1762,10 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 	s_ctrl->sensordata->actuator_name = slave_info->actuator_name;
+ 	s_ctrl->sensordata->ois_name = slave_info->ois_name;
+ 	s_ctrl->sensordata->flash_name = slave_info->flash_name;
++#ifdef CONFIG_MACH_LONGCHEER
++	s_ctrl->sensordata->vendor_id_info = &(slave_info->vendor_id_info);
++	s_ctrl->sensordata->vcm_id_info = &(slave_info->vcm_id_info);
++#endif
+ 	/*
+ 	 * Update eeporm subdevice Id by input eeprom name
+ 	 */
+@@ -1062,21 +1826,31 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 		goto camera_power_down;
+ 	}
+ 
++#ifndef CONFIG_MACH_LONGCHEER
+ 	/* Power down */
+ 	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
++#endif
+ 
+ 	rc = msm_sensor_fill_slave_info_init_params(
+ 		slave_info,
+ 		s_ctrl->sensordata->sensor_info);
+ 	if (rc < 0) {
+ 		pr_err("%s Fill slave info failed", slave_info->sensor_name);
++#ifdef CONFIG_MACH_LONGCHEER
++		goto camera_power_down;
++#else
+ 		goto free_camera_info;
++#endif
+ 	}
+ 	rc = msm_sensor_validate_slave_info(s_ctrl->sensordata->sensor_info);
+ 	if (rc < 0) {
+ 		pr_err("%s Validate slave info failed",
+ 			slave_info->sensor_name);
++#ifdef CONFIG_MACH_LONGCHEER
++		goto camera_power_down;
++#else
+ 		goto free_camera_info;
++#endif
+ 	}
+ 	/* Update sensor mount angle and position in media entity flag */
+ 	is_yuv = (slave_info->output_format == MSM_SENSOR_YCBCR) ? 1 : 0;
+@@ -1091,7 +1865,15 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 	s_ctrl->sensordata->cam_slave_info = slave_info;
+ 
+ 	msm_sensor_fill_sensor_info(s_ctrl, probed_info, entity_name);
++#ifdef CONFIG_MACH_LONGCHEER
++	msm_sensor_init_device_name();
++	msm_sensor_set_module_info(s_ctrl);
++	msm_sensorid_init_device_name();
++	msm_sensor_set_sensor_id(s_ctrl);
+ 
++	/* Power down */
++	s_ctrl->func_tbl->sensor_power_down(s_ctrl);
++#endif
+ 	/*
+ 	 * Set probe succeeded flag to 1 so that no other camera shall
+ 	 * probed on this slot
+-- 
+2.49.0
+

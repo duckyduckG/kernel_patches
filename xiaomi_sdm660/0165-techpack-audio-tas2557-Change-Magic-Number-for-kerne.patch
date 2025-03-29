@@ -1,0 +1,28 @@
+From a20e33a95b87a80a822a13700201560e98a25dd7 Mon Sep 17 00:00:00 2001
+From: Tracy Yi <tracy-yi@ti.com>
+Date: Wed, 13 Jun 2018 17:55:35 +0800
+Subject: [PATCH 165/178] techpack: audio: tas2557: Change Magic Number for
+ kernel 4.19 support
+
+Signed-off-by: Tracy Yi <tracy-yi@ti.com>
+Change-Id: If62aa6dce55e9e84225ccc93550901031b1b9aa3
+---
+ techpack/audio/asoc/codecs/tas2557/tas2557-misc.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/techpack/audio/asoc/codecs/tas2557/tas2557-misc.h b/techpack/audio/asoc/codecs/tas2557/tas2557-misc.h
+index 99a240c168ed..5fe5eb1c4efb 100644
+--- a/techpack/audio/asoc/codecs/tas2557/tas2557-misc.h
++++ b/techpack/audio/asoc/codecs/tas2557/tas2557-misc.h
+@@ -41,7 +41,7 @@
+ #define	TIAUDIO_CMD_SPEAKER				11
+ #define	TIAUDIO_CMD_FW_RELOAD			12
+ 
+-#define	TAS2557_MAGIC_NUMBER	0x32353537	/* '2557' */
++#define	TAS2557_MAGIC_NUMBER	0x3537	/* '2557' */
+ 
+ #define	SMARTPA_SPK_DAC_VOLUME				_IOWR(TAS2557_MAGIC_NUMBER, 1, unsigned long)
+ #define	SMARTPA_SPK_POWER_ON				_IOWR(TAS2557_MAGIC_NUMBER, 2, unsigned long)
+-- 
+2.49.0
+

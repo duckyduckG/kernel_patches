@@ -1,0 +1,28 @@
+From 0abc86506c10570561a630c9662c97226b117348 Mon Sep 17 00:00:00 2001
+From: srfarias <erikofarias@gmail.com>
+Date: Tue, 22 Oct 2019 04:22:23 +0000
+Subject: [PATCH 054/178] arm64: dts: xiaomi: whyred: Oreo fw support
+
+Signed-off-by: srfarias <erikofarias@gmail.com>
+Signed-off-by: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Change-Id: I7fb1454908cf4c1d6316fc802fd5650cb3f01a56
+---
+ arch/arm64/boot/dts/vendor/qcom/sdm636-mtp-whyred.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/sdm636-mtp-whyred.dts b/arch/arm64/boot/dts/vendor/qcom/sdm636-mtp-whyred.dts
+index 80970bcb8eaa..2d951942332b 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/sdm636-mtp-whyred.dts
++++ b/arch/arm64/boot/dts/vendor/qcom/sdm636-mtp-whyred.dts
+@@ -21,7 +21,7 @@
+ / {
+ 	model = "Qualcomm Technologies, Inc. SDM 636 PM660 + PM660L E7S";
+ 	compatible = "qcom,sdm636-mtp", "qcom,sdm636", "qcom,mtp";
+-	qcom,board-id = <0x30008 0>;
++	qcom,board-id = <0x30008 0>, <0x10008 0>;
+ 	qcom,pmic-id = <0x0001001b 0x0101011a 0x0 0x0>,
+ 			<0x0001001b 0x0201011a 0x0 0x0>,
+ 			<0x0001001b 0x0102001a 0x0 0x0>;
+-- 
+2.49.0
+

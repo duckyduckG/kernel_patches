@@ -1,0 +1,58 @@
+From 601d0fc17d2b1778322b613b8d4c7117c472357c Mon Sep 17 00:00:00 2001
+From: Khusika Dhamar Gusti <mail@khusika.com>
+Date: Fri, 13 Sep 2019 23:05:32 +0700
+Subject: [PATCH 101/178] input: touchscreen: *_touch_d2t: fix snprintf error
+
+Fixes the following clang error:
+
+../drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c:1487:3: error: 'snprintf' size argument is too large; destination buffer has size
+32, but size argument is 4096 [-Werror,-Wfortify-source]
+                snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
+                ^
+1 error generated.
+
+Change-Id: Ieb3331a226cb6e183aaac2f22e7e8dccf27af7fc
+Signed-off-by: Khusika Dhamar Gusti <mail@khusika.com>
+---
+ drivers/input/touchscreen/focal_ft8719_d2t/focaltech_ex_fun.c | 4 ++--
+ drivers/input/touchscreen/nvt_touch_d2t/nt36xxx_mp_ctrlram.c  | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/input/touchscreen/focal_ft8719_d2t/focaltech_ex_fun.c b/drivers/input/touchscreen/focal_ft8719_d2t/focaltech_ex_fun.c
+index 9f32a876cc75..e8ebe301df69 100644
+--- a/drivers/input/touchscreen/focal_ft8719_d2t/focaltech_ex_fun.c
++++ b/drivers/input/touchscreen/focal_ft8719_d2t/focaltech_ex_fun.c
+@@ -145,7 +145,7 @@ static ssize_t fts_debug_write(struct file *filp, const char __user *buff, size_
+ 		break;
+ 
+ 	case PROC_HW_RESET:
+-		snprintf(tmp, PAGE_SIZE, "%s", writebuf + 1);
++		snprintf(tmp, sizeof(tmp), "%s", writebuf + 1);
+ 		tmp[buflen - 1] = '\0';
+ 		if (strncmp(tmp, "focal_driver", 12) == 0) {
+ 			FTS_INFO("APK execute HW Reset");
+@@ -857,7 +857,7 @@ static ssize_t fts_fwforceupg_store(struct device *dev, struct device_attribute
+ 		return -EINVAL;
+ 	}
+ 	memset(fwname, 0, sizeof(fwname));
+-	snprintf(fwname, PAGE_SIZE, "%s", buf);
++	snprintf(fwname, sizeof(fwname), "%s", buf);
+ 	fwname[count - 1] = '\0';
+ 
+ 	FTS_INFO("force upgrade through sysfs node");
+diff --git a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx_mp_ctrlram.c
+index 65f023e73e44..4e166a72dfd8 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx_mp_ctrlram.c
+@@ -1274,7 +1274,7 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 		 * Ex. nvt_pid = 500A
+ 		 *     mpcriteria = "novatek-mp-criteria-500A"
+ 		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
++		snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid);
+ 		nvt_mp_parse_dt(np, mpcriteria);
+ 	} else {
+ 		NVT_LOG("Not found novatek,mp-support-dt, use default setting\n");
+-- 
+2.49.0
+

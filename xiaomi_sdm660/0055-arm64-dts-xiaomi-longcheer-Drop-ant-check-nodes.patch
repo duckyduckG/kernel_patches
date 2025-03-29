@@ -1,0 +1,58 @@
+From 6676c3813273c0a07ff315c9e08cd9f44145585d Mon Sep 17 00:00:00 2001
+From: Pig <pig.priv@gmail.com>
+Date: Fri, 13 Nov 2020 09:03:25 +0800
+Subject: [PATCH 055/178] arm64: dts: xiaomi: longcheer: Drop ant check nodes
+
+Change-Id: I75796f16199490e40180678866892483295688ca
+---
+ .../longcheer/common/longcheer-sdm660-mtp.dtsi  |  7 -------
+ .../common/longcheer-sdm660-pinctrl.dtsi        | 17 -----------------
+ 2 files changed, 24 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+index 8138effd7e39..1e2e2b606e92 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+@@ -90,11 +90,4 @@
+ 		fpc,enable-on-boot;
+ 		fpc,enable-wakeup;
+ 	};
+-
+-	ant_check {
+-		compatible = "ant_check";
+-		ant_check_gpio = <&tlmm 74 0x0>;
+-		pinctrl-names = "default";
+-		pinctrl-0 = <&ant_check_default>;
+-	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-pinctrl.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-pinctrl.dtsi
+index f6788a4d1254..300b6890b54a 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-pinctrl.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-pinctrl.dtsi
+@@ -54,23 +54,6 @@
+ 		};
+ 	};
+ 
+-	ant-check-pin {
+-		ant_check_default: ant_check_default {
+-			mux {
+-				pins = "gpio74";
+-				function = "gpio";
+-			};
+-
+-			config {
+-				pins = "gpio74";
+-				drive-strength = <2>;
+-				bias-disable;
+-				input-enable;
+-				input-debounce = <5000>;
+-			};
+-		};
+-	};
+-
+ 	/* add pri_mi2s for smartpa */
+ 	pri_mi2s_sck {
+ 		pri_mi2s_sck_sleep: pri_mi2s_sck_sleep {
+-- 
+2.49.0
+

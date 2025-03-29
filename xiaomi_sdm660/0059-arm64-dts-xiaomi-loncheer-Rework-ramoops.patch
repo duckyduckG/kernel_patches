@@ -1,0 +1,43 @@
+From 12918cd0007e5b0ab6c55ca06d08e3e124197a27 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Wed, 4 Mar 2020 13:21:46 +0100
+Subject: [PATCH 059/178] arm64: dts: xiaomi: loncheer: Rework ramoops
+
+Change-Id: Ibe09c864898398dcf3cb07c3db4b8dc902654389
+---
+ .../common/longcheer-sdm660-ramoops.dtsi       | 18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-ramoops.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-ramoops.dtsi
+index a95ca350143e..f69c1efe65e9 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-ramoops.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-ramoops.dtsi
+@@ -13,19 +13,13 @@
+ /* ramoops dts configuration */
+ / {
+ 	reserved-memory {
+-		ramoops_mem: ramoops_region@b0000000 {
+-			compatible = "removed-dma-pool";
++		ramoops {
++			compatible = "removed-dma-pool", "ramoops";
+ 			no-map;
+-			reg = <0 0xA0000000 0 0x00400000>;
++			reg = <0x0 0xA0000000 0x0 0x00400000>;
++			status = "ok";
++			console-size = <0x200000>;
++			pmsg-size = <0x200000>;
+ 		};
+ 	};
+ };
+-
+-&soc {
+-	ramoops {
+-		compatible = "ramoops";
+-		memory-region = <&ramoops_mem>;
+-		console-size = <0x0 0x200000>;
+-		pmsg-size = <0x0 0x200000>;
+-	};
+-};
+-- 
+2.49.0
+

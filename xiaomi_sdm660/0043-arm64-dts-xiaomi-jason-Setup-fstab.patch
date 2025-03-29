@@ -1,0 +1,52 @@
+From 517d95af61f2f6b445eb95d638659f6efbd919c1 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Mon, 10 Feb 2020 22:11:55 +0800
+Subject: [PATCH 043/178] arm64: dts: xiaomi: jason: Setup fstab
+
+Change-Id: I2c7d64050d454e49173eec7f6da00d06e092e66c
+---
+ .../qcom/xiaomi/mi/jason/jason-sdm660.dtsi    | 23 +++++++++++--------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
+index bb31bd9a8661..ba9a024cf689 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
+@@ -402,20 +402,25 @@
+ 	status = "disabled";
+ };
+ 
+-
+-/{
+-	firmware: firmware {
+-		android {
+-			fstab {
+-				vendor {
+-					status = "disabled";
+-				};
++&firmware {
++	android {
++		fstab {
++			system {
++				compatible = "android,system";
++				dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/system";
++				type = "ext4";
++				mnt_flags = "ro,barrier=1,discard";
++				fsmgr_flags = "wait";
++				status = "ok";
++			};
++			vendor {
++				dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/cust";
++				fsmgr_flags = "wait";
+ 			};
+ 		};
+ 	};
+ };
+ 
+-
+ &soc {
+ 	qcom,msm-adsp-loader {
+ 		qcom,firmware-name = "adsp_c8";
+-- 
+2.49.0
+

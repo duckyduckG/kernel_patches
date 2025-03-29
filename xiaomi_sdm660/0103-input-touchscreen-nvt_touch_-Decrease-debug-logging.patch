@@ -1,0 +1,83 @@
+From e80b52d7b628b2f0c0b65ef8adb78d4c3b7838e8 Mon Sep 17 00:00:00 2001
+From: Michael Bestas <mkbestas@lineageos.org>
+Date: Sun, 27 Dec 2020 21:42:35 +0200
+Subject: [PATCH 103/178] input: touchscreen: nvt_touch_*: Decrease debug
+ logging
+
+Change-Id: I1e88fa3d74beb77dbac768e7a0e561a24e9c10c7
+---
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx.h   | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+index 970c9cd69289..c585a557048b 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+@@ -55,7 +55,7 @@
+ #if NVT_DEBUG
+ #define NVT_LOG(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #else
+-#define NVT_LOG(fmt, args...)    pr_info("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
++#define NVT_LOG(fmt, args...)    pr_debug("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #endif
+ #define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+index 7966941f255e..bfc4fa0960a4 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+@@ -49,7 +49,7 @@
+ #if NVT_DEBUG
+ #define NVT_LOG(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #else
+-#define NVT_LOG(fmt, args...)    pr_info("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
++#define NVT_LOG(fmt, args...)    pr_debug("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #endif
+ #define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
+index 7ec185ca8947..31869be049f2 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
+@@ -53,7 +53,7 @@
+ #if NVT_DEBUG
+ #define NVT_LOG(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #else
+-#define NVT_LOG(fmt, args...)    pr_info("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
++#define NVT_LOG(fmt, args...)    pr_debug("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #endif
+ #define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+index 6a20401328d2..f3b846bfda30 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+@@ -49,7 +49,7 @@
+ #if NVT_DEBUG
+ #define NVT_LOG(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #else
+-#define NVT_LOG(fmt, args...)    pr_info("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
++#define NVT_LOG(fmt, args...)    pr_debug("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #endif
+ #define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+index 1718f9db547a..8e6e61a6c137 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+@@ -52,7 +52,7 @@
+ #if NVT_DEBUG
+ #define NVT_LOG(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #else
+-#define NVT_LOG(fmt, args...)    pr_info("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
++#define NVT_LOG(fmt, args...)    pr_debug("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ #endif
+ #define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_I2C_NAME, __func__, __LINE__, ##args)
+ 
+-- 
+2.49.0
+

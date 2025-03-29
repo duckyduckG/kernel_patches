@@ -1,0 +1,49 @@
+From d4acb8beecd3ed955e71774adf35c95593badaf4 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Wed, 26 Sep 2018 14:28:40 +0800
+Subject: [PATCH 050/178] arm64: dts: xiaomi: jason: Remove redundant gpio-keys
+ gpio override
+
+ * gpio-keys pinctrl is totally disabled, thus overriding these gpio
+   values is a no-op, and can cause potential conflict with i2c_2, which
+   actually uses gpio7.
+
+Change-Id: I301d31517b80686c6e3a07bf2f05c7b3b49392fd
+---
+ .../vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi | 20 -------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi
+index df64c35f0c6a..35226cbaf08b 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/sdm660-overlay.dtsi
+@@ -408,26 +408,6 @@
+ 	};
+ };
+ 
+-&gpio_key_active {
+-	mux {
+-		pins = "gpio7";
+-	};
+-
+-	config {
+-		pins = "gpio7";
+-	};
+-};
+-
+-&gpio_key_suspend {
+-	mux {
+-		pins = "gpio7";
+-	};
+-
+-	config {
+-		pins = "gpio7";
+-	};
+-};
+-
+ // sdm660-pm.dtsi
+ &soc {
+ 	qcom,gpio-map =
+-- 
+2.49.0
+

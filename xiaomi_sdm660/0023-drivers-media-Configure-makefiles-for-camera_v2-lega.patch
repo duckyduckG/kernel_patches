@@ -1,0 +1,65 @@
+From a7c508734e07222ae6cfca42c721749c236fdd23 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Tue, 23 Aug 2022 16:19:07 +0200
+Subject: [PATCH 023/178] drivers: media: Configure makefiles for
+ camera_v2-legacy
+
+Change-Id: Icd4cd777bb5b55960e64f640517c83b7b4e6544b
+---
+ drivers/media/platform/msm/Kconfig  | 18 +++++++++++++++++-
+ drivers/media/platform/msm/Makefile |  5 +++++
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/Kconfig b/drivers/media/platform/msm/Kconfig
+index 9de7fb2b9de1..42248c3ea8a2 100644
+--- a/drivers/media/platform/msm/Kconfig
++++ b/drivers/media/platform/msm/Kconfig
+@@ -40,6 +40,17 @@ menuconfig MSMB_CAMERA
+        adds support for the camera driver stack including sensor, isp
+        and postprocessing drivers.
+ 
++menuconfig MSMB_CAMERA_LEGACY
++     bool "QTI MSM camera and video capture 2.0 legacy support"
++     depends on ARCH_QCOM && VIDEO_V4L2 && I2C
++     select MSMB_CAMERA
++     help
++       Say Y here to enable selecting the video adapters for
++       QTI msm camera and video capture 2.0, enabling this
++       adds support for the camera driver stack including sensor, isp
++       and postprocessing drivers.
++       Legacy msm-4.4 version
++
+ config MSMB_CAMERA_DEBUG
+      bool "QTI MSM camera 2.0 debugging with printk"
+      depends on MSMB_CAMERA
+@@ -51,7 +62,12 @@ config MSMB_CAMERA_DEBUG
+        Enable printk() debug for msm camera 2.0.
+ 
+ if MSMB_CAMERA
+-       source "drivers/media/platform/msm/camera_v2/Kconfig"
++       if MSMB_CAMERA_LEGACY
++              source "drivers/media/platform/msm/camera_v2/Kconfig"
++       endif
++       if !MSMB_CAMERA_LEGACY
++              source "drivers/media/platform/msm/camera_v2/Kconfig"
++       endif
+ endif # MSMB_CAMERA
+ 
+ source "drivers/media/platform/msm/cvp/Kconfig"
+diff --git a/drivers/media/platform/msm/Makefile b/drivers/media/platform/msm/Makefile
+index 042de7015758..fa92b3457a6c 100644
+--- a/drivers/media/platform/msm/Makefile
++++ b/drivers/media/platform/msm/Makefile
+@@ -11,4 +11,9 @@ obj-$(CONFIG_MSM_NPU) += npu/
+ obj-$(CONFIG_MSM_GLOBAL_SYNX) += synx/
+ obj-$(CONFIG_TSPP) += broadcast/
+ obj-$(CONFIG_DVB_MPQ) += dvb/
++
++ifdef CONFIG_MSMB_CAMERA_LEGACY
++obj-$(CONFIG_MSMB_CAMERA) += camera_v2-legacy/
++else
+ obj-$(CONFIG_MSMB_CAMERA) += camera_v2/
++endif
+-- 
+2.49.0
+

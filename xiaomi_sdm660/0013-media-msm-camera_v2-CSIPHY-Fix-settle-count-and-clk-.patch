@@ -1,0 +1,60 @@
+From 772b270789f97ec4d7b82433aafd31b8e470b505 Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Wed, 8 Aug 2018 19:01:36 +0200
+Subject: [PATCH 013/178] media: msm: camera_v2: CSIPHY: Fix settle count and
+ clk setting
+
+For some reason, on k4.9 the parameter was wrongly set to zero.
+Also, if we currently know which clock rate should we use,
+just use it instead of setting the maximum rate.
+
+Change-Id: Ia6149dfee50698357b7931481cd938a31ebd5e07
+---
+ .../platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+index 1b8954b0dc4e..8d47f5bfe83a 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+@@ -764,7 +764,7 @@ static int msm_csiphy_3phase_lane_config(
+ 			.mipi_csiphy_3ph_lnn_ctrl1.data,
+ 			csiphybase + csiphy_dev->ctrl_reg->csiphy_3ph_reg
+ 			.mipi_csiphy_3ph_lnn_ctrl1.addr + 0x200*i);
+-		msm_camera_io_w(0,
++		msm_camera_io_w(((csiphy_params->settle_cnt >> 8) & 0xff),
+ 			csiphybase + csiphy_dev->ctrl_reg->csiphy_3ph_reg
+ 			.mipi_csiphy_3ph_lnn_ctrl2.addr + 0x200*i);
+ 		msm_camera_io_w((csiphy_params->settle_cnt & 0xff),
+@@ -955,14 +955,14 @@ static int msm_csiphy_3phase_lane_config_v50(
+ 		msm_camera_io_w((csiphy_params->settle_cnt & 0xff),
+ 			csiphybase + csiphy_dev->ctrl_reg->csiphy_3ph_reg
+ 			.mipi_csiphy_3ph_lnn_ctrl3.addr + 0x200*i);
+-		msm_camera_io_w(0,
++		msm_camera_io_w(((csiphy_params->settle_cnt >> 8) & 0xff),
+ 			csiphybase + csiphy_dev->ctrl_reg->csiphy_3ph_reg
+ 			.mipi_csiphy_3ph_lnn_ctrl2.addr + 0x200*i);
+ 		msm_camera_io_w(csiphy_dev->ctrl_reg->csiphy_3ph_reg
+ 			.mipi_csiphy_3ph_lnn_ctrl5.data,
+ 			csiphybase + csiphy_dev->ctrl_reg->csiphy_3ph_reg
+ 			.mipi_csiphy_3ph_lnn_ctrl5.addr + 0x200*i);
+-		msm_camera_io_w(0,
++		msm_camera_io_w(((csiphy_params->settle_cnt >> 8) & 0xff),
+ 			csiphybase + csiphy_dev->ctrl_reg->csiphy_3ph_reg
+ 			.mipi_csiphy_3ph_lnn_ctrl20.addr + 0x200*i);
+ 		msm_camera_io_w(csiphy_dev->ctrl_reg->csiphy_3ph_reg
+@@ -1364,7 +1364,10 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
+ 		return rc;
+ 	}
+ 
+-	clk_rate = csiphy_dev->csiphy_max_clk;
++//	clk_rate = csiphy_dev->csiphy_max_clk;
++	clk_rate = (csiphy_params->csiphy_clk > 0)
++			? csiphy_params->csiphy_clk :
++			csiphy_dev->csiphy_max_clk;
+ 	clk_rate = msm_camera_clk_set_rate(&csiphy_dev->pdev->dev,
+ 		csiphy_dev->csiphy_clk[csiphy_dev->csiphy_clk_index],
+ 		clk_rate);
+-- 
+2.49.0
+

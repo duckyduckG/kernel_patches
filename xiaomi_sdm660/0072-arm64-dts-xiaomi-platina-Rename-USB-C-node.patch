@@ -1,0 +1,28 @@
+From f5f8d62f9b344a8dcd5d2d32b15d1eafdbdc4149 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Thu, 4 Mar 2021 21:23:11 +0100
+Subject: [PATCH 072/178] arm64: dts: xiaomi: platina: Rename USB-C node
+
+* Xiaomi used a different name on their kernel sources
+
+Change-Id: I91b180f45586b2609b22fd2e9d4609b8a1f74969
+---
+ .../boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi  | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi
+index a3c9c1779ce4..ab0aeea5c9c4 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi
+@@ -311,7 +311,7 @@
+ 		qcom,msm-mbhc-hphl-swh = <1>;
+ 		qcom,msm-mbhc-gnd-swh = <1>;
+ 		qcom,msm-mbhc-usbc-audio-supported = <1>;
+-		qcom,usbc-analog-en1-gpio = <&pm660_gpios 13 0>;
++		qcom,usbc-analog-en1_gpio = <&pm660_gpios 13 0>;
+ 		qcom,us-euro-gpios = <&us_euro_gpio>;
+ 	};
+ 
+-- 
+2.49.0
+

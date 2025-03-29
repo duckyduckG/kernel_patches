@@ -1,0 +1,35 @@
+From 9fac8be4005cafa510c287dc9ad95587e0b06e9a Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Sat, 22 Sep 2018 19:49:22 +0800
+Subject: [PATCH 141/178] leds: backlight: qcom-spmi-wled: Import Xiaomi
+ changes
+
+Change-Id: Ie71d330889404166e6fb593ed43b483c152bd217
+---
+ drivers/video/backlight/qcom-spmi-wled.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/video/backlight/qcom-spmi-wled.c b/drivers/video/backlight/qcom-spmi-wled.c
+index 43134e2518e4..c58c76700b78 100644
+--- a/drivers/video/backlight/qcom-spmi-wled.c
++++ b/drivers/video/backlight/qcom-spmi-wled.c
+@@ -1037,12 +1037,15 @@ static irqreturn_t wled_ovp_irq_handler(int irq, void *_wled)
+ 	rc = wled_get_ovp_fault_status(wled, &fault_set);
+ 	if (rc < 0) {
+ 		pr_err("Error in getting OVP fault_sts, rc=%d\n", rc);
+-		return rc;
++		goto END;
+ 	}
+ 
+ 	if (fault_set)
+ 		handle_ovp_fault(wled);
+ 
++END:
++	disable_irq_nosync(wled->ovp_irq);
++	wled->ovp_irq_disabled = true;
+ 	return IRQ_HANDLED;
+ }
+ 
+-- 
+2.49.0
+

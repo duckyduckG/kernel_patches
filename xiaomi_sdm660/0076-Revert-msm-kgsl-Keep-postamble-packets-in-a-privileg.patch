@@ -1,0 +1,131 @@
+From d003c435127a37415898248a18cd1ba49681836f Mon Sep 17 00:00:00 2001
+From: Michael Bestas <mkbestas@lineageos.org>
+Date: Fri, 5 May 2023 21:21:31 +0300
+Subject: [PATCH 076/178] Revert "msm: kgsl: Keep postamble packets in a
+ privileged buffer"
+
+This reverts commit 942312d6b55a8bc301cf3bf38bc2c4bc096cef68.
+
+Change-Id: I87ce154480e12183c2317956060936cde97c9d5c
+---
+ drivers/gpu/msm/adreno.h              |  5 ++++-
+ drivers/gpu/msm/adreno_a6xx_preempt.c | 25 +++++++++++--------------
+ drivers/gpu/msm/kgsl.h                |  6 ------
+ 3 files changed, 15 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/gpu/msm/adreno.h b/drivers/gpu/msm/adreno.h
+index b41ae2960790..03c3e974618f 100644
+--- a/drivers/gpu/msm/adreno.h
++++ b/drivers/gpu/msm/adreno.h
+@@ -1,7 +1,7 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /*
+  * Copyright (c) 2008-2021, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
++ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ #ifndef __ADRENO_H
+ #define __ADRENO_H
+@@ -16,6 +16,9 @@
+ #define DEVICE_3D_NAME "kgsl-3d"
+ #define DEVICE_3D0_NAME "kgsl-3d0"
+ 
++/* Index to preemption scratch buffer to store KMD postamble */
++#define KMD_POSTAMBLE_IDX 100
++
+ /* ADRENO_DEVICE - Given a kgsl_device return the adreno device struct */
+ #define ADRENO_DEVICE(device) \
+ 		container_of(device, struct adreno_device, dev)
+diff --git a/drivers/gpu/msm/adreno_a6xx_preempt.c b/drivers/gpu/msm/adreno_a6xx_preempt.c
+index 6eafa1244715..a58f8b2c899a 100644
+--- a/drivers/gpu/msm/adreno_a6xx_preempt.c
++++ b/drivers/gpu/msm/adreno_a6xx_preempt.c
+@@ -1,7 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
++ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ 
+ #include "adreno.h"
+@@ -558,8 +558,8 @@ unsigned int a6xx_preemption_pre_ibsubmit(
+ 		 * preemption
+ 		 */
+ 		if (!adreno_dev->perfcounter) {
+-			u64 kmd_postamble_addr = SCRATCH_POSTAMBLE_ADDR
+-						(KGSL_DEVICE(adreno_dev));
++			u64 kmd_postamble_addr =
++			PREEMPT_SCRATCH_ADDR(adreno_dev, KMD_POSTAMBLE_IDX);
+ 
+ 			*cmds++ = cp_type7_packet(CP_SET_AMBLE, 3);
+ 			*cmds++ = lower_32_bits(kmd_postamble_addr);
+@@ -763,8 +763,6 @@ void a6xx_preemption_close(struct adreno_device *adreno_dev)
+ 
+ int a6xx_preemption_init(struct adreno_device *adreno_dev)
+ {
+-	u32 flags = ADRENO_FEATURE(adreno_dev, ADRENO_APRIV) ?
+-			KGSL_MEMDESC_PRIVILEGED : 0;
+ 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
+ 	struct adreno_preemption *preempt = &adreno_dev->preempt;
+ 	struct adreno_ringbuffer *rb;
+@@ -779,8 +777,8 @@ int a6xx_preemption_init(struct adreno_device *adreno_dev)
+ 
+ 	timer_setup(&preempt->timer, _a6xx_preemption_timer, 0);
+ 
+-	ret = kgsl_allocate_global(device, &preempt->scratch, PAGE_SIZE, 0,
+-			flags, "preemption_scratch");
++	ret = kgsl_allocate_global(device, &preempt->scratch, PAGE_SIZE, 0, 0,
++			"preemption_scratch");
+ 
+ 	/* Allocate mem for storing preemption switch record */
+ 	FOR_EACH_RINGBUFFER(adreno_dev, rb, i) {
+@@ -790,15 +788,14 @@ int a6xx_preemption_init(struct adreno_device *adreno_dev)
+ 	}
+ 
+ 	/*
+-	 * First 28 dwords of the device scratch buffer are used to store
+-	 * shadow rb data. Reserve 11 dwords in the device scratch buffer
+-	 * from SCRATCH_POSTAMBLE_OFFSET for KMD postamble pm4 packets.
+-	 * This should be in *device->scratch* so that userspace cannot
+-	 * access it.
++	 * First 8 dwords of the preemption scratch buffer is used to store the
++	 * address for CP to save/restore VPC data. Reserve 11 dwords in the
++	 * preemption scratch buffer from index KMD_POSTAMBLE_IDX for KMD
++	 * postamble pm4 packets
+ 	 */
+ 	if (!adreno_dev->perfcounter) {
+-		u32 *postamble = device->scratch.hostptr +
+-				SCRATCH_POSTAMBLE_OFFSET;
++		u32 *postamble = preempt->scratch.hostptr +
++					(KMD_POSTAMBLE_IDX * sizeof(u64));
+ 		u32 count = 0;
+ 
+ 		postamble[count++] = cp_type7_packet(CP_REG_RMW, 3);
+diff --git a/drivers/gpu/msm/kgsl.h b/drivers/gpu/msm/kgsl.h
+index f3691b6e165b..62ad5304171e 100644
+--- a/drivers/gpu/msm/kgsl.h
++++ b/drivers/gpu/msm/kgsl.h
+@@ -1,7 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /*
+  * Copyright (c) 2008-2021, The Linux Foundation. All rights reserved.
+- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
+  */
+ #ifndef __KGSL_H
+ #define __KGSL_H
+@@ -70,11 +69,6 @@
+ #define SCRATCH_RPTR_GPU_ADDR(dev, id) \
+ 	((dev)->scratch.gpuaddr + SCRATCH_RPTR_OFFSET(id))
+ 
+-/* OFFSET to KMD postamble packets in scratch buffer */
+-#define SCRATCH_POSTAMBLE_OFFSET (100 * sizeof(u64))
+-#define SCRATCH_POSTAMBLE_ADDR(dev) \
+-	((dev)->scratch.gpuaddr + SCRATCH_POSTAMBLE_OFFSET)
+-
+ /* Timestamp window used to detect rollovers (half of integer range) */
+ #define KGSL_TIMESTAMP_WINDOW 0x80000000
+ 
+-- 
+2.49.0
+

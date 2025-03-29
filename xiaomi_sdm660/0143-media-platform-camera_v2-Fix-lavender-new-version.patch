@@ -1,0 +1,251 @@
+From deea2cde14353a0fa50bf04a482f47a8bd99313a Mon Sep 17 00:00:00 2001
+From: Erfan Abdi <erfangplus@gmail.com>
+Date: Sat, 7 Mar 2020 02:30:30 +0330
+Subject: [PATCH 143/178] media: platform: camera_v2: Fix lavender new version
+
+Co-authored-by: Qiwu Huang <huangqiwu@xiaomi.com>
+Change-Id: I3c958bd9107d9af607563145d83d26cbb296072d
+---
+ .../platform/msm/camera_v2/isp/msm_isp47.c    |  4 +++
+ .../platform/msm/camera_v2/isp/msm_isp48.c    | 18 ++++++++++++
+ .../msm/camera_v2/sensor/msm_sensor.c         | 28 +++++++++++++++++++
+ .../msm/camera_v2/sensor/msm_sensor_driver.c  |  6 ++++
+ include/media/msm_cam_sensor.h                |  3 ++
+ include/soc/qcom/camera2.h                    |  3 ++
+ include/uapi/media/msm_camera.h               |  4 +++
+ include/uapi/media/msm_camsensor_sdk.h        | 14 ++++++++++
+ include/uapi/media/msmb_camera.h              |  4 +++
+ 9 files changed, 84 insertions(+)
+
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
+index cbeeffd6a326..751ec1274b01 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp47.c
+@@ -39,7 +39,11 @@
+ #define VFE47_STATS_BURST_LEN 3
+ #define VFE47_UB_SIZE_VFE0 2048
+ #define VFE47_UB_SIZE_VFE1 1536
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++#define VFE47_UB_STATS_SIZE 288
++#else
+ #define VFE47_UB_STATS_SIZE 144
++#endif
+ #define MSM_ISP47_TOTAL_IMAGE_UB_VFE0 (VFE47_UB_SIZE_VFE0 - VFE47_UB_STATS_SIZE)
+ #define MSM_ISP47_TOTAL_IMAGE_UB_VFE1 (VFE47_UB_SIZE_VFE1 - VFE47_UB_STATS_SIZE)
+ #define VFE47_WM_BASE(idx) (0xA0 + 0x2C * idx)
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
+index bb570d6657c9..3ccd1d841724 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
+@@ -31,7 +31,11 @@
+ #define MSM_VFE48_BUS_CLIENT_INIT 0xABAB
+ #define VFE48_STATS_BURST_LEN 3
+ #define VFE48_UB_SIZE_VFE 2048 /* 2048 * 256 bits = 64KB */
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++#define VFE48_UB_STATS_SIZE 608
++#else
+ #define VFE48_UB_STATS_SIZE 144
++#endif
+ #define MSM_ISP48_TOTAL_IMAGE_UB_VFE (VFE48_UB_SIZE_VFE - VFE48_UB_STATS_SIZE)
+ 
+ 
+@@ -321,6 +325,19 @@ void msm_vfe48_stats_cfg_ub(struct vfe_device *vfe_dev)
+ {
+ 	int i;
+ 	uint32_t ub_offset = 0, stats_burst_len;
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	uint32_t ub_size[VFE47_NUM_STATS_TYPE] = {
++		80, /* MSM_ISP_STATS_HDR_BE */
++		64, /* MSM_ISP_STATS_BG */
++		64, /* MSM_ISP_STATS_BF */
++		64, /* MSM_ISP_STATS_HDR_BHIST */
++		64, /* MSM_ISP_STATS_RS */
++		64, /* MSM_ISP_STATS_CS */
++		64, /* MSM_ISP_STATS_IHIST */
++		64, /* MSM_ISP_STATS_BHIST */
++		80, /* MSM_ISP_STATS_AEC_BG */
++	};
++#else
+ 	uint32_t ub_size[VFE47_NUM_STATS_TYPE] = {
+ 		16, /* MSM_ISP_STATS_HDR_BE */
+ 		16, /* MSM_ISP_STATS_BG */
+@@ -332,6 +349,7 @@ void msm_vfe48_stats_cfg_ub(struct vfe_device *vfe_dev)
+ 		16, /* MSM_ISP_STATS_BHIST */
+ 		16, /* MSM_ISP_STATS_AEC_BG */
+ 	};
++#endif
+ 
+ 	stats_burst_len = VFE48_STATS_BURST_LEN;
+ 	ub_offset = VFE48_UB_SIZE_VFE;
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+index dbf5cde23a8d..466b50216f73 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+@@ -244,6 +244,10 @@ int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
+ 	uint16_t temp_sid = 0;
+ 	uint16_t vcmid = 0;
+ 	int have_vcmid = 0;
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	uint16_t lensid = 0;
++	int have_lensid = 0;
++#endif
+ 	enum cci_i2c_master_t temp_master = MASTER_0;
+ 
+ 	if (!s_ctrl) {
+@@ -298,6 +302,17 @@ int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
+ 		have_vcmid = 1;
+ 	}
+ 
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	if (s_ctrl->sensordata->lens_id_info->lens_id_addr != 0) {
++	    msm_camera_cci_i2c_read(
++		sensor_i2c_client,
++		s_ctrl->sensordata->lens_id_info->lens_id_addr,
++		&lensid,
++		s_ctrl->sensordata->lens_id_info->data_type);
++		have_lensid = 1;
++	}
++#endif
++
+ 	sensor_i2c_client->cci_client->sid = temp_sid;
+ 	sensor_i2c_client->cci_client->cci_i2c_master = temp_master;
+ 	if (rc < 0) {
+@@ -323,6 +338,19 @@ int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
+ 					__func__, vcmid, s_ctrl->sensordata->vcm_id_info->vcm_id);
+ 			}
+ 		}
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++		if (have_lensid == 1) {
++			if (s_ctrl->sensordata->lens_id_info->lens_id != lensid) {
++				pr_err("%s:match lensid if failed read lens id: 0x%x expected id 0x%x:\n",
++					__func__, lensid, s_ctrl->sensordata->lens_id_info->lens_id);
++				rc = -1;
++				return rc;
++			} else {
++				pr_err("%s: read lensid id: 0x%x expected id 0x%x:\n",
++					__func__, lensid, s_ctrl->sensordata->lens_id_info->lens_id);
++			}
++		}
++#endif
+ 	}
+ 	pr_err("%s: read vendor id: 0x%x expected id 0x%x:\n",
+ 			__func__, vendorid, s_ctrl->sensordata->vendor_id_info->vendor_id);
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+index 67933ba97864..6fa23a58fec8 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+@@ -1469,6 +1469,9 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 		slave_info->vendor_id_info = slave_info32->vendor_id_info;
+ 		slave_info->vcm_id_info = slave_info32->vcm_id_info;
+ #endif
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++		slave_info->lens_id_info = slave_info32->lens_id_info;
++#endif
+ 
+ 		slave_info->slave_addr = slave_info32->slave_addr;
+ 		slave_info->power_setting_array.size =
+@@ -1778,6 +1781,9 @@ int32_t msm_sensor_driver_probe(void *setting,
+ #ifdef CONFIG_MACH_LONGCHEER
+ 	s_ctrl->sensordata->vendor_id_info = &(slave_info->vendor_id_info);
+ 	s_ctrl->sensordata->vcm_id_info = &(slave_info->vcm_id_info);
++#endif
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	s_ctrl->sensordata->lens_id_info = &(slave_info->lens_id_info);
+ #endif
+ 	/*
+ 	 * Update eeporm subdevice Id by input eeprom name
+diff --git a/include/media/msm_cam_sensor.h b/include/media/msm_cam_sensor.h
+index e45512184310..55cf57b4ac42 100644
+--- a/include/media/msm_cam_sensor.h
++++ b/include/media/msm_cam_sensor.h
+@@ -53,6 +53,9 @@ struct msm_camera_sensor_slave_info32 {
+ #ifdef CONFIG_MACH_LONGCHEER
+ 	struct msm_vendor_id_info_t vendor_id_info;
+ 	struct msm_vcm_id_info_t vcm_id_info;
++#endif
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	struct msm_lens_id_info_t lens_id_info;
+ #endif
+ 	struct msm_sensor_power_setting_array32 power_setting_array;
+ 	uint8_t  is_init_params_valid;
+diff --git a/include/soc/qcom/camera2.h b/include/soc/qcom/camera2.h
+index cad1ae783c0c..692556aac53b 100644
+--- a/include/soc/qcom/camera2.h
++++ b/include/soc/qcom/camera2.h
+@@ -199,6 +199,9 @@ struct msm_camera_sensor_board_info {
+ #ifdef CONFIG_MACH_LONGCHEER
+ 	struct msm_vendor_id_info_t *vendor_id_info;
+ 	struct msm_vcm_id_info_t *vcm_id_info;
++#endif
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	struct msm_lens_id_info_t *lens_id_info;
+ #endif
+ 	struct msm_camera_csi_lane_params *csi_lane_params;
+ 	struct msm_camera_sensor_strobe_flash_data *strobe_flash_data;
+diff --git a/include/uapi/media/msm_camera.h b/include/uapi/media/msm_camera.h
+index 58845e56147a..0af3dc20fdeb 100644
+--- a/include/uapi/media/msm_camera.h
++++ b/include/uapi/media/msm_camera.h
+@@ -254,7 +254,11 @@ struct msm_mctl_post_proc_cmd {
+ #define MSM_CAMERA_STROBE_FLASH_NONE 0
+ #define MSM_CAMERA_STROBE_FLASH_XENON 1
+ 
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++#define MSM_MAX_CAMERA_SENSORS  7
++#else
+ #define MSM_MAX_CAMERA_SENSORS  6
++#endif
+ #define MAX_SENSOR_NAME 32
+ #define MAX_CAM_NAME_SIZE 32
+ #define MAX_ACT_MOD_NAME_SIZE 32
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index 20352df5300d..e997e4533e6a 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -333,6 +333,17 @@ struct msm_vcm_id_info_t {
+ };
+ #endif
+ 
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++struct msm_lens_id_info_t {
++	unsigned short eeprom_slave_addr;
++	unsigned short lens_id_addr;
++	enum msm_camera_i2c_reg_addr_type addr_type;
++	unsigned short lens_id;
++	enum msm_camera_i2c_data_type data_type;
++	enum msm_cci_i2c_master_t cci_i2c_master;
++};
++#endif
++
+ struct msm_camera_sensor_slave_info {
+ 	char sensor_name[32];
+ 	char eeprom_name[32];
+@@ -347,6 +358,9 @@ struct msm_camera_sensor_slave_info {
+ #ifdef CONFIG_MACH_LONGCHEER
+ 	struct msm_vendor_id_info_t vendor_id_info;
+ 	struct msm_vcm_id_info_t vcm_id_info;
++#endif
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++	struct msm_lens_id_info_t lens_id_info;
+ #endif
+ 	struct msm_sensor_power_setting_array power_setting_array;
+ 	unsigned char  is_init_params_valid;
+diff --git a/include/uapi/media/msmb_camera.h b/include/uapi/media/msmb_camera.h
+index caab32b534f4..4edc2b8023f8 100644
+--- a/include/uapi/media/msmb_camera.h
++++ b/include/uapi/media/msmb_camera.h
+@@ -55,7 +55,11 @@
+ #define MSM_CAMERA_SUBDEV_EXT          19
+ #define MSM_CAMERA_SUBDEV_TOF          20
+ #define MSM_CAMERA_SUBDEV_LASER_LED    21
++#ifdef CONFIG_MACH_XIAOMI_LAVENDER
++#define MSM_MAX_CAMERA_SENSORS  7
++#else
+ #define MSM_MAX_CAMERA_SENSORS  6
++#endif
+ 
+ /* The below macro is defined to put an upper limit on maximum
+  * number of buffer requested per stream. In case of extremely
+-- 
+2.49.0
+

@@ -1,0 +1,2574 @@
+From d03c74a1b019c745c8759728eecb31a693c5362b Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 14 Oct 2020 16:27:57 +0200
+Subject: [PATCH 071/178] arm64: dts: xiaomi: Import overlayed dts for platina
+
+* Overlayed from nitrogen-q-oss
+
+Change-Id: I579f1dc9e56dfb38e3d3a3c7d88613f1b7ccdd8a
+---
+ arch/arm64/boot/dts/vendor/qcom/Makefile      |   1 +
+ .../dts/vendor/qcom/sdm660-mtp-platina.dts    |  27 +
+ .../batterydata-D2T-coslight-3350mAh.dtsi     |  84 +++
+ .../batterydata-D2T-desay-3350mAh.dtsi        |  84 +++
+ .../fg-gen3-batterydata-itech-3000mah.dtsi    |  83 +++
+ .../dsi-panel-boe-fhd-td4320-video.dtsi       | 159 ++++++
+ .../dsi-panel-csot-fhd-ft8719-video.dtsi      | 166 ++++++
+ .../dsi-panel-tianma-fhd-ili7807d-video.dtsi  | 188 +++++++
+ .../dsi-panel-tianma-fhd-nt36672a-video.dtsi  | 307 +++++++++++
+ .../xiaomi/mi/platina/platina-msm-audio.dtsi  |  24 +
+ .../platina/platina-sdm660-camera-sensor.dtsi | 398 ++++++++++++++
+ .../platina/platina-sdm660-mdss-panels.dtsi   | 232 ++++++++
+ .../mi/platina/platina-sdm660-pinctrl.dtsi    |  33 ++
+ .../xiaomi/mi/platina/platina-sdm660.dtsi     | 494 ++++++++++++++++++
+ .../xiaomi/mi/platina/platina-smb1355.dtsi    | 111 ++++
+ .../platina/platina-xiaomi-sdm660-common.dtsi |  26 +
+ .../boot/dts/vendor/qcom/xiaomi/platina.dtsi  |   3 +
+ 17 files changed, 2420 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/sdm660-mtp-platina.dts
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-coslight-3350mAh.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-desay-3350mAh.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/fg-gen3-batterydata-itech-3000mah.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-boe-fhd-td4320-video.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-csot-fhd-ft8719-video.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-ili7807d-video.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-nt36672a-video.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-msm-audio.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-camera-sensor.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-mdss-panels.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-pinctrl.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-smb1355.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-xiaomi-sdm660-common.dtsi
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/platina.dtsi
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/Makefile b/arch/arm64/boot/dts/vendor/qcom/Makefile
+index 237bc226a5e6..6a04979a345c 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/Makefile
++++ b/arch/arm64/boot/dts/vendor/qcom/Makefile
+@@ -245,6 +245,7 @@ sdm660-mtp-lavender-overlay.dtbo-base := sdm660-mtp-lavender.dtb
+ else
+ dtb-$(CONFIG_MACH_XIAOMI_LAVENDER) := sdm660-mtp-lavender.dtb
+ dtb-$(CONFIG_MACH_XIAOMI_JASON) := sdm660-mtp-jason.dtb
++dtb-$(CONFIG_MACH_XIAOMI_PLATINA) := sdm660-mtp-platina.dtb
+ dtb-$(CONFIG_MACH_XIAOMI_TULIP) := sdm636-mtp-tulip.dtb
+ dtb-$(CONFIG_MACH_XIAOMI_WAYNE) := sdm660-mtp-wayne.dtb sdm660-mtp-jasmine.dtb
+ dtb-$(CONFIG_MACH_XIAOMI_WHYRED) := sdm636-mtp-whyred.dtb
+diff --git a/arch/arm64/boot/dts/vendor/qcom/sdm660-mtp-platina.dts b/arch/arm64/boot/dts/vendor/qcom/sdm660-mtp-platina.dts
+new file mode 100644
+index 000000000000..acb8b77fa5eb
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/sdm660-mtp-platina.dts
+@@ -0,0 +1,27 @@
++/* Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++
++/dts-v1/;
++
++#include "sdm660.dtsi"
++#include "sdm660-internal-codec.dtsi"
++
++/ {
++	model = "Qualcomm Technologies, Inc. SDM 660 PM660 + PM660L MTP,Int Codec,Platina";
++	compatible = "qcom,sdm660-mtp", "qcom,sdm660", "qcom,mtp";
++	qcom,board-id = <34 0>;
++	qcom,pmic-id = <0x0001001b 0x0101011a 0x0 0x0>,
++			<0x0001001b 0x0201011a 0x0 0x0>;
++};
++
++#include "xiaomi/platina.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-coslight-3350mAh.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-coslight-3350mAh.dtsi
+new file mode 100644
+index 000000000000..aad619c9bb57
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-coslight-3350mAh.dtsi
+@@ -0,0 +1,84 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++qcom,d2t_coslight_3350mah {
++	qcom, = <24>;
++	/* #3475320_Xiaomi_D2Tcos_3350mAh_averaged_MasterSlave_Jun4th2018*/
++	qcom,max-voltage-uv = <4400000>;
++	qcom,nom-batt-capacity-mah = <3350>;
++	qcom,batt-id-kohm = <100>;
++	qcom,battery-beta = <3435>;
++	qcom,fg-cc-cv-threshold-mv = <4390>;
++	qcom,battery-type = "d2t_coslight";
++	qcom,checksum = <0x0B75>;
++	qcom,gui-version = "PM660GUI - 0.0.0.45";
++	qcom,fg-profile-data = [
++		 7B 1F BE 05
++		 4D 0A 1B FD
++		 E9 1C 9B FB
++		 0C 04 48 0A
++		 41 17 1D 2A
++		 00 44 95 5A
++		 79 00 00 00
++		 10 00 00 00
++		 00 00 CD C4
++		 B3 C4 34 C3
++		 1B 00 08 00
++		 B5 DA D6 E4
++		 59 FD 26 F3
++		 BC 00 09 12
++		 69 EC 76 33
++		 1C 06 09 20
++		 27 00 14 00
++		 12 20 30 05
++		 BB 0A 3B FC
++		 C8 1C DB 02
++		 3A 0C 05 12
++		 7E 18 9D 23
++		 50 44 9C 5A
++		 6F 00 00 00
++		 0F 00 00 00
++		 00 00 4E CC
++		 2A CA 51 A4
++		 17 00 00 00
++		 7E EA D6 E4
++		 F5 FD 59 F2
++		 D7 EB 2F 0A
++		 BD FB 32 22
++		 C3 33 CC FF
++		 07 10 00 00
++		 37 0D 66 46
++		 17 00 40 00
++		 55 01 0A FA
++		 FF 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++	];
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-desay-3350mAh.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-desay-3350mAh.dtsi
+new file mode 100644
+index 000000000000..7d799a82af78
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/batterydata-D2T-desay-3350mAh.dtsi
+@@ -0,0 +1,84 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++qcom,d2t_desay_3350mah {
++	qcom, = <24>;
++	/* #3475364_Xiaomi_D2Tdesay_3350mAh_averaged_MasterSlave_Jun11th2018*/
++	qcom,max-voltage-uv = <4400000>;
++	qcom,nom-batt-capacity-mah = <3350>;
++	qcom,batt-id-kohm = <68>;
++	qcom,battery-beta = <3380>;
++	qcom,fg-cc-cv-threshold-mv = <4390>;
++	qcom,battery-type = "d2t_desay";
++	qcom,checksum = <0x32F3>;
++	qcom,gui-version = "PM660GUI - 0.0.0.45";
++	qcom,fg-profile-data = [
++		 74 1F D8 05
++		 3A 0A 9B 06
++		 E6 1C 71 FB
++		 9B 04 E6 03
++		 68 17 FC 23
++		 57 44 4B 5A
++		 7E 00 00 00
++		 11 00 00 00
++		 00 00 9D BA
++		 F8 CC 51 A4
++		 22 00 08 00
++		 F3 E2 73 ED
++		 5D 06 95 F3
++		 43 E5 D1 12
++		 A9 07 8E 2B
++		 22 06 09 20
++		 27 00 14 00
++		 C4 1F 94 05
++		 78 0A A1 FC
++		 BD 1C F7 02
++		 17 0C 1A 12
++		 78 18 9A 23
++		 54 44 99 5A
++		 6C 00 00 00
++		 0F 00 00 00
++		 00 00 7D D5
++		 8D CA 0C C3
++		 1C 00 00 00
++		 A2 EB 73 ED
++		 F2 06 70 00
++		 D9 FD AF 01
++		 3E 06 97 1A
++		 9C 33 CC FF
++		 07 10 00 00
++		 04 0D 66 46
++		 1C 00 40 00
++		 74 01 0A FA
++		 FF 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++		 00 00 00 00
++	];
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/fg-gen3-batterydata-itech-3000mah.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/fg-gen3-batterydata-itech-3000mah.dtsi
+new file mode 100644
+index 000000000000..3c8f967b51dc
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/battery/fg-gen3-batterydata-itech-3000mah.dtsi
+@@ -0,0 +1,83 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++qcom,itech_3000mah {
++	/* #3326715_Xiaomi_E4atl_5500mAh_averaged_MasterSlave_Mar2nd2018*/
++	qcom,max-voltage-uv = <4400000>;
++	qcom,nom-batt-capacity-mah = <5500>;
++	qcom,fg-cc-cv-threshold-mv = <4390>;
++	qcom,batt-id-kohm = <75>;
++	qcom,battery-beta = <3380>;
++	qcom,battery-type = "itech_3000mah";
++	qcom,checksum = <0x6830>;
++	qcom,gui-version = "PM660GUI - 0.0.0.45";
++	qcom,fg-profile-data = [
++		37 1F FD 05
++		3A 0A 87 06
++		DA 1C 0F 02
++		8E 0D D7 0A
++		C4 17 F2 23
++		2B 44 8C 5A
++		6F 00 00 00
++		10 00 00 00
++		00 00 51 A4
++		A9 CD 2E C2
++		17 00 08 00
++		1E 00 2F E5
++		35 FC 38 01
++		A3 05 DB 13
++		81 F5 61 32
++		1E 06 09 20
++		27 00 14 00
++		D1 1F 7A 05
++		9A 0A 49 FC
++		C9 1C 05 03
++		EC 15 49 12
++		8A 18 F7 23
++		C0 4D 8B 5B
++		69 00 00 00
++		0D 00 00 00
++		00 00 D2 D5
++		0A CA BE C2
++		14 00 00 00
++		C3 E3 2F E5
++		98 06 46 F3
++		C3 06 7F 03
++		FD 06 CC 1B
++		B6 33 CC FF
++		07 10 00 00
++		CB 15 66 46
++		14 00 40 00
++		85 01 0A FA
++		FF 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++		00 00 00 00
++	];
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-boe-fhd-td4320-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-boe-fhd-td4320-video.dtsi
+new file mode 100644
+index 000000000000..487b93bcdf1f
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-boe-fhd-td4320-video.dtsi
+@@ -0,0 +1,159 @@
++/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++/*---------------------------------------------------------------------------
++ * This file is autogenerated file using gcdb parser. Please do not edit it.
++ * Update input XML file to add a new entry or update variable in this file
++ * VERSION = "1.0"
++ *---------------------------------------------------------------------------
++ */
++&mdss_mdp {
++	dsi_boe_fhd_td4320_video: qcom,mdss_dsi_boe_fhd_td4320_video {
++		qcom,mdss-dsi-panel-name = "boe fhd video dsi panel";
++		qcom,mdss-dsi-panel-id = <0>;
++		qcom,mdss-dsi-panel-model = "BOE FHD TD4320 VIDEO PANEL";
++		qcom,mdss-dsi-panel-sleepwrmod = <0>;
++		qcom,mdss-dsi-panel-type = "dsi_video_mode";
++		qcom,mdss-dsi-panel-framerate = <60>;
++		qcom,mdss-dsi-virtual-channel-id = <0>;
++		qcom,mdss-dsi-stream = <0>;
++		qcom,mdss-dsi-panel-width = <1080>;
++		qcom,mdss-dsi-panel-height = <2280>;
++		qcom,mdss-dsi-h-front-porch = <92>;
++		qcom,mdss-dsi-h-back-porch = <112>;
++		qcom,mdss-dsi-h-pulse-width = <20>;
++		qcom,mdss-dsi-h-sync-skew = <0>;
++		qcom,mdss-dsi-v-back-porch = <60>;
++		qcom,mdss-dsi-v-front-porch = <12>;
++		qcom,mdss-dsi-v-pulse-width = <4>;
++		qcom,mdss-dsi-h-left-border = <0>;
++		qcom,mdss-dsi-h-right-border = <0>;
++		qcom,mdss-dsi-v-top-border = <0>;
++		qcom,mdss-dsi-v-bottom-border = <0>;
++		qcom,mdss-dsi-bpp = <24>;
++		qcom,mdss-dsi-color-order = "0";
++		qcom,mdss-dsi-underflow-color = <0x0>;
++		qcom,mdss-dsi-border-color = <0>;
++		qcom,mdss-dsi-on-command = [
++				15 00 00 00 00 00 02 51 FF
++				15 00 00 00 00 00 02 53 24
++				15 00 00 00 00 00 02 55 00
++				15 00 00 00 00 00 02 B0 04
++				15 01 00 00 00 00 02 D6 00
++				05 01 00 00 00 00 02 29 00
++				05 01 00 00 4B 00 02 11 00
++				15 01 00 00 00 00 02 B0 04
++				29 00 00 00 00 00 08 B8 23 51 01 BE 00 04 04
++				29 00 00 00 00 00 08 B9 67 51 01 E6 00 02 03
++				29 01 00 00 00 00 08 BA CD 51 11 E6 00 00 00
++				29 01 00 00 00 00 22 CE 5D 40 57 6F 87 9F B7 CF E7 FF FF FF FF FF FF FF FF FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++				29 01 00 00 00 00 22 CE 5D 40 4B 57 63 6F 7B 87 93 9F AB B7 C3 CF DB E7 F3 FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++				29 01 00 00 00 00 42 CA 1C FC FC FC 00 07 0B 07 00 07 00 00 00 00 00 00 00 07 FD FD 00 DB C8 80 84 C8 80 84 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
++				15 01 00 00 00 00 02 B0 03];
++		qcom,mdss-dsi-off-command = [
++				05 01 00 00 00 00 02 28 00
++				05 01 00 00 46 00 02 10 00];
++		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
++		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-h-sync-pulse = <1>;
++		qcom,mdss-dsi-traffic-mode = "burst_mode";
++		qcom,mdss-dsi-bllp-eof-power-mode;
++		qcom,mdss-dsi-bllp-power-mode;
++		qcom,mdss-dsi-lp11-init;
++		qcom,mdss-dsi-lane-0-state;
++		qcom,mdss-dsi-lane-1-state;
++		qcom,mdss-dsi-lane-2-state;
++		qcom,mdss-dsi-lane-3-state;
++		qcom,mdss-dsi-t-clk-post = <0x0A>;
++		qcom,mdss-dsi-t-clk-pre = <0x35>;
++		qcom,mdss-dsi-bl-min-level = <1>;
++		qcom,mdss-dsi-bl-max-level = <4095>;
++		qcom,mdss-brightness-max-level = <4095>;
++		qcom,mdss-dsi-dma-trigger = "trigger_sw";
++		qcom,mdss-dsi-mdp-trigger = "none";
++		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
++		qcom,mdss-dsi-tp-reset-sequence = <1 4>;
++		qcom,mdss-pan-physical-width-dimension = <68>;
++		qcom,mdss-pan-physical-height-dimension = <144>;
++		qcom,mdss-dsi-tx-eot-append;
++		qcom,ulps-enabled;
++		qcom,esd-err-irq-gpio = <&tlmm 59 0x2001>;
++		qcom,esd-check-enabled;
++		qcom,dispparam-enabled;
++		qcom,mdss-panel-on-dimming-delay = <120>;
++		qcom,mdss-dsi-dispparam-dimmingon-command = [
++			15 01 00 00 01 00 02 53 2C];
++		/* CABC control */
++		qcom,mdss-dsi-dispparam-cabcon-command = [
++			15 01 00 00 00 00 02 55 01
++			29 01 00 00 00 00 02 b0 04
++			29 01 00 00 00 00 08 B8 23 51 01 BE 00 04 04 
++			29 01 00 00 00 00 22 CE 5D 40 57 6F 87 9F B7 CF E7 FF FF FF FF FF FF FF FF FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++			29 01 00 00 00 00 02 b0 03
++		];
++		qcom,mdss-dsi-dispparam-cabcon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcstillon-command = [
++			15 01 00 00 00 00 02 55 03
++			29 01 00 00 00 00 02 b0 04
++			29 01 00 00 00 00 08 BA CD 51 11 E6 00 00 00
++			29 01 00 00 00 00 22 CE 5D 40 4B 57 63 6F 7B 87 93 9F AB B7 C3 CF DB E7 F3 FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++			29 01 00 00 00 00 02 b0 03
++		];
++		qcom,mdss-dsi-dispparam-cabcstillon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcmovieon-command = [
++			15 01 00 00 00 00 02 55 02
++			29 01 00 00 00 00 02 b0 04
++			29 01 00 00 00 00 08 B9 67 51 01 E6 00 04 04
++			29 01 00 00 00 00 22 CE 5D 40 57 6F 87 9F B7 CF E7 FF FF FF FF FF FF FF FF FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++			29 01 00 00 00 00 02 b0 03
++		];
++		qcom,mdss-dsi-dispparam-cabcmovieon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcoff-command = [
++			15 01 00 00 00 00 02 55 00
++		];
++		qcom,mdss-dsi-dispparam-cabcoff-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcuion-command = [
++			15 01 00 00 00 00 02 55 81
++			29 01 00 00 00 00 02 b0 04
++			29 01 00 00 00 00 08 B8 23 51 01 BE 00 04 04 
++			29 01 00 00 00 00 22 CE 5D 40 57 6F 87 9F B7 CF E7 FF FF FF FF FF FF FF FF FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++			29 01 00 00 00 00 02 b0 03
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcuion-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcstillon-command = [
++			15 01 00 00 00 00 02 55 83
++			29 01 00 00 00 00 02 b0 04
++			29 01 00 00 00 00 08 BA CD 51 11 E6 00 00 00
++			29 01 00 00 00 00 22 CE 5D 40 4B 57 63 6F 7B 87 93 9F AB B7 C3 CF DB E7 F3 FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++			29 01 00 00 00 00 02 b0 03
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcstillon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcmovieon-command = [
++			15 01 00 00 00 00 02 55 82
++			29 01 00 00 00 00 02 b0 04
++			29 01 00 00 00 00 08 B9 67 51 01 E6 00 04 04
++			29 01 00 00 00 00 22 CE 5D 40 57 6F 87 9F B7 CF E7 FF FF FF FF FF FF FF FF FF 04 00 04 04 42 00 69 5A 40 40 00 00 04 FA 00
++			29 01 00 00 00 00 02 b0 03
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcmovieon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcoff-command = [
++			15 01 00 00 00 00 02 55 00
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcoff-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skin-ce-command = [
++			15 01 00 00 00 00 02 CA 1D];
++		qcom,mdss-dsi-dispparam-skin-ce-off-command = [
++			15 01 00 00 00 00 02 CA 1C];
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-csot-fhd-ft8719-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-csot-fhd-ft8719-video.dtsi
+new file mode 100644
+index 000000000000..5346af683c1b
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-csot-fhd-ft8719-video.dtsi
+@@ -0,0 +1,166 @@
++/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++/*---------------------------------------------------------------------------
++ * This file is autogenerated file using gcdb parser. Please do not edit it.
++ * Update input XML file to add a new entry or update variable in this file
++ * VERSION = "1.0"
++ *---------------------------------------------------------------------------
++ */
++&mdss_mdp {
++	dsi_csot_fhd_ft8719_video: qcom,mdss_dsi_csot_fhd_ft8719_video {
++		qcom,mdss-dsi-panel-name = "csot fhd video dsi panel";
++		qcom,mdss-dsi-panel-id = <0>;
++		qcom,mdss-dsi-panel-model = "CSOT FHD FT8719 VIDEO PANEL";
++		qcom,mdss-dsi-panel-sleepwrmod = <0>;
++		qcom,mdss-dsi-panel-type = "dsi_video_mode";
++		qcom,mdss-dsi-panel-framerate = <60>;
++		qcom,mdss-dsi-virtual-channel-id = <0>;
++		qcom,mdss-dsi-stream = <0>;
++		qcom,mdss-dsi-panel-width = <1080>;
++		qcom,mdss-dsi-panel-height = <2280>;
++		qcom,mdss-dsi-h-front-porch = <88>;
++		qcom,mdss-dsi-h-back-porch = <96>;
++		qcom,mdss-dsi-h-pulse-width = <12>;
++		qcom,mdss-dsi-h-sync-skew = <0>;
++		qcom,mdss-dsi-v-back-porch = <12>;
++		qcom,mdss-dsi-v-front-porch = <112>;
++		qcom,mdss-dsi-v-pulse-width = <4>;
++		qcom,mdss-dsi-h-left-border = <0>;
++		qcom,mdss-dsi-h-right-border = <0>;
++		qcom,mdss-dsi-v-top-border = <0>;
++		qcom,mdss-dsi-v-bottom-border = <0>;
++		qcom,mdss-dsi-bpp = <24>;
++		qcom,mdss-dsi-color-order = "0";
++		qcom,mdss-dsi-underflow-color = <0x0>;
++		qcom,mdss-dsi-border-color = <0>;
++		qcom,mdss-dsi-on-command = [
++			/* enable command write function */
++			15 00 00 00 00 00 02 00 00
++			29 00 00 00 00 00 04 FF 87 19 01
++			15 00 00 00 00 00 02 00 80
++			29 01 00 00 00 00 03 FF 87 19
++			/* CABC dimming */
++			15 00 00 00 00 00 02 00 A0
++			29 00 00 00 00 00 04 CA 0F 0F 0F
++			/* 12 bit pwm fre 31k */
++			15 00 00 00 00 00 02 00 B0
++			29 00 00 00 00 00 04 CA 00 00 0C
++			/* CABC parameter */
++			15 00 00 00 00 00 02 00 80
++			29 00 00 00 00 00 0D CA B6 AF A8 A2 9D 98 94 90 8C 89 86 83
++			15 00 00 00 00 00 02 00 90
++			29 01 00 00 00 00 0A CA FE FF 66 FB FF 32 F6 FF 66
++			/* CE parameter */
++			15 00 00 00 00 00 02 00 A0
++			29 00 00 00 00 00 0D D6 77 7A 7A 80 80 80 80 80 80 80 80 80
++			15 00 00 00 00 00 02 00 B0
++			29 00 00 00 00 00 0D D6 7D 81 83 80 80 80 80 80 80 80 80 80
++			15 00 00 00 00 00 02 00 C0
++			29 00 00 00 00 00 0D D6 7B 78 7B 80 80 80 80 80 80 80 80 80
++			15 00 00 00 00 00 02 00 D0
++			29 01 00 00 00 00 0D D6 7D 81 83 80 80 80 80 80 80 80 80 80
++			15 00 00 00 00 00 02 00 E0
++			29 00 00 00 00 00 0D D6 80 80 80 80 80 80 80 80 80 80 80 80
++			15 00 00 00 00 00 02 00 F0
++			29 00 00 00 00 00 0D D6 80 80 80 80 80 80 80 80 80 80 80 80
++			15 00 00 00 00 00 02 00 00
++			29 00 00 00 00 00 0D D7 80 80 80 80 80 80 80 80 80 80 80 80
++			15 00 00 00 00 00 02 00 10
++			29 01 00 00 00 00 0D D7 80 80 80 80 80 80 80 80 80 80 80 80
++			/*CE parameter end*/
++			/* disable command write function */
++			15 00 00 00 00 00 02 00 00
++			29 00 00 00 00 00 04 FF 00 00 00
++			15 00 00 00 00 00 02 00 80
++			29 00 00 00 00 00 03 FF 00 00
++			29 00 00 00 00 00 03 51 FF 0F
++			15 00 00 00 00 00 02 53 24
++			15 01 00 00 00 00 02 55 00
++			05 01 00 00 5A 00 02 11 00
++			05 01 00 00 00 00 02 29 00];
++		qcom,mdss-dsi-off-command = [
++				05 01 00 00 0A 00 02 28 00
++				05 01 00 00 5A 00 02 10 00
++				/* deep standby mode */
++				15 00 00 00 00 00 02 00 00
++				29 01 00 00 05 00 05 F7 5A A5 95 27];
++		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
++		qcom,mdss-dsi-off-command-state = "dsi_lp_mode";
++		qcom,mdss-dsi-h-sync-pulse = <1>;
++		qcom,mdss-dsi-traffic-mode = "burst_mode";
++		qcom,mdss-dsi-bllp-eof-power-mode;
++		qcom,mdss-dsi-bllp-power-mode;
++		qcom,mdss-dsi-lp11-init;
++		qcom,mdss-dsi-lane-0-state;
++		qcom,mdss-dsi-lane-1-state;
++		qcom,mdss-dsi-lane-2-state;
++		qcom,mdss-dsi-lane-3-state;
++		qcom,mdss-dsi-t-clk-post = <0x0A>;
++		qcom,mdss-dsi-t-clk-pre = <0x35>;
++		qcom,mdss-dsi-bl-min-level = <1>;
++		qcom,mdss-dsi-bl-max-level = <4095>;
++		qcom,mdss-brightness-max-level = <4095>;
++		qcom,mdss-dsi-dma-trigger = "trigger_sw";
++		qcom,mdss-dsi-mdp-trigger = "none";
++		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++		qcom,mdss-dsi-reset-sequence = <1 4>, <0 1>, <1 15>;
++		qcom,mdss-dsi-tp-reset-sequence = <1 1>;
++		qcom,mdss-pan-physical-width-dimension = <68>;
++		qcom,mdss-pan-physical-height-dimension = <144>;
++		qcom,mdss-dsi-tx-eot-append;
++		qcom,ulps-enabled;
++		qcom,esd-err-irq-gpio = <&tlmm 13 0x2001>;
++		qcom,esd-check-enabled;
++		qcom,dispparam-enabled;
++		qcom,mdss-panel-on-dimming-delay = <120>;
++		qcom,mdss-dsi-dispparam-dimmingon-command = [
++			15 01 00 00 01 00 02 53 2C];
++		qcom,mdss-dsi-dispparam-cabcon-command = [
++			15 01 00 00 00 00 02 55 01
++		];
++		qcom,mdss-dsi-dispparam-cabcon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcstillon-command = [
++			15 01 00 00 00 00 02 55 03
++		];
++		qcom,mdss-dsi-dispparam-cabcstillon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcmovieon-command = [
++			15 01 00 00 00 00 02 55 02
++		];
++		qcom,mdss-dsi-dispparam-cabcmovieon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcoff-command = [
++			15 01 00 00 00 00 02 55 00
++		];
++		qcom,mdss-dsi-dispparam-cabcoff-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcuion-command = [
++			15 01 00 00 00 00 02 55 01
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcuion-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcstillon-command = [
++			15 01 00 00 00 00 02 55 03
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcstillon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcmovieon-command = [
++			15 01 00 00 00 00 02 55 02
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcmovieon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcoff-command = [
++			15 01 00 00 00 00 02 55 00
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcoff-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skin-ce-command = [
++			15 01 00 00 00 00 02 91 80];
++		qcom,mdss-dsi-dispparam-skin-ce-off-command = [
++			15 01 00 00 00 00 02 91 00];
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-ili7807d-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-ili7807d-video.dtsi
+new file mode 100644
+index 000000000000..252dffbfdf4a
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-ili7807d-video.dtsi
+@@ -0,0 +1,188 @@
++/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++/*---------------------------------------------------------------------------
++ * This file is autogenerated file using gcdb parser. Please do not edit it.
++ * Update input XML file to add a new entry or update variable in this file
++ * VERSION = "1.0"
++ *---------------------------------------------------------------------------
++ */
++&mdss_mdp {
++	dsi_tianma_fhd_ili7807d_video: qcom,mdss_dsi_tianma_fhd_ili7807d_video {
++		qcom,mdss-dsi-panel-name = "tianma fhd video dsi panel";
++		qcom,mdss-dsi-panel-id = <0>;
++		qcom,mdss-dsi-panel-model = "TIANMA FHD ILI7807D VIDEO PANEL";
++		qcom,mdss-dsi-panel-sleepwrmod = <0>;
++		qcom,mdss-dsi-panel-type = "dsi_video_mode";
++		qcom,mdss-dsi-panel-framerate = <60>;
++		qcom,mdss-dsi-virtual-channel-id = <0>;
++		qcom,mdss-dsi-stream = <0>;
++		qcom,mdss-dsi-panel-width = <1080>;
++		qcom,mdss-dsi-panel-height = <2160>;
++		qcom,mdss-dsi-h-front-porch = <140>;
++		qcom,mdss-dsi-h-back-porch = <148>;
++		qcom,mdss-dsi-h-pulse-width = <20>;
++		qcom,mdss-dsi-h-sync-skew = <0>;
++		qcom,mdss-dsi-v-back-porch = <36>;
++		qcom,mdss-dsi-v-front-porch = <20>;
++		qcom,mdss-dsi-v-pulse-width = <2>;
++		qcom,mdss-dsi-h-left-border = <0>;
++		qcom,mdss-dsi-h-right-border = <0>;
++		qcom,mdss-dsi-v-top-border = <0>;
++		qcom,mdss-dsi-v-bottom-border = <0>;
++		qcom,mdss-dsi-bpp = <24>;
++		qcom,mdss-dsi-color-order = "0";
++		qcom,mdss-dsi-underflow-color = <0xff>;
++		qcom,mdss-dsi-border-color = <0>;
++		qcom,mdss-dsi-on-command = [
++				29 00 00 00 00 00 04 FF 78 07 00
++				29 00 00 00 00 00 03 51 0B 84
++				15 00 00 00 00 00 02 53 24
++				29 00 00 00 00 00 03 68 05 00
++				15 00 00 00 00 00 02 35 00
++				05 01 00 00 4B 00 02 11 00
++				05 01 00 00 14 00 02 29 00
++				29 00 00 00 00 00 04 FF 78 07 01
++				29 00 00 00 00 00 02 35 22
++				29 00 00 00 00 00 02 44 94
++				29 00 00 00 00 00 02 B4 60
++				29 01 00 00 00 00 02 63 0B
++				29 00 00 00 00 00 04 FF 78 07 06
++				29 00 00 00 00 00 02 0B 01
++				29 00 00 00 00 00 02 0E 62
++				29 00 00 00 00 00 02 0F 62
++				29 00 00 00 00 00 02 A0 06
++				29 00 00 00 00 00 02 A2 0B
++				29 00 00 00 00 00 02 A6 11
++				29 00 00 00 00 00 02 A7 03
++				29 00 00 00 00 00 02 AE 14
++				29 00 00 00 00 00 02 B2 33
++				29 01 00 00 00 00 02 B3 00
++				29 00 00 00 00 00 04 FF 78 07 05
++				15 00 00 00 00 00 02 00 13
++				15 00 00 00 00 00 02 01 14
++				15 00 00 00 00 00 02 02 16
++				15 00 00 00 00 00 02 03 40
++				15 00 00 00 00 00 02 04 00
++				15 00 00 00 00 00 02 07 90
++				15 00 00 00 00 00 02 08 08
++				15 00 00 00 00 00 02 28 16
++				15 00 00 00 00 00 02 29 15
++				15 00 00 00 00 00 02 2A 14
++				15 00 00 00 00 00 02 2B 0D
++				15 00 00 00 00 00 02 30 06
++				15 00 00 00 00 00 02 31 00
++				15 00 00 00 00 00 02 38 07
++				15 00 00 00 00 00 02 39 09
++				15 01 00 00 00 00 02 3A 0C
++				15 00 00 00 00 00 02 40 00
++				15 00 00 00 00 00 02 41 00
++				15 00 00 00 00 00 02 42 00
++				15 00 00 00 00 00 02 43 01
++				15 00 00 00 00 00 02 44 01
++				15 00 00 00 00 00 02 45 01
++				15 01 00 00 00 00 02 46 01
++				15 00 00 00 00 00 02 47 01
++				15 00 00 00 00 00 02 48 01
++				15 00 00 00 00 00 02 49 01
++				15 00 00 00 00 00 02 4A 01
++				15 00 00 00 00 00 02 4B 01
++				15 00 00 00 00 00 02 4C 01
++				15 00 00 00 00 00 02 4D 01
++				15 00 00 00 00 00 02 4E 01
++				15 01 00 00 00 00 02 4F 01
++				15 00 00 00 00 00 02 50 01
++				15 00 00 00 00 00 02 51 01
++				15 00 00 00 00 00 02 52 01
++				15 00 00 00 00 00 02 53 01
++				15 00 00 00 00 00 02 54 01
++				15 00 00 00 00 00 02 55 00
++				15 00 00 00 00 00 02 56 00
++				15 01 00 00 00 00 02 57 00
++				15 00 00 00 00 00 02 33 00
++				15 00 00 00 00 00 02 80 13
++				15 00 00 00 00 00 02 81 50
++				29 00 00 00 00 00 04 FF 78 07 07
++				15 00 00 00 00 00 02 77 50
++				15 00 00 00 00 00 02 44 07
++				29 01 00 00 00 00 04 FF 78 07 00];
++		qcom,mdss-dsi-off-command = [
++				05 01 00 00 14 00 02 28 00
++				05 01 00 00 4B 00 02 10 00];
++		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
++		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-h-sync-pulse = <1>;
++		qcom,mdss-dsi-traffic-mode = "burst_mode";
++		qcom,mdss-dsi-bllp-eof-power-mode;
++		qcom,mdss-dsi-bllp-power-mode;
++		qcom,mdss-dsi-lp11-init;
++		qcom,mdss-dsi-lane-0-state;
++		qcom,mdss-dsi-lane-1-state;
++		qcom,mdss-dsi-lane-2-state;
++		qcom,mdss-dsi-lane-3-state;
++		qcom,mdss-dsi-panel-timings =
++					[ce 2e 1e 00 5a 5c 24 30 24 03 04 00];
++		qcom,mdss-dsi-t-clk-post = <0x0A>;
++		qcom,mdss-dsi-t-clk-pre = <0x35>;
++		qcom,mdss-dsi-bl-min-level = <1>;
++		qcom,mdss-dsi-bl-max-level = <4095>;
++		qcom,mdss-brightness-max-level = <4095>;
++		qcom,mdss-dsi-dma-trigger = "trigger_sw";
++		qcom,mdss-dsi-mdp-trigger = "none";
++		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
++		qcom,mdss-pan-physical-width-dimension = <78>;
++		qcom,mdss-pan-physical-height-dimension = <156>;
++		qcom,mdss-dsi-tx-eot-append;
++		qcom,ulps-enabled;
++		qcom,esd-err-irq-gpio = <&tlmm 59 0x2002>;
++		qcom,esd-check-enabled;
++		qcom,initial-esd-check-cmd = <0x0A 0x9C 20>;
++		qcom,dispparam-enabled;
++		qcom,mdss-panel-on-dimming-delay = <120>;
++		qcom,mdss-dsi-dispparam-dimmingon-command = [
++			15 01 00 00 01 00 02 53 2C];
++		qcom,mdss-dsi-dispparam-cabcon-command = [
++			29 00 00 00 00 00 04 FF 78 07 05
++			15 00 00 00 00 00 02 2B 0D
++			29 01 00 00 00 00 04 FF 78 07 00];
++		qcom,mdss-dsi-dispparam-cabcstillon-command = [
++			29 00 00 00 00 00 04 FF 78 07 05
++			15 00 00 00 00 00 02 2B 0F
++			29 01 00 00 00 00 04 FF 78 07 00];
++		qcom,mdss-dsi-dispparam-cabcmovieon-command = [
++			29 00 00 00 00 00 04 FF 78 07 05
++			15 00 00 00 00 00 02 2B 0E
++			29 01 00 00 00 00 04 FF 78 07 00];
++		qcom,mdss-dsi-dispparam-cabcoff-command = [
++			29 00 00 00 00 00 04 FF 78 07 05
++			15 00 00 00 00 00 02 2B 08
++			29 01 00 00 00 00 04 FF 78 07 00];
++		qcom,mdss-dsi-dispparam-skin-ce-command = [
++			29 00 00 00 00 00 04 FF 78 07 05
++			15 00 00 00 00 00 02 31 10
++			29 01 00 00 00 00 04 FF 78 07 00];
++		qcom,mdss-dsi-dispparam-skin-ce-off-command = [
++			29 00 00 00 00 00 04 FF 78 07 05
++			15 00 00 00 00 00 02 31 00
++			29 01 00 00 00 00 04 FF 78 07 00];
++		qcom,mdss-dsi-dispparam-hbm-l1-on-command = [
++			29 01 00 00 00 00 03 51 0C CC];
++		qcom,mdss-dsi-dispparam-hbm-l2-on-command = [
++			29 01 00 00 00 00 03 51 0E 65];
++		qcom,mdss-dsi-dispparam-hbm-l3-on-command = [
++			29 01 00 00 00 00 03 51 0F FF];
++		qcom,mdss-dsi-dispparam-hbm-off-command = [
++			29 01 00 00 00 00 03 51 0B 84];
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-nt36672a-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-nt36672a-video.dtsi
+new file mode 100644
+index 000000000000..c74e1301d0dc
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/display/dsi-panel-tianma-fhd-nt36672a-video.dtsi
+@@ -0,0 +1,307 @@
++/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++/*---------------------------------------------------------------------------
++ * This file is autogenerated file using gcdb parser. Please do not edit it.
++ * Update input XML file to add a new entry or update variable in this file
++ * VERSION = "1.0"
++ *---------------------------------------------------------------------------
++ */
++&mdss_mdp {
++	dsi_tianma_fhd_nt36672a_video: qcom,mdss_dsi_tianma_fhd_nt36672a_video {
++		qcom,mdss-dsi-panel-name = "tianma fhd video dsi panel";
++		qcom,mdss-dsi-panel-id = <0>;
++		qcom,mdss-dsi-panel-model = "TIANMA FHD NT36672A VIDEO PANEL";
++		qcom,mdss-dsi-panel-sleepwrmod = <0>;
++		qcom,mdss-dsi-panel-type = "dsi_video_mode";
++		qcom,mdss-dsi-panel-framerate = <60>;
++		qcom,mdss-dsi-virtual-channel-id = <0>;
++		qcom,mdss-dsi-stream = <0>;
++		qcom,mdss-dsi-panel-width = <1080>;
++		qcom,mdss-dsi-panel-height = <2280>;
++		qcom,mdss-dsi-h-front-porch = <92>;
++		qcom,mdss-dsi-h-back-porch = <140>;
++		qcom,mdss-dsi-h-pulse-width = <20>;
++		qcom,mdss-dsi-h-sync-skew = <0>;
++		qcom,mdss-dsi-v-back-porch = <10>;
++		qcom,mdss-dsi-v-front-porch = <16>;
++		qcom,mdss-dsi-v-pulse-width = <2>;
++		qcom,mdss-dsi-h-left-border = <0>;
++		qcom,mdss-dsi-h-right-border = <0>;
++		qcom,mdss-dsi-v-top-border = <0>;
++		qcom,mdss-dsi-v-bottom-border = <0>;
++		qcom,mdss-dsi-bpp = <24>;
++		qcom,mdss-dsi-color-order = "0";
++		qcom,mdss-dsi-underflow-color = <0x0>;
++		qcom,mdss-dsi-border-color = <0>;
++		qcom,mdss-dsi-on-command = [
++			15 01 00 00 00 00 02 FF 22
++			15 00 00 00 00 00 02 FB 01
++			/* CE */
++			15 00 00 00 00 00 02 00 40
++			15 00 00 00 00 00 02 01 40
++			15 00 00 00 00 00 02 02 40
++			15 00 00 00 00 00 02 03 40
++			15 00 00 00 00 00 02 04 40
++			15 00 00 00 00 00 02 05 40
++			15 00 00 00 00 00 02 06 40
++			15 00 00 00 00 00 02 07 40
++			15 00 00 00 00 00 02 08 40
++			15 00 00 00 00 00 02 09 40
++			15 00 00 00 00 00 02 0A 40
++			15 00 00 00 00 00 02 0B 40
++			15 00 00 00 00 00 02 0C 40
++			15 00 00 00 00 00 02 0D 40
++			15 00 00 00 00 00 02 0E 40
++			15 01 00 00 00 00 02 0F 40
++			15 00 00 00 00 00 02 10 40
++			15 00 00 00 00 00 02 11 50
++			15 00 00 00 00 00 02 12 60
++			15 00 00 00 00 00 02 13 70
++			15 00 00 00 00 00 02 14 58
++			15 00 00 00 00 00 02 15 68
++			15 00 00 00 00 00 02 16 78
++			15 00 00 00 00 00 02 17 77
++			15 00 00 00 00 00 02 18 3E
++			15 00 00 00 00 00 02 19 36
++			15 00 00 00 00 00 02 1A 30
++			15 00 00 00 00 00 02 1B 28
++			15 00 00 00 00 00 02 1C 25
++			15 00 00 00 00 00 02 1D 23
++			15 00 00 00 00 00 02 1E 26
++			15 01 00 00 00 00 02 1F 2A
++			15 00 00 00 00 00 02 20 30
++			15 00 00 00 00 00 02 21 36
++			15 00 00 00 00 00 02 22 3C
++			15 00 00 00 00 00 02 23 40
++			15 00 00 00 00 00 02 24 40
++			15 00 00 00 00 00 02 25 40
++			15 00 00 00 00 00 02 26 40
++			15 00 00 00 00 00 02 27 40
++			15 00 00 00 00 00 02 28 40
++			15 00 00 00 00 00 02 53 01
++			15 00 00 00 00 00 02 54 01
++			15 00 00 00 00 00 02 55 FF
++			15 00 00 00 00 00 02 56 76
++			15 00 00 00 00 00 02 58 C8
++			15 00 00 00 00 00 02 59 CA
++			15 00 00 00 00 00 02 5A 48
++			15 00 00 00 00 00 02 5B 48
++			15 00 00 00 00 00 02 5C 48
++			15 00 00 00 00 00 02 5D 48
++			15 00 00 00 00 00 02 5E 48
++			15 01 00 00 00 00 02 5F 48
++			15 00 00 00 00 00 02 60 48
++			15 00 00 00 00 00 02 61 48
++			15 00 00 00 00 00 02 62 48
++			15 00 00 00 00 00 02 63 48
++			15 00 00 00 00 00 02 64 48
++			15 00 00 00 00 00 02 65 48
++			15 00 00 00 00 00 02 66 48
++			15 00 00 00 00 00 02 67 48
++			15 00 00 00 00 00 02 68 48
++			15 00 00 00 00 00 02 69 48
++			15 00 00 00 00 00 02 6A 48
++			15 00 00 00 00 00 02 6B 48
++			15 00 00 00 00 00 02 6C 48
++			15 00 00 00 00 00 02 6D 48
++			15 00 00 00 00 00 02 6E 48
++			15 01 00 00 00 00 02 6F C8
++			15 00 00 00 00 00 02 70 03
++			15 00 00 00 00 00 02 71 00
++			15 00 00 00 00 00 02 72 80
++			15 00 00 00 00 00 02 73 00
++			15 00 00 00 00 00 02 74 06
++			15 00 00 00 00 00 02 75 0C
++			15 00 00 00 00 00 02 76 03
++			15 00 00 00 00 00 02 77 09
++			15 00 00 00 00 00 02 78 0F
++			15 00 00 00 00 00 02 79 68
++			15 00 00 00 00 00 02 7A 8B
++			15 00 00 00 00 00 02 7C 80
++			15 00 00 00 00 00 02 7D 80
++			15 00 00 00 00 00 02 7E 80
++			15 01 00 00 00 00 02 7F 00
++			15 00 00 00 00 00 02 80 00
++			15 00 00 00 00 00 02 81 00
++			15 00 00 00 00 00 02 83 01
++			15 00 00 00 00 00 02 84 00
++			15 00 00 00 00 00 02 85 80
++			15 00 00 00 00 00 02 86 80
++			15 00 00 00 00 00 02 87 80
++			15 00 00 00 00 00 02 88 40
++			15 00 00 00 00 00 02 89 83
++			15 00 00 00 00 00 02 8A 86
++			15 00 00 00 00 00 02 B7 76
++			15 01 00 00 00 00 02 B8 76
++			15 01 00 00 00 00 02 FF 23
++			15 00 00 00 00 00 02 FB 01
++			/* set LEDPWM 31KHz */
++			15 00 00 00 00 00 02 00 60
++			15 00 00 00 00 00 02 07 00
++			15 00 00 00 00 00 02 08 01
++			15 01 00 00 00 00 02 09 00
++			/* resolution 1080*2280 */
++			15 00 00 00 00 00 02 11 01
++			15 00 00 00 00 00 02 12 80
++			15 00 00 00 00 00 02 15 6D
++			15 01 00 00 00 00 02 16 0B
++			/* UI mode */
++			15 00 00 00 00 00 02 29 0A
++			15 00 00 00 00 00 02 30 FF
++			15 00 00 00 00 00 02 31 FF
++			15 00 00 00 00 00 02 32 FF
++			15 00 00 00 00 00 02 33 FF
++			15 00 00 00 00 00 02 34 FF
++			15 00 00 00 00 00 02 35 FF
++			15 00 00 00 00 00 02 36 FF
++			15 00 00 00 00 00 02 37 FF
++			15 00 00 00 00 00 02 38 FC
++			15 00 00 00 00 00 02 39 F9
++			15 00 00 00 00 00 02 3A F5
++			15 00 00 00 00 00 02 3B F1
++			15 00 00 00 00 00 02 3D EE
++			15 00 00 00 00 00 02 3F EB
++			15 00 00 00 00 00 02 40 E9
++			15 01 00 00 00 00 02 41 E5
++			/* STILL mode */
++			15 00 00 00 00 00 02 2A 13
++			15 00 00 00 00 00 02 45 FF
++			15 00 00 00 00 00 02 46 F5
++			15 00 00 00 00 00 02 47 EA
++			15 00 00 00 00 00 02 48 DF
++			15 00 00 00 00 00 02 49 D5
++			15 00 00 00 00 00 02 4A CA
++			15 00 00 00 00 00 02 4B C0
++			15 00 00 00 00 00 02 4C B6
++			15 00 00 00 00 00 02 4D AC
++			15 00 00 00 00 00 02 4E A2
++			15 00 00 00 00 00 02 4F 98
++			15 00 00 00 00 00 02 50 8E
++			15 00 00 00 00 00 02 51 84
++			15 00 00 00 00 00 02 52 7A
++			15 00 00 00 00 00 02 53 70
++			15 01 00 00 00 00 02 54 66
++			/* MOVING mode */
++			15 00 00 00 00 00 02 2B 0E
++			15 00 00 00 00 00 02 58 FF
++			15 00 00 00 00 00 02 59 FF
++			15 00 00 00 00 00 02 5A FF
++			15 00 00 00 00 00 02 5B FF
++			15 00 00 00 00 00 02 5C FF
++			15 00 00 00 00 00 02 5D FF
++			15 00 00 00 00 00 02 5E FF
++			15 00 00 00 00 00 02 5F FF
++			15 00 00 00 00 00 02 60 F6
++			15 00 00 00 00 00 02 61 EC
++			15 00 00 00 00 00 02 62 E3
++			15 00 00 00 00 00 02 63 D9
++			15 00 00 00 00 00 02 64 D0
++			15 00 00 00 00 00 02 65 C7
++			15 00 00 00 00 00 02 66 BD
++			15 01 00 00 00 00 02 67 B3
++			/* cabc dimming */
++			15 00 00 00 00 00 02 01 84
++			15 01 00 00 00 00 02 06 01
++			15 00 00 00 00 00 02 05 2D
++			15 00 00 00 00 00 02 04 05
++			15 01 00 00 00 00 02 FF 25
++			15 00 00 00 00 00 02 FB 01
++			15 01 00 00 00 00 02 05 04
++			15 01 00 00 00 00 02 FF 10
++			15 00 00 00 00 00 02 FB 01
++			15 00 00 00 00 00 02 35 00
++			29 00 00 00 00 00 03 51 07 FF
++			15 00 00 00 00 00 02 53 24
++			15 01 00 00 00 00 02 55 00
++			05 01 00 00 00 00 02 29 00
++			05 01 00 00 46 00 02 11 00
++			15 01 00 00 00 00 02 FF 24
++			15 00 00 00 00 00 02 FB 01
++			/* esd setting, raising is valid */
++			15 00 00 00 00 00 02 C3 01
++			15 00 00 00 00 00 02 C4 54
++			15 01 00 00 00 00 02 C2 8E
++			15 01 00 00 00 00 02 FF 10];
++		qcom,mdss-dsi-off-command = [
++			15 01 00 00 00 00 02 FF 24
++			15 00 00 00 00 00 02 FB 01
++			15 01 00 00 00 00 02 C3 00
++			15 01 00 00 00 00 02 FF 10
++			05 01 00 00 00 00 02 28 00
++			05 01 00 00 3C 00 02 10 00];
++		qcom,mdss-dsi-on-command-state = "dsi_lp_mode";
++		qcom,mdss-dsi-off-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-h-sync-pulse = <1>;
++		qcom,mdss-dsi-traffic-mode = "burst_mode";
++		qcom,mdss-dsi-bllp-eof-power-mode;
++		qcom,mdss-dsi-bllp-power-mode;
++		qcom,mdss-dsi-lp11-init;
++		qcom,mdss-dsi-lane-0-state;
++		qcom,mdss-dsi-lane-1-state;
++		qcom,mdss-dsi-lane-2-state;
++		qcom,mdss-dsi-lane-3-state;
++		qcom,mdss-dsi-t-clk-post = <0x0A>;
++		qcom,mdss-dsi-t-clk-pre = <0x35>;
++		qcom,mdss-dsi-bl-min-level = <1>;
++		qcom,mdss-dsi-bl-max-level = <4095>;
++		qcom,mdss-brightness-max-level = <4095>;
++		qcom,mdss-dsi-dma-trigger = "trigger_sw";
++		qcom,mdss-dsi-mdp-trigger = "none";
++		qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++		qcom,mdss-dsi-reset-sequence = <1 1>, <0 1>, <1 10>;
++		qcom,mdss-pan-physical-width-dimension = <68>;
++		qcom,mdss-pan-physical-height-dimension = <144>;
++		qcom,mdss-dsi-tx-eot-append;
++		qcom,ulps-enabled;
++		qcom,esd-err-irq-gpio = <&tlmm 59 0x2001>;
++		qcom,esd-check-enabled;
++		qcom,dispparam-enabled;
++		qcom,mdss-panel-on-dimming-delay = <120>;
++		qcom,mdss-dsi-dispparam-dimmingon-command = [
++			15 01 00 00 00 00 02 53 2C];
++		qcom,mdss-dsi-dispparam-dimmingon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcon-command = [
++			15 01 00 00 00 00 02 55 01
++		];
++		qcom,mdss-dsi-dispparam-cabcon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcstillon-command = [
++			15 01 00 00 00 00 02 55 02
++		];
++		qcom,mdss-dsi-dispparam-cabcstillon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcmovieon-command = [
++			15 01 00 00 00 00 02 55 03
++		];
++		qcom,mdss-dsi-dispparam-cabcmovieon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-cabcoff-command = [
++			15 01 00 00 00 00 02 55 00
++		];
++		qcom,mdss-dsi-dispparam-cabcoff-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcuion-command = [
++			15 01 00 00 00 00 02 55 81
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcuion-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcstillon-command = [
++			15 01 00 00 00 00 02 55 82
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcstillon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcmovieon-command = [
++			15 01 00 00 00 00 02 55 83
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcmovieon-command-state = "dsi_hs_mode";
++		qcom,mdss-dsi-dispparam-skince-cabcoff-command = [
++			15 01 00 00 00 00 02 55 80
++		];
++		qcom,mdss-dsi-dispparam-skince-cabcoff-command-state = "dsi_hs_mode";
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-msm-audio.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-msm-audio.dtsi
+new file mode 100644
+index 000000000000..55b5bf059736
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-msm-audio.dtsi
+@@ -0,0 +1,24 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++&soc {
++	/delete-node/ msm_cdc_pinctrl@75;
++
++	us_euro_gpio: msm_cdc_pinctrl@56 {
++		compatible = "qcom,msm-cdc-pinctrl";
++		pinctrl-names = "aud_active", "aud_sleep";
++		pinctrl-0 = <&wcd_gnd_mic_swap_active>;
++		pinctrl-1 = <&wcd_gnd_mic_swap_idle>;
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-camera-sensor.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-camera-sensor.dtsi
+new file mode 100644
+index 000000000000..2cfa7411f6f1
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-camera-sensor.dtsi
+@@ -0,0 +1,398 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++&soc {
++	led_flash0: qcom,camera-flash@0 {
++		cell-index = <0>;
++		compatible = "qcom,camera-flash";
++		qcom,flash-source = <&pm660l_flash0 &pm660l_flash1>;
++		qcom,torch-source = <&pm660l_torch0 &pm660l_torch1>;
++		qcom,switch-source = <&pm660l_switch0>;
++		status = "ok";
++	};
++
++	led_flash1: qcom,camera-flash@1 {
++		cell-index = <1>;
++		compatible = "qcom,camera-flash";
++		qcom,flash-source = <&pm660l_flash2>;
++		qcom,torch-source = <&pm660l_torch2>;
++		qcom,switch-source = <&pm660l_switch1>;
++		status = "ok";
++	};
++
++	cam_avdd_gpio_regulator: cam_avdd_fixed_regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "cam_avdd_gpio_regulator";
++		regulator-min-microvolt = <3600000>;
++		regulator-max-microvolt = <3600000>;
++		enable-active-high;
++		gpio = <&tlmm 49 0>;
++		vin-supply = <&pm660l_bob>;
++	};
++
++	cam_rear_avdd_gpio_regulator: cam_rear_avdd_fixed_regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "cam_rear_avdd_gpio_regulator";
++		regulator-min-microvolt = <3600000>;
++		regulator-max-microvolt = <3600000>;
++		enable-active-high;
++		gpio = <&tlmm 51 0>;
++		vin-supply = <&pm660l_bob>;
++	};
++
++	cam_actuator_regulator: cam_actuator_fixed_regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "cam_actuator_regulator";
++		regulator-min-microvolt = <3600000>;
++		regulator-max-microvolt = <3600000>;
++		enable-active-high;
++		gpio = <&tlmm 50 0>;
++		vin-supply = <&pm660l_bob>;
++	};
++
++	cam_dvdd_gpio_regulator: cam_dvdd_fixed_regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "cam_dvdd_gpio_regulator";
++		regulator-min-microvolt = <1350000>;
++		regulator-max-microvolt = <1350000>;
++		enable-active-high;
++		gpio = <&pm660l_gpios 3 0>;
++		vin-supply = <&pm660_s5>;
++	};
++
++	cam_rear_dvdd_gpio_regulator: cam_rear_dvdd_fixed_regulator {
++		compatible = "regulator-fixed";
++		regulator-name = "cam_rear_dvdd_gpio_regulator";
++		regulator-min-microvolt = <1350000>;
++		regulator-max-microvolt = <1350000>;
++		enable-active-high;
++		gpio = <&pm660l_gpios 4 0>;
++		vin-supply = <&pm660_s5>;
++	};
++};
++
++&cci {
++	/delete-node/ qcom,actuator@0;
++	/delete-node/ qcom,actuator@1;
++	/delete-node/ qcom,actuator@2;
++	/delete-node/ qcom,ois@0;
++	/delete-node/ qcom,tof@29;
++	/delete-node/ qcom,eeprom@0;
++	/delete-node/ qcom,eeprom@1;
++	/delete-node/ qcom,eeprom@2;
++	/delete-node/ qcom,camera@0;
++	/delete-node/ qcom,camera@1;
++	/delete-node/ qcom,camera@2;
++	/delete-node/ qcom,camera@3;
++
++	actuator0: qcom,actuator@0 {
++		cell-index = <0>;
++		reg = <0x0>;
++		compatible = "qcom,actuator";
++		qcom,cci-master = <0>;
++		cam_vaf-supply = <&cam_actuator_regulator>;
++		qcom,cam-vreg-name = "cam_vaf";
++		qcom,cam-vreg-min-voltage = <3600000>;
++		qcom,cam-vreg-max-voltage = <3600000>;
++		qcom,cam-vreg-op-mode = <0>;
++	};
++
++	actuator1: qcom,actuator@1 {
++		cell-index = <1>;
++		reg = <0x1>;
++		compatible = "qcom,actuator";
++		qcom,cci-master = <1>;
++		cam_vaf-supply = <&cam_actuator_regulator>;
++		qcom,cam-vreg-name = "cam_vaf";
++		qcom,cam-vreg-min-voltage = <3600000>;
++		qcom,cam-vreg-max-voltage = <3600000>;
++		qcom,cam-vreg-op-mode = <0>;
++	};
++
++	actuator2: qcom,actuator@2 {
++		cell-index = <2>;
++		reg = <0x2>;
++		compatible = "qcom,actuator";
++		qcom,cci-master = <1>;
++		cam_vaf-supply = <&cam_actuator_regulator>;
++		qcom,cam-vreg-name = "cam_vaf";
++		qcom,cam-vreg-min-voltage = <3600000>;
++		qcom,cam-vreg-max-voltage = <3600000>;
++		qcom,cam-vreg-op-mode = <0>;
++	};
++
++	ois0: qcom,ois@0 {
++		cell-index = <0>;
++		reg = <0x0>;
++		compatible = "qcom,ois";
++		qcom,cci-master = <0>;
++		cam_vaf-supply = <&cam_actuator_regulator>;
++		qcom,cam-vreg-name = "cam_vaf";
++		qcom,cam-vreg-min-voltage = <3600000>;
++		qcom,cam-vreg-max-voltage = <3600000>;
++		qcom,cam-vreg-op-mode = <0>;
++		status = "disabled";
++	};
++
++	tof0: qcom,tof@29{
++		cell-index = <0>;
++		reg = <0x29>;
++		compatible = "st,stmvl53l0";
++		qcom,cci-master = <0>;
++		cam_laser-supply = <&cam_actuator_regulator>;
++		qcom,cam-vreg-name =  "cam_laser";
++		qcom,cam-vreg-min-voltage = <3600000>;
++		qcom,cam-vreg-max-voltage = <3600000>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_tof_active>;
++		pinctrl-1 = <&cam_tof_suspend>;
++		stm,irq-gpio = <&tlmm 45  0x2008>;
++		gpios = <&tlmm 42 0>;
++		qcom,gpio-req-tbl-num = <0>;
++		qcom,gpio-req-tbl-flags = <0>;
++		qcom,gpio-req-tbl-label = "RNG_EN";
++	};
++
++	eeprom0: qcom,eeprom@0 {
++		cell-index = <0>;
++		reg = <0>;
++		compatible = "qcom,eeprom";
++		cam_vio-supply = <&pm660_l14>;
++		qcom,cam-vreg-name = "cam_vio";
++		qcom,cam-vreg-min-voltage = <1780000>;
++		qcom,cam-vreg-max-voltage = <1950000>;
++		qcom,cam-vreg-op-mode = <105000 0 0>;
++		qcom,gpio-no-mux = <0>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk0_platina_active
++				&cam_sensor_rear_active>;
++		pinctrl-1 = <&cam_sensor_mclk0_platina_suspend
++				&cam_sensor_rear_suspend>;
++		gpios = <&tlmm 32 0>,
++			<&tlmm 46 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-req-tbl-num = <0 1>;
++		qcom,gpio-req-tbl-flags = <1 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK0",
++					"CAM_RESET0";
++		qcom,cci-master = <0>;
++		status = "ok";
++		clocks = <&clock_mmss MCLK0_CLK_SRC>,
++				<&clock_mmss MMSS_CAMSS_MCLK0_CLK>;
++		clock-names = "cam_src_clk", "cam_clk";
++		qcom,clock-rates = <24000000 0>;
++	};
++
++	eeprom1: qcom,eeprom@1 {
++		cell-index = <1>;
++		reg = <0x1>;
++		compatible = "qcom,eeprom";
++		cam_vio-supply = <&pm660_l14>;
++		cam_vana-supply = <&cam_rear_avdd_gpio_regulator>;
++		cam_vdig-supply = <&cam_rear_dvdd_gpio_regulator>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana", "cam_vdig";
++		qcom,cam-vreg-min-voltage = <1780000 0 0>;
++		qcom,cam-vreg-max-voltage = <1950000 0 0>;
++		qcom,cam-vreg-op-mode = <105000 0 0>;
++		qcom,gpio-no-mux = <0>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk3_platina_active
++			&cam_sensor_front_iris_active>;
++		pinctrl-1 = <&cam_sensor_mclk3_platina_suspend
++			&cam_sensor_front_iris_suspend>;
++		gpios = <&tlmm 35 0>,
++		    <&tlmm 52 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-req-tbl-num = <0 1>;
++		qcom,gpio-req-tbl-flags = <1 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK3",
++				"CAM_RESET3";
++		qcom,cci-master = <1>;
++		status = "ok";
++		clocks = <&clock_mmss MCLK3_CLK_SRC>,
++		    <&clock_mmss MMSS_CAMSS_MCLK3_CLK>;
++		clock-names = "cam_src_clk", "cam_clk";
++		qcom,clock-rates = <24000000 0>;
++	};
++
++	eeprom2: qcom,eeprom@2 {
++		cell-index = <2>;
++		reg = <0x2>;
++		compatible = "qcom,eeprom";
++		cam_vio-supply = <&pm660_l14>;
++		cam_vana-supply = <&cam_avdd_gpio_regulator>;
++		cam_vdig-supply = <&cam_dvdd_gpio_regulator>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana", "cam_vdig";
++		qcom,cam-vreg-min-voltage = <1780000 0 0>;
++		qcom,cam-vreg-max-voltage = <1950000 0 0>;
++		qcom,cam-vreg-op-mode = <105000 0 0>;
++		qcom,gpio-no-mux = <0>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk1_platina_active
++				 &cam_sensor_front_active>;
++		pinctrl-1 = <&cam_sensor_mclk1_platina_suspend
++				 &cam_sensor_front_suspend>;
++		gpios = <&tlmm 33 0>,
++			<&tlmm 47 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-req-tbl-num = <0 1>;
++		qcom,gpio-req-tbl-flags = <1 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK2",
++					"CAM_RESET2";
++		qcom,cci-master = <1>;
++		status = "ok";
++		clocks = <&clock_mmss MCLK1_CLK_SRC>,
++			<&clock_mmss MMSS_CAMSS_MCLK1_CLK>;
++		clock-names = "cam_src_clk", "cam_clk";
++		qcom,clock-rates = <24000000 0>;
++	};
++
++	qcom,camera@0 {
++		cell-index = <0>;
++		compatible = "qcom,camera";
++		reg = <0x0>;
++		qcom,csiphy-sd-index = <0>;
++		qcom,csid-sd-index = <0>;
++		qcom,mount-angle = <90>;
++		qcom,led-flash-src = <&led_flash0>;
++		qcom,actuator-src = <&actuator0>;
++		qcom,eeprom-src = <&eeprom0>;
++		cam_vio-supply = <&pm660_l14>;
++		cam_vana-supply = <&cam_rear_avdd_gpio_regulator>;
++		cam_vdig-supply = <&cam_rear_dvdd_gpio_regulator>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana", "cam_vdig";
++		qcom,cam-vreg-min-voltage = <1780000 0 0>;
++		qcom,cam-vreg-max-voltage = <1950000 0 0>;
++		qcom,cam-vreg-op-mode = <105000 0 0>;
++		qcom,gpio-no-mux = <0>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk0_platina_active
++				 &cam_sensor_rear_active>;
++		pinctrl-1 = <&cam_sensor_mclk0_platina_suspend
++				 &cam_sensor_rear_suspend>;
++		gpios = <&tlmm 32 0>,
++			<&tlmm 46 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-req-tbl-num = <0 1>;
++		qcom,gpio-req-tbl-flags = <1 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK0",
++					"CAM_RESET0";
++		qcom,sensor-position = <0>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <0>;
++		status = "ok";
++		clocks = <&clock_mmss MCLK0_CLK_SRC>,
++				<&clock_mmss MMSS_CAMSS_MCLK0_CLK>;
++		clock-names = "cam_src_clk", "cam_clk";
++		qcom,clock-rates = <24000000 0>;
++	};
++
++
++	qcom,camera@2 {
++		cell-index = <2>;
++		compatible = "qcom,camera";
++		reg = <0x02>;
++		qcom,csiphy-sd-index = <2>;
++		qcom,csid-sd-index = <2>;
++		qcom,mount-angle = <90>;
++		qcom,eeprom-src = <&eeprom2>;
++		cam_vio-supply = <&pm660_l14>;
++		cam_vana-supply = <&cam_avdd_gpio_regulator>;
++		cam_vdig-supply = <&cam_dvdd_gpio_regulator>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana", "cam_vdig";
++		qcom,cam-vreg-min-voltage = <1780000 0 0>;
++		qcom,cam-vreg-max-voltage = <1950000 0 0>;
++		qcom,cam-vreg-op-mode = <105000 0 0>;
++		qcom,gpio-no-mux = <0>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk1_platina_active
++				 &cam_sensor_front_active>;
++		pinctrl-1 = <&cam_sensor_mclk1_platina_suspend
++				 &cam_sensor_front_suspend>;
++		gpios = <&tlmm 33 0>,
++			<&tlmm 47 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-req-tbl-num = <0 1>;
++		qcom,gpio-req-tbl-flags = <1 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK2",
++					"CAM_RESET2";
++		qcom,sensor-position = <1>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <1>;
++		status = "ok";
++		clocks = <&clock_mmss MCLK1_CLK_SRC>,
++			<&clock_mmss MMSS_CAMSS_MCLK1_CLK>;
++		clock-names = "cam_src_clk", "cam_clk";
++		qcom,clock-rates = <24000000 0>;
++	};
++
++	qcom,camera@3 {
++		cell-index = <3>;
++		compatible = "qcom,camera";
++		reg = <0x03>;
++		qcom,csiphy-sd-index = <1>;
++		qcom,csid-sd-index = <1>;
++		qcom,mount-angle = <90>;
++		qcom,eeprom-src = <&eeprom1>;
++		cam_vio-supply = <&pm660_l14>;
++		cam_vana-supply = <&cam_rear_avdd_gpio_regulator>;
++		cam_vdig-supply = <&cam_rear_dvdd_gpio_regulator>;
++		qcom,cam-vreg-name = "cam_vio", "cam_vana", "cam_vdig";
++		qcom,cam-vreg-min-voltage = <1780000 0 0>;
++		qcom,cam-vreg-max-voltage = <1950000 0 0>;
++		qcom,cam-vreg-op-mode = <105000 0 0>;
++		qcom,gpio-no-mux = <0>;
++		pinctrl-names = "cam_default", "cam_suspend";
++		pinctrl-0 = <&cam_sensor_mclk3_platina_active
++				 &cam_sensor_front_iris_active>;
++		pinctrl-1 = <&cam_sensor_mclk3_platina_suspend
++				 &cam_sensor_front_iris_suspend>;
++		gpios = <&tlmm 35 0>,
++			<&tlmm 52 0>;
++		qcom,gpio-reset = <1>;
++		qcom,gpio-req-tbl-num = <0 1>;
++		qcom,gpio-req-tbl-flags = <1 0>;
++		qcom,gpio-req-tbl-label = "CAMIF_MCLK3",
++					"CAM_RESET3";
++		qcom,sensor-position = <1>;
++		qcom,sensor-mode = <0>;
++		qcom,cci-master = <1>;
++		clocks = <&clock_mmss MCLK3_CLK_SRC>,
++			<&clock_mmss MMSS_CAMSS_MCLK3_CLK>;
++		clock-names = "cam_src_clk", "cam_clk";
++		qcom,clock-rates = <24000000 0>;
++	};
++};
++
++&pm660l_gpios {
++	gpio@c300 { /* GPIO4 -CAMERA SENSOR 0 VDIG*/
++		qcom,mode = <1>;                /* Output */
++		qcom,pull = <5>;                /* No Pull */
++		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
++		qcom,src-sel = <0>;             /* GPIO */
++		qcom,invert = <0>;              /* Invert */
++		qcom,master-en = <1>;           /* Enable GPIO */
++		status = "ok";
++	};
++
++	gpio@c200 { /* GPIO3 -CAMERA SENSOR 2 VDIG*/
++		qcom,mode = <1>;                /* Output */
++		qcom,pull = <5>;                /* No Pull */
++		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
++		qcom,src-sel = <0>;             /* GPIO */
++		qcom,invert = <0>;              /* Invert */
++		qcom,master-en = <1>;           /* Enable GPIO */
++		status = "ok";
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-mdss-panels.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-mdss-panels.dtsi
+new file mode 100644
+index 000000000000..b1d96ae7315d
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-mdss-panels.dtsi
+@@ -0,0 +1,232 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include "display/dsi-panel-tianma-fhd-ili7807d-video.dtsi"
++#include "display/dsi-panel-tianma-fhd-nt36672a-video.dtsi"
++#include "display/dsi-panel-boe-fhd-td4320-video.dtsi"
++#include "display/dsi-panel-csot-fhd-ft8719-video.dtsi"
++
++&dsi_tianma_fhd_ili7807d_video {
++	qcom,mdss-dsi-panel-timings-phy-v2 = [26 20 0a 0d 06 03 04 a0
++		26 20 0a 0d 06 03 04 a0
++		26 20 0a 0d 06 03 04 a0
++		26 20 0a 0d 06 03 04 a0
++		26 21 0a 0b 06 03 04 a0];
++	qcom,mdss-dsi-t-clk-post = <0x0f>;
++	qcom,mdss-dsi-t-clk-pre = <0x38>;
++	qcom,mdss-dsi-min-refresh-rate = <48>;
++	qcom,mdss-dsi-max-refresh-rate = <60>;
++	qcom,mdss-dsi-pan-fps-update = "dfps_immediate_porch_mode_vfp";
++	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++	qcom,mdss-dsi-bl-min-level = <1>;
++	qcom,mdss-dsi-bl-max-level = <4095>;
++	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_tianma_ili7807d>;
++};
++
++&dsi_tianma_fhd_nt36672a_video {
++	qcom,mdss-dsi-panel-timings-phy-v2 = [26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 21 0a 0b 06 03 04 a0];
++	qcom,mdss-dsi-t-clk-post = <0x0f>;
++	qcom,mdss-dsi-t-clk-pre = <0x38>;
++	qcom,mdss-dsi-min-refresh-rate = <48>;
++	qcom,mdss-dsi-max-refresh-rate = <60>;
++	qcom,mdss-dsi-pan-fps-update = "dfps_immediate_porch_mode_vfp";
++	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++	qcom,mdss-dsi-bl-min-level = <1>;
++	qcom,mdss-dsi-bl-max-level = <4095>;
++	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_tianma_nt36672a>;
++};
++
++&dsi_boe_fhd_td4320_video {
++	qcom,mdss-dsi-panel-timings-phy-v2 = [26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 21 0a 0b 06 03 04 a0];
++	qcom,mdss-dsi-t-clk-post = <0x0f>;
++	qcom,mdss-dsi-t-clk-pre = <0x38>;
++	qcom,mdss-dsi-min-refresh-rate = <48>;
++	qcom,mdss-dsi-max-refresh-rate = <60>;
++	qcom,mdss-dsi-pan-fps-update = "dfps_immediate_porch_mode_vfp";
++	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++	qcom,mdss-dsi-bl-min-level = <1>;
++	qcom,mdss-dsi-bl-max-level = <4095>;
++	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_boe_td4320>;
++};
++
++&dsi_csot_fhd_ft8719_video {
++	qcom,mdss-dsi-panel-timings-phy-v2 = [26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 20 0a 0b 06 03 04 a0
++		26 21 0a 0b 06 03 04 a0];
++	qcom,mdss-dsi-t-clk-post = <0x0f>;
++	qcom,mdss-dsi-t-clk-pre = <0x38>;
++	qcom,mdss-dsi-min-refresh-rate = <48>;
++	qcom,mdss-dsi-max-refresh-rate = <60>;
++	qcom,mdss-dsi-pan-fps-update = "dfps_immediate_porch_mode_vfp";
++	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
++	qcom,mdss-dsi-bl-min-level = <1>;
++	qcom,mdss-dsi-bl-max-level = <4095>;
++	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_csot_ft8719>;
++};
++
++&soc {
++        dsi_panel_pwr_supply_tianma_ili7807d: dsi_panel_pwr_supply_tianma_ili7807d {
++		#address-cells = <1>;
++		#size-cells = <0>;
++ 
++		qcom,panel-supply-entry@0 {
++			reg = <0>;
++			qcom,supply-name = "wqhd-vddio";
++			qcom,supply-min-voltage = <1800000>;
++			qcom,supply-max-voltage = <1950000>;
++			qcom,supply-enable-load = <32000>;
++			qcom,supply-disable-load = <80>;
++			qcom,supply-post-on-sleep = <5>;
++			qcom,supply-pre-off-sleep = <15>;
++		};
++ 
++		qcom,panel-supply-entry@1 {
++			reg = <1>;
++			qcom,supply-name = "lab";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-post-on-sleep = <18>;
++		};
++ 
++		qcom,panel-supply-entry@2 {
++			reg = <2>;
++			qcom,supply-name = "ibb";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-pre-off-sleep = <5>;
++		};
++	};
++
++	dsi_panel_pwr_supply_tianma_nt36672a: dsi_panel_pwr_supply_tianma_nt36672a {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		qcom,panel-supply-entry@0 {
++			reg = <0>;
++			qcom,supply-name = "wqhd-vddio";
++			qcom,supply-min-voltage = <1800000>;
++			qcom,supply-max-voltage = <1950000>;
++			qcom,supply-enable-load = <32000>;
++			qcom,supply-disable-load = <80>;
++			qcom,supply-post-on-sleep = <3>;
++			qcom,supply-pre-off-sleep = <20>;
++		};
++
++		qcom,panel-supply-entry@1 {
++			reg = <1>;
++			qcom,supply-name = "lab";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-post-on-sleep = <18>;
++		};
++
++		qcom,panel-supply-entry@2 {
++			reg = <2>;
++			qcom,supply-name = "ibb";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-pre-off-sleep = <5>;
++		};
++	};
++
++	dsi_panel_pwr_supply_boe_td4320: dsi_panel_pwr_supply_boe_td4320{
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		qcom,panel-supply-entry@0 {
++			reg = <0>;
++			qcom,supply-name = "wqhd-vddio";
++			qcom,supply-min-voltage = <1800000>;
++			qcom,supply-max-voltage = <1950000>;
++			qcom,supply-enable-load = <32000>;
++			qcom,supply-disable-load = <80>;
++			qcom,supply-post-on-sleep = <10>;
++			qcom,supply-pre-off-sleep = <20>;
++		};
++
++		qcom,panel-supply-entry@1 {
++			reg = <1>;
++			qcom,supply-name = "lab";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-post-on-sleep = <20>;
++		};
++
++		qcom,panel-supply-entry@2 {
++			reg = <2>;
++			qcom,supply-name = "ibb";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-pre-off-sleep = <5>;
++		};
++	};
++
++	dsi_panel_pwr_supply_csot_ft8719: dsi_panel_pwr_supply_csot_ft8719{
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		qcom,panel-supply-entry@0 {
++			reg = <0>;
++			qcom,supply-name = "wqhd-vddio";
++			qcom,supply-min-voltage = <1800000>;
++			qcom,supply-max-voltage = <1950000>;
++			qcom,supply-enable-load = <32000>;
++			qcom,supply-disable-load = <80>;
++			qcom,supply-post-on-sleep = <5>;
++			qcom,supply-pre-off-sleep = <15>;
++		};
++
++		qcom,panel-supply-entry@1 {
++			reg = <1>;
++			qcom,supply-name = "lab";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-post-on-sleep = <10>;
++		};
++
++		qcom,panel-supply-entry@2 {
++			reg = <2>;
++			qcom,supply-name = "ibb";
++			qcom,supply-min-voltage = <4600000>;
++			qcom,supply-max-voltage = <6000000>;
++			qcom,supply-enable-load = <100000>;
++			qcom,supply-disable-load = <100>;
++			qcom,supply-pre-off-sleep = <5>;
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-pinctrl.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-pinctrl.dtsi
+new file mode 100644
+index 000000000000..61be442e75df
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660-pinctrl.dtsi
+@@ -0,0 +1,33 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++&gpio_key_active {
++	mux {
++		pins = "gpio7";
++	};
++
++	config {
++		pins = "gpio7";
++	};
++};
++
++&gpio_key_suspend {
++	mux {
++		pins = "gpio7";
++	};
++
++	config {
++		pins ="gpio7";
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi
+new file mode 100644
+index 000000000000..a3c9c1779ce4
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-sdm660.dtsi
+@@ -0,0 +1,494 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include "platina-msm-audio.dtsi"
++#include "platina-sdm660-camera-sensor.dtsi"
++#include "platina-sdm660-mdss-panels.dtsi"
++#include "platina-sdm660-pinctrl.dtsi"
++#include "platina-smb1355.dtsi"
++#include "platina-xiaomi-sdm660-common.dtsi"
++
++/* sdm660.dtsi */
++
++&firmware {
++	android {
++		fstab {
++			system {
++				compatible = "android,system";
++				dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/system";
++				type = "ext4";
++				mnt_flags = "ro,barrier=1,discard";
++				fsmgr_flags = "wait,verify";
++				status = "ok";
++			};
++
++			vendor {
++				fsmgr_flags = "wait,verify";
++			};
++		};
++	};
++};
++
++/* platina-sdm660.dtsi */
++
++&qusb_phy0 {
++	qcom,qusb-phy-init-seq = <0xf8 0x80
++				0xaf 0x84
++				0x83 0x88
++				0xc7 0x8c
++				0x00 0x90
++				0x30 0x08
++				0x79 0x0c
++				0x21 0x10
++				0x14 0x9c
++				0x9f 0x1c
++				0x00 0x18>;
++};
++
++&tlmm {
++	/* d2t don't support reverse boost, set gpio20 to in/down */
++	boost_en_disable: boost_en_disable {
++		/* diable state */
++		mux {
++			pins = "gpio20";
++			function = "gpio";
++		};
++
++		config {
++			pins = "gpio20";
++			bias-pull-down; /* PULL DOWN */
++			drive-strength = <2>; /* 2 MA */
++			input-enable;
++		};
++	};
++};
++
++&pm660_charger {
++	qcom,usb-icl-ua = <2750000>;
++	qcom,fcc-max-ua = <3000000>;
++	qcom,fv-max-uv = <4400000>;
++	qcom,sw-jeita-enable;
++	qcom,cool-fcc-ua = <975000>;
++	qcom,critical-low-fcc-ua = <325000>;
++	qcom,normal-cool-fcc-ua = <2275000>;
++	qcom,warm-fcc-ua = <1625000>;
++	qcom,supprot-5v-2a;
++	qcom,use-usbmid;
++	pinctrl-names = "default";
++	pinctrl-0 = <&boost_en_disable>;
++	qcom,thermal-mitigation
++				= <2000000 1800000 1600000 1400000 1200000 1000000 1000000>;
++	qcom,thermal-mitigation-dcp
++				= <2000000 2000000 2000000 2000000 2000000 2000000 2000000
++				   2000000 1800000 1700000 1600000 1400000 1200000 1000000
++				   1000000 1000000>;
++	qcom,thermal-mitigation-qc3
++				= <2750000 2450000 2200000 2150000 2100000 1950000 1825000
++				   1725000 1550000 1250000 1150000 1000000 900000 800000
++				   750000 525000>;
++	qcom,thermal-mitigation-qc2
++				= <1500000 1500000 1500000 1500000 1425000 1325000 1275000
++				   1225000 1175000 1125000 1025000 925000 825000 725000
++				   625000 525000>;
++	qcom,thermal-mitigation-pd-base
++				= <3000000 2800000 2600000 2400000 2200000 2000000 1800000
++				   1600000 1600000 1400000 1200000 1100000 1000000 900000
++				   752500 525000>;
++};
++
++/{
++	/delete-node/ qcom,battery-data;
++
++	mtp_batterydata: qcom,battery-data {
++		qcom,batt-id-range-pct = <15>;
++		#include "battery/batterydata-D2T-coslight-3350mAh.dtsi"
++		#include "battery/batterydata-D2T-desay-3350mAh.dtsi"
++		#include "battery/fg-gen3-batterydata-itech-3000mah.dtsi"
++	};
++};
++
++&pm660_fg {
++	qcom,battery-data = <&mtp_batterydata>;
++	qcom,fg-force-load-profile;
++	qcom,fg-sys-term-current = <(-300)>;
++	qcom,fg-chg-term-current = <200>;
++	qcom,fg-recharge-soc-thr = <99>;
++	qcom,fg-cutoff-voltage = <3400>;
++	qcom,fg-empty-voltage = <3100>;
++	qcom,fg-jeita-hyst-temp = <0>;
++	qcom,fg-jeita-thresholds = <0 15 45 58>;
++	qcom,fg-batt-temp-delta = <6>;
++	qcom,fg-esr-clamp-mohms = <60>;
++	qcom,fg-cutoff-current = <200>;
++	qcom,slope-limit-temp-threshold = <100>;
++	qcom,slope-limit-coeffs = <10 11 12 13>;
++};
++
++&tlmm {
++	smb_int_default: smb_int_default {
++		mux {
++			pins = "gpio21";
++			function = "gpio";
++		};
++		config {
++			pins = "gpio21";
++			drive-strength = <2>;
++			bias-pull-up;
++			input-enable;
++		};
++	};
++};
++
++&i2c_2 {
++	status = "ok";
++};
++
++&smb1355_0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&smb_int_default>;
++	interrupt-parent = <&tlmm>;
++	interrupts = <21 IRQ_TYPE_LEVEL_LOW>;
++	smb1355_charger_0: qcom,smb1355-charger@1000 {
++		io-channels = <&pm660_rradc 2>,
++				<&pm660_rradc 12>;
++		io-channel-names = "charger_temp",
++				"charger_temp_max";
++		status ="ok";
++	};
++};
++
++&smb1355_1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&smb_int_default>;
++	interrupt-parent = <&tlmm>;
++	interrupts = <21 IRQ_TYPE_LEVEL_LOW>;
++	smb1355_charger_1: qcom,smb1355-charger@1000 {
++		io-channels = <&pm660_rradc 2>,
++				<&pm660_rradc 12>;
++		io-channel-names = "charger_temp",
++				"charger_temp_max";
++		status ="ok";
++	};
++};
++
++&i2c_4 { /* BLSP1 QUP3 (TP) */
++	status = "okay";
++	/* Novatek device tree node */
++	novatek@62 {
++		compatible = "novatek,NVT-ts";
++		reg = <0x62>;
++		status = "ok";
++
++		vddio-supply = <&pm660_l11>;
++		lab-supply = <&lcdb_ldo_vreg>;
++		ibb-supply = <&lcdb_ncp_vreg>;
++		novatek,vddio-reg-name = "vddio";
++		novatek,lab-reg-name = "lab";
++		novatek,ibb-reg-name = "ibb";
++
++		novatek,reset-tddi = <&tlmm 53 0x00>;
++		novatek,reset-gpio = <&tlmm 66 0x00>;
++		novatek,irq-gpio = <&tlmm 67 0x2001>;
++		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
++		pinctrl-0 = <&ts_active>;
++		pinctrl-1 = <&ts_nvt_int_suspend &ts_reset_suspend>;
++		novatek,config-array-size = <1>;
++		novatek,display-coords = <1080 2280>;
++		novatek,dump-click-count;
++		novatek,tddi-tp-hw-reset;
++		novatek,cfg_0 {
++			novatek,tp-vendor = <0x46>;
++			novatek,fw-name = "novatek_nt36672_d2t.fw";
++			novatek,clicknum-file-name = "nvt+tianma";
++		};
++		/* MP */
++		/*novatek,mp-support-dt;*/
++	};
++	/*Synatics device tree node*/
++	synaptics_tcm@20 {
++		compatible = "synaptics,tcm-i2c";
++		reg = <0x20>;
++		interrupt-parent = <&tlmm>;
++		vdd-supply = <&pm660_l11>;
++		lab-supply = <&lcdb_ldo_vreg>;
++		ibb-supply = <&lcdb_ncp_vreg>;
++		i2c-supply = <&pm660_l14>;
++		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
++		pinctrl-0 = <&ts_active>;
++		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
++		synaptics,bus-reg-name = "vdd";
++		synaptics,lab-reg-name = "lab";
++		synaptics,ibb-reg-name = "ibb";
++		synaptics,i2c-reg-name = "i2c";
++		synaptics,irq-gpio = <&tlmm 67 0x2008>; /* IRQF_ONESHOT | IRQF_TRIGGER_LOW */
++		synaptics,irq-on-state = <0>;
++		synaptics,reset-gpio = <&tlmm 66 0x0000>;
++		synaptics,mdss-reset = <&tlmm 53 0x0000>;
++		synaptics,reset-on-state = <0>;
++		synaptics,reset-active-ms = <20>;
++		synaptics,reset-delay-ms = <200>;
++		synaptics,power-delay-ms = <200>;
++		synaptics,ubl-i2c-addr = <0x2c>;
++	};
++	focaltech@38 {
++		compatible = "focaltech,fts";
++		reg = <0x38>;
++		interrupt-parent = <&tlmm>;
++		interrupts = <67 0>;
++		vddio-supply = <&pm660_l11>;
++		i2c-supply = <&pm660_l14>;
++		/*avdd-supply = <&pm8994_l22>;*/
++		lab-supply = <&lcdb_ldo_vreg>;
++		ibb-supply = <&lcdb_ncp_vreg>;
++		/*
++		focaltech,vddio-reg-name = "vddio";
++		focaltech,lab-reg-name = "lab";
++		focaltech,ibb-reg-name = "ibb";
++		*/
++		focaltech,i2c-reg-name = "i2c";
++		focaltech,reset-gpio = <&tlmm 66 0x01>;
++		focaltech,lcd-reset-gpio = <&tlmm 53 0x00>;
++		focaltech,irq-gpio = <&tlmm 67 0x02>;
++		focaltech,max-touch-number = <10>;
++		focaltech,display-coords = <0 0 1080 2280>;
++		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
++		pinctrl-0 = <&ts_active>;
++		pinctrl-1 = <&ts_nvt_int_suspend &ts_reset_suspend>;
++		/* focaltech,have-key; */
++	};
++};
++
++&pm660_coincell {
++	qcom,vset-millivolts = <3200>;
++	qcom,charge-enable = <1>;
++};
++
++&pm660_haptics {
++	status = "okay";
++	qcom,wave-play-rate-us = <4878>;
++	qcom,vmax-mv = <3100>;
++	qcom,wave-shape = "sine";
++	qcom,lra-auto-res-mode = "qwd";
++	qcom,lra-res-cal-period = <4>;
++	qcom,lra-qwd-drive-duration = <1>;
++	qcom,brake-pattern = [03 02 00 00];
++	qcom,disable_force_back_emf_delay;
++	qcom,vmax-overbrake-mv = <3596>;
++	qcom,brake-pattern-count = <4>;
++	qcom,brake-pattern-arry = [01 01 00 00
++		02 01 01 00
++		02 01 01 00
++		02 02 01 00];
++};
++
++
++&soc {
++	thermal-message {
++		thermal,batt-array-size = "13";
++		thermal,batt-level-screen-on = "0 2 4 6 8 8 9 10 11 12 14 14 16";
++		thermal,batt-level-screen-off = "0 1 1 1 1 3 4 5 6 7 8 14 16";
++	};
++};
++
++&soc {
++	sound {
++		qcom,msm-mi2s-master = <0>, <1>, <0>, <0>;
++		qcom,msm-mi2s-ext-mclk = <1>,<0>,<0>,<0>;
++		qcom,wsa-max-devs = <0>;
++		qcom,msm-micbias1-ext-cap;
++		qcom,msm-micbias2-ext-cap;
++		qcom,msm-mbhc-hphl-swh = <1>;
++		qcom,msm-mbhc-gnd-swh = <1>;
++		qcom,msm-mbhc-usbc-audio-supported = <1>;
++		qcom,usbc-analog-en1-gpio = <&pm660_gpios 13 0>;
++		qcom,us-euro-gpios = <&us_euro_gpio>;
++	};
++
++	qcom,msm-dai-mi2s {
++		compatible = "qcom,msm-dai-mi2s";
++		dai_mi2s1: qcom,msm-dai-q6-mi2s-sec {
++			compatible = "qcom,msm-dai-q6-mi2s";
++			qcom,msm-dai-q6-mi2s-dev-id = <1>;
++			qcom,msm-mi2s-rx-lines = <1>;
++			qcom,msm-mi2s-tx-lines = <2>;
++			pinctrl-names = "default", "sleep";
++			pinctrl-0 = <&sec_mi2s_active
++					&sec_mi2s_sd0_active
++					&sec_mi2s_sd1_active>;
++			pinctrl-1 = <&sec_mi2s_sleep
++					&sec_mi2s_sd0_sleep
++					&sec_mi2s_sd1_sleep>;
++		};
++	};
++	cdc_sdw_gpios: sdw_clk_data_pinctrl {
++		status = "disabled";
++	};
++
++	wsa_spkr_en1: wsa_spkr_en1_pinctrl {
++		status = "disabled";
++	};
++
++	wsa_spkr_en2: wsa_spkr_en2_pinctrl {
++		status = "disabled";
++	};
++
++	spk_id_pin: spk-id-pin@113{
++		compatible = "audio,speaker-id";
++		audio,speaker-id-gpio = <&tlmm 113 0>;
++		pinctrl-names = "pull_down", "pull_up", "no_pull";
++		pinctrl-0 = <&spk_id_pull_down>;
++		pinctrl-1 = <&spk_id_pull_up>;
++		pinctrl-2 = <&spk_id_no_pull>;
++	};
++};
++
++&pm660_gpios {
++		/* GPIO 13 (AUDIO_SEL) */
++		gpio@cc00 {
++			status = "okay";
++			qcom,mode = <1>;/* Digital out */
++			qcom,pull = <5>;/* No pull */
++		};
++	/* disable pmic gpio_4 as adc for backlight therm */
++	gpio@c300 {
++		reg = <0xc300 0x100>;
++		qcom,pin-num = <4>;
++		status = "ok";
++		qcom,master-en = <0>;
++	};
++};
++
++&i2c_2 { /* smart PA device. */
++		status = "okay";
++		tfa98xx@34 {
++		compatible = "nxp,tfa98xx";
++		reset-gpio = <&tlmm 43 0>;
++		irq-gpio = <&tlmm 48 0>;
++		nxp,spk-id-pin = <&spk_id_pin>;
++		reg = <0x34>;
++		status = "ok";
++		};
++};
++&mdss_dsi0 {
++	qcom,dsi-pref-prim-pan = <&dsi_tianma_fhd_nt36672a_video>;
++};
++
++&tlmm {
++	ts_nvt_int_suspend: ts_nvt_int_suspend {
++		mux {
++			pins = "gpio67";
++			function = "gpio";
++		};
++
++		config {
++			pins = "gpio67";
++			drive-strength = <16>;
++			bias-pull-down;
++		};
++	};
++};
++
++&soc {
++	fingerprint_fpc {
++		status = "ok";
++		compatible = "fpc,fpc1020";
++		interrupt-parent = <&tlmm>;
++		interrupts = <72 0x0>;
++		fpc,gpio_rst = <&tlmm 55 0x0>;
++		fpc,gpio_irq = <&tlmm 72 0x0>;
++		vdd_ana-supply = <&fp_vdd_vreg>;
++		/* fpc,enable-on-boot; */
++		/* fpc,enable-wakeup; */
++
++		pinctrl-names = "fpc1020_reset_reset",
++			"fpc1020_reset_active",
++			"fpc1020_irq_active";
++
++		pinctrl-0 = <&msm_gpio_55>;
++		pinctrl-1 = <&msm_gpio_55_output_high>;
++		pinctrl-2 = <&msm_gpio_72>;
++
++	};
++
++	fingerprint_goodix {
++		compatible = "goodix,fingerprint";
++		gooidx,gpio-reset = <&tlmm 55 0x0>;
++		goodix,gpio-irq = <&tlmm 72 0x0>;
++		status = "ok";
++	};
++
++	fp_vdd_vreg: fp_vdd_vreg {
++		compatible = "regulator-fixed";
++		regulator-name = "fp_vdd_vreg";
++		startup-delay-us = <4000>;
++		enable-active-high;
++		gpio = <&tlmm 64 0>;
++	};
++};
++
++&tlmm {
++	/* GPIO_55 : FP_RESET_N */
++	msm_gpio_55: msm_gpio_55 {
++		mux {
++			pins = "gpio55";
++			function = "gpio";
++		};
++
++		config {
++			pins = "gpio55";
++			drive-strength = <2>;
++			bias-disable;
++			output-low;
++		};
++	};
++
++	/* GPIO_55 : FP_RESET_N, state device active*/
++	msm_gpio_55_output_high: msm_gpio_55_output_high {
++		mux {
++			pins = "gpio55";
++			function = "gpio";
++		};
++
++		config {
++			pins = "gpio55";
++			drive-strength = <2>;
++			bias-disable;
++			output-high;
++		};
++	};
++
++	/* GPIO_72 : FP_INT_N */
++	msm_gpio_72: msm_gpio_72 {
++		mux {
++			pins = "gpio72";
++			function = "gpio";
++		};
++
++		config {
++			pins = "gpio72";
++			drive-strength = <2>;
++			bias-pull-down;
++		};
++	};
++};
++
++&fp_vdd_vreg {
++	regulator-always-on;
++};
++
++&soc {
++	qcom,qbt1000 {
++		status = "disabled";
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-smb1355.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-smb1355.dtsi
+new file mode 100644
+index 000000000000..0410ca54b3f2
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-smb1355.dtsi
+@@ -0,0 +1,111 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++&i2c_2 {
++	smb1355_0: qcom,smb1355@8 {
++		compatible = "qcom,i2c-pmic";
++		reg = <0x8>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		interrupt-parent = <&spmi_bus>;
++		interrupts = <0x0 0xd1 0x0 IRQ_TYPE_LEVEL_LOW>;
++		interrupt_names = "smb1355_0";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		qcom,periph-map = <0x10 0x12 0x13 0x16>;
++
++		smb1355_revid_0: qcom,revid@100 {
++			compatible = "qcom,qpnp-revid";
++			reg = <0x100 0x100>;
++		};
++
++		smb1355_charger_0: qcom,smb1355-charger@1000 {
++			compatible = "qcom,smb1355";
++			qcom,pmic-revid = <&smb1355_revid_0>;
++			reg = <0x1000 0x700>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			interrupt-parent = <&smb1355_0>;
++			status = "disabled";
++
++			io-channels = <&pm660_rradc 8>,
++				      <&pm660_rradc 10>;
++			io-channel-names = "charger_temp",
++					   "charger_temp_max";
++
++			qcom,chgr@1000 {
++				reg = <0x1000 0x100>;
++				interrupts = <0x10 0x1 IRQ_TYPE_EDGE_RISING>;
++				interrupt-names = "chg-state-change";
++			};
++
++			qcom,chgr-misc@1600 {
++				reg = <0x1600 0x100>;
++				interrupts = <0x16 0x1 IRQ_TYPE_EDGE_RISING>,
++					     <0x16 0x6 IRQ_TYPE_EDGE_RISING>;
++				interrupt-names = "wdog-bark",
++						  "temperature-change";
++			};
++		};
++	};
++
++	smb1355_1: qcom,smb1355@c {
++		compatible = "qcom,i2c-pmic";
++		reg = <0xc>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		interrupt-parent = <&spmi_bus>;
++		interrupts = <0x0 0xd1 0x0 IRQ_TYPE_LEVEL_LOW>;
++		interrupt_names = "smb1355_1";
++		interrupt-controller;
++		#interrupt-cells = <3>;
++		qcom,periph-map = <0x10 0x12 0x13 0x16>;
++
++		smb1355_revid_1: qcom,revid@100 {
++			compatible = "qcom,qpnp-revid";
++			reg = <0x100 0x100>;
++		};
++
++		smb1355_charger_1: qcom,smb1355-charger@1000 {
++			compatible = "qcom,smb1355";
++			qcom,pmic-revid = <&smb1355_revid_1>;
++			reg = <0x1000 0x700>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			interrupt-parent = <&smb1355_1>;
++			status = "disabled";
++
++			io-channels = <&pm660_rradc 8>,
++				      <&pm660_rradc 10>;
++			io-channel-names = "charger_temp",
++					   "charger_temp_max";
++
++			qcom,chgr@1000 {
++				reg = <0x1000 0x100>;
++				interrupts = <0x10 0x1 IRQ_TYPE_EDGE_RISING>;
++				interrupt-names = "chg-state-change";
++			};
++
++			qcom,chgr-misc@1600 {
++				reg = <0x1600 0x100>;
++				interrupts = <0x16 0x1 IRQ_TYPE_EDGE_RISING>,
++					     <0x16 0x6 IRQ_TYPE_EDGE_RISING>;
++				interrupt-names = "wdog-bark",
++						  "temperature-change";
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-xiaomi-sdm660-common.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-xiaomi-sdm660-common.dtsi
+new file mode 100644
+index 000000000000..ce640295be47
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/platina/platina-xiaomi-sdm660-common.dtsi
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++&soc {
++	gpio_keys {
++		hall_key0 {
++			label = "hall_key0";
++			gpios = <&tlmm 75 0x01>;
++			linux,input-type = <5>;
++			linux,code = <0>;
++			gpio-key,wakeup;
++			debounce-interval = <15>;
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/platina.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/platina.dtsi
+new file mode 100644
+index 000000000000..94650436147b
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/platina.dtsi
+@@ -0,0 +1,3 @@
++#include "xiaomi-sdm660-common.dtsi"
++#include "mi/mi-sdm660-common.dtsi"
++#include "mi/platina/platina-sdm660.dtsi"
+-- 
+2.49.0
+

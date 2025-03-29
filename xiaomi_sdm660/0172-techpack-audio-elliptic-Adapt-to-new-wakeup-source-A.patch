@@ -1,0 +1,53 @@
+From 4c070ffb7dd6cebac4235273efc134a1efbe2b82 Mon Sep 17 00:00:00 2001
+From: Tashfin Shakeer Rhythm <tashfinshakeerrhythm@gmail.com>
+Date: Sat, 19 Mar 2022 19:15:16 +0600
+Subject: [PATCH 172/178] techpack: audio: elliptic: Adapt to new wakeup source
+ API fully
+
+wakeup_source_init() and wakeup_source_trash() have been deprecated.
+Adapt to the new wakeup_source_{register, unregister} functions to
+fix the following compilation errors:
+
+../techpack/audio/dsp/elliptic/elliptic.c:772:2: error: implicit declaration of function 'wakeup_source_init' [-Werror,-Wimplicit-function-declaration]
+        wakeup_source_init(wake_source, "elliptic_wake_source");
+        ^
+../techpack/audio/dsp/elliptic/elliptic.c:772:2: note: did you mean 'wakeup_source_add'?
+../include/linux/pm_wakeup.h:105:13: note: 'wakeup_source_add' declared here
+extern void wakeup_source_add(struct wakeup_source *ws);
+            ^
+../techpack/audio/dsp/elliptic/elliptic.c:792:3: error: implicit declaration of function 'wakeup_source_trash' [-Werror,-Wimplicit-function-declaration]
+                wakeup_source_trash(wake_source);
+                ^
+
+Subsequent to: b92d081fac ("techpack: audio: elliptic: adapt driver to kernel 4.19")
+
+Change-Id: Id91fdaa8b68b2a292638415aee89c1f8b6f98fe8
+---
+ techpack/audio/dsp/elliptic/elliptic.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/techpack/audio/dsp/elliptic/elliptic.c b/techpack/audio/dsp/elliptic/elliptic.c
+index b0f938d01606..36db1b3945c5 100644
+--- a/techpack/audio/dsp/elliptic/elliptic.c
++++ b/techpack/audio/dsp/elliptic/elliptic.c
+@@ -770,7 +770,7 @@ int __init elliptic_driver_init(void)
+ 		return -ENOMEM;
+ 	}
+ 
+-	wakeup_source_init(wake_source, "elliptic_wake_source");
++	wake_source = wakeup_source_register(NULL, "elliptic_wake_source");
+ 
+ #ifdef ELLIPTIC_LOAD_CALIBRATION_DATA_FROM_FILESYSTEM
+ 	/* Code to send calibration to engine */
+@@ -790,7 +790,7 @@ int __init elliptic_driver_init(void)
+ void elliptic_driver_exit(void)
+ {
+ 	if (wake_source) {
+-		wakeup_source_trash(wake_source);
++		wakeup_source_unregister(wake_source);
+ 		kfree(wake_source);
+ 	}
+ 
+-- 
+2.49.0
+

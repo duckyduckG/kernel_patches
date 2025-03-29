@@ -1,0 +1,57 @@
+From e12bef0bd99ee615bad107741637931e95a1a88a Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Mon, 22 Aug 2022 11:37:27 +0200
+Subject: [PATCH 064/178] arm64: dts: xiaomi: tulip: Use sdm660-mtp camera
+ gpios
+
+Change-Id: If6a94053fa1eb4c7d920c19c9f6f2385588f98a6
+---
+ .../longcheer/tulip/tulip-camera-sensor-mtp.dtsi      | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi
+index bd84aaaa2cc5..1ff37cde386f 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi
+@@ -56,6 +56,8 @@
+ 		regulator-min-microvolt = <1200000>;//1350000
+ 		regulator-max-microvolt = <1200000>;
+ 		enable-active-high;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cam_sensor_eldo4_default>;
+ 		gpio = <&pm660l_gpios 4 0>;
+ 		vin-supply = <&pm660_s5>;
+ 	};
+@@ -284,7 +286,8 @@
+ 		qcom,gpio-no-mux = <0>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_sensor_mclk1_active
+-				 &cam_sensor_front_active>;
++				 &cam_sensor_front_active
++				 &cam_sensor_eldo3_default>;
+ 		pinctrl-1 = <&cam_sensor_mclk1_suspend
+ 				 &cam_sensor_front_suspend>;
+ 		gpios = <&tlmm 33 0>,
+@@ -559,7 +562,8 @@
+ 		qcom,gpio-no-mux = <0>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_sensor_mclk1_active
+-				 &cam_sensor_front_active>;
++				 &cam_sensor_front_active
++				 &cam_sensor_eldo3_default>;
+ 		pinctrl-1 = <&cam_sensor_mclk1_suspend
+ 				 &cam_sensor_front_suspend>;
+ 		gpios = <&tlmm 33 0>,
+@@ -878,7 +882,8 @@
+ 		qcom,gpio-no-mux = <0>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_sensor_mclk1_active
+-				 &cam_sensor_front_active>;
++				 &cam_sensor_front_active
++				 &cam_sensor_eldo3_default>;
+ 		pinctrl-1 = <&cam_sensor_mclk1_suspend
+ 				 &cam_sensor_front_suspend>;
+ 		gpios = <&tlmm 33 0>,
+-- 
+2.49.0
+

@@ -1,0 +1,76 @@
+From 9e2fad0d5b5dd684cba43229cd0ab5bb27d9860b Mon Sep 17 00:00:00 2001
+From: Khusika Dhamar Gusti <mail@khusika.com>
+Date: Fri, 13 Sep 2019 23:05:32 +0700
+Subject: [PATCH 117/178] input: touchscreen: nvt_touch_*: fix snprintf error
+
+Fixes the following clang error:
+
+../drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c:1487:3: error: 'snprintf' size argument is too large; destination buffer has size
+32, but size argument is 4096 [-Werror,-Wfortify-source]
+                snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
+                ^
+1 error generated.
+
+Change-Id: I3988e96941df236a879d64c09788d7074ded9f01
+---
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c   | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c | 2 +-
+ drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c | 2 +-
+ drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c
+index 73d0f956399b..76c8dcb36662 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx_mp_ctrlram.c
+@@ -1411,7 +1411,7 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 		 * Ex. nvt_pid = 500A
+ 		 *     mpcriteria = "novatek-mp-criteria-500A"
+ 		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
++		snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid);
+ 
+ 		nvt_mp_parse_dt(np, mpcriteria);
+ 	} else {
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c
+index f1e724502b17..3442618bafda 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx_mp_ctrlram.c
+@@ -1484,7 +1484,7 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 		 * Ex. nvt_pid = 500A
+ 		 *     mpcriteria = "novatek-mp-criteria-500A"
+ 		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
++		snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid);
+ 
+ 		nvt_mp_parse_dt(np, mpcriteria);
+ 	} else {
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c
+index f5dbb0825b79..9a0cfeaf6f52 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx_mp_ctrlram.c
+@@ -1484,7 +1484,7 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 		 * Ex. nvt_pid = 500A
+ 		 *     mpcriteria = "novatek-mp-criteria-500A"
+ 		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
++		snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid);
+ 
+ 		nvt_mp_parse_dt(np, mpcriteria);
+ 	} else {
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c
+index fdeb40f6ca86..3995e44cd239 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx_mp_ctrlram.c
+@@ -1378,7 +1378,7 @@ static int32_t nvt_selftest_open(struct inode *inode, struct file *file)
+ 		 * Ex. nvt_pid = 500A
+ 		 *     mpcriteria = "novatek-mp-criteria-500A"
+ 		 */
+-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
++		snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid);
+ 
+ 		nvt_mp_parse_dt(np, mpcriteria);
+ 	} else {
+-- 
+2.49.0
+

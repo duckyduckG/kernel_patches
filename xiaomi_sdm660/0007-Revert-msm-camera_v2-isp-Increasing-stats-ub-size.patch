@@ -1,0 +1,39 @@
+From a94f79dd05fbf9501c69de07241fcb5c92df4f86 Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Date: Fri, 26 Jun 2020 11:13:26 +0530
+Subject: [PATCH 007/178] Revert "msm:camera_v2:isp:Increasing stats ub size"
+
+This reverts commit 140b04d8a43ab6444807ce535e91c836f3037150.
+
+Change-Id: Iefe48f838453dab853fa3ab3c5497bcae1a1924f
+---
+ drivers/media/platform/msm/camera_v2/isp/msm_isp48.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
+index c61e80699c37..d68ae789bdaa 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp48.c
+@@ -31,7 +31,7 @@
+ #define MSM_VFE48_BUS_CLIENT_INIT 0xABAB
+ #define VFE48_STATS_BURST_LEN 3
+ #define VFE48_UB_SIZE_VFE 2048 /* 2048 * 256 bits = 64KB */
+-#define VFE48_UB_STATS_SIZE 352
++#define VFE48_UB_STATS_SIZE 288
+ #define MSM_ISP48_TOTAL_IMAGE_UB_VFE (VFE48_UB_SIZE_VFE - VFE48_UB_STATS_SIZE)
+ 
+ 
+@@ -322,8 +322,8 @@ void msm_vfe48_stats_cfg_ub(struct vfe_device *vfe_dev)
+ 	int i;
+ 	uint32_t ub_offset = 0, stats_burst_len;
+ 	uint32_t ub_size[VFE47_NUM_STATS_TYPE] = {
+-		64, /* MSM_ISP_STATS_HDR_BE */
+-		64, /* MSM_ISP_STATS_BG */
++		32, /* MSM_ISP_STATS_HDR_BE */
++		32, /* MSM_ISP_STATS_BG */
+ 		32, /* MSM_ISP_STATS_BF */
+ 		32, /* MSM_ISP_STATS_HDR_BHIST */
+ 		32, /* MSM_ISP_STATS_RS */
+-- 
+2.49.0
+

@@ -1,0 +1,48 @@
+From 29a3eb376a44a285e7341afe7914038018679168 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 28 Oct 2020 13:14:00 +0000
+Subject: [PATCH 063/178] arm64: dts: xiaomi: whyred: Use sdm660-mtp camera
+ gpios
+
+Change-Id: I176a6862d602f9a812410e8cc6aa841b714627fd
+---
+ .../longcheer/whyred/whyred-camera-sensor-mtp.dtsi       | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi
+index cdf434ccca49..1e7d1e8cf897 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi
+@@ -432,7 +432,8 @@ eeprom3: qcom,eeprom@3 {
+ 		qcom,gpio-no-mux = <0>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_sensor_mclk1_active
+-				 &cam_sensor_front_active>;
++				 &cam_sensor_front_active
++				 &cam_sensor_eldo3_default>;
+ 		pinctrl-1 = <&cam_sensor_mclk1_suspend
+ 				 &cam_sensor_front_suspend>;
+ 		gpios = <&tlmm 33 0>,
+@@ -488,7 +489,8 @@ eeprom3: qcom,eeprom@3 {
+ 		qcom,gpio-no-mux = <0>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_sensor_mclk1_active
+-				 &cam_sensor_front_active>;
++				 &cam_sensor_front_active
++				 &cam_sensor_eldo3_default>;
+ 		pinctrl-1 = <&cam_sensor_mclk1_suspend
+ 				 &cam_sensor_front_suspend>;
+ 		gpios = <&tlmm 33 0>,
+@@ -542,7 +544,8 @@ eeprom3: qcom,eeprom@3 {
+ 		qcom,gpio-no-mux = <0>;
+ 		pinctrl-names = "cam_default", "cam_suspend";
+ 		pinctrl-0 = <&cam_sensor_mclk1_active
+-				 &cam_sensor_front_active>;
++				 &cam_sensor_front_active
++				 &cam_sensor_eldo3_default>;
+ 		pinctrl-1 = <&cam_sensor_mclk1_suspend
+ 				 &cam_sensor_front_suspend>;
+ 		gpios = <&tlmm 33 0>,
+-- 
+2.49.0
+

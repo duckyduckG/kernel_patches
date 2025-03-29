@@ -1,0 +1,65 @@
+From af58ac29e3f6cd5dccf12f51f4c812cb1a935db8 Mon Sep 17 00:00:00 2001
+From: Vijay kumar Tumati <vtumati@codeaurora.org>
+Date: Thu, 14 Jun 2018 09:27:24 +0530
+Subject: [PATCH 009/178] msm: camera: sensor: Add support for front aux sensor
+
+Allow front aux sensor to be connected on device.
+
+Change-Id: I0386c23c77b38200c20581cd85b20c96bf074547
+Signed-off-by: Vijay kumar Tumati <vtumati@codeaurora.org>
+---
+ include/uapi/media/msm_camera.h        | 2 +-
+ include/uapi/media/msm_camsensor_sdk.h | 3 +++
+ include/uapi/media/msmb_camera.h       | 2 +-
+ 3 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/include/uapi/media/msm_camera.h b/include/uapi/media/msm_camera.h
+index 953cd735d461..24d07500e85b 100644
+--- a/include/uapi/media/msm_camera.h
++++ b/include/uapi/media/msm_camera.h
+@@ -254,7 +254,7 @@ struct msm_mctl_post_proc_cmd {
+ #define MSM_CAMERA_STROBE_FLASH_NONE 0
+ #define MSM_CAMERA_STROBE_FLASH_XENON 1
+ 
+-#define MSM_MAX_CAMERA_SENSORS  5
++#define MSM_MAX_CAMERA_SENSORS  6
+ #define MAX_SENSOR_NAME 32
+ #define MAX_CAM_NAME_SIZE 32
+ #define MAX_ACT_MOD_NAME_SIZE 32
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index 03def893a403..a4610da9d670 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -55,6 +55,8 @@
+ 
+ #define SECURE_CAM_RST_MODULES
+ 
++#define FRONT_AUX_SENSOR_SUPPORT
++
+ enum msm_sensor_camera_id_t {
+ 	CAMERA_0,
+ 	CAMERA_1,
+@@ -77,6 +79,7 @@ enum camb_position_t {
+ 	BACK_CAMERA_B,
+ 	FRONT_CAMERA_B,
+ 	AUX_CAMERA_B = 0x100,
++	FRONT_AUX_CAMERA_B,
+ 	INVALID_CAMERA_B,
+ };
+ 
+diff --git a/include/uapi/media/msmb_camera.h b/include/uapi/media/msmb_camera.h
+index b6be6d8d29b7..caab32b534f4 100644
+--- a/include/uapi/media/msmb_camera.h
++++ b/include/uapi/media/msmb_camera.h
+@@ -55,7 +55,7 @@
+ #define MSM_CAMERA_SUBDEV_EXT          19
+ #define MSM_CAMERA_SUBDEV_TOF          20
+ #define MSM_CAMERA_SUBDEV_LASER_LED    21
+-#define MSM_MAX_CAMERA_SENSORS  5
++#define MSM_MAX_CAMERA_SENSORS  6
+ 
+ /* The below macro is defined to put an upper limit on maximum
+  * number of buffer requested per stream. In case of extremely
+-- 
+2.49.0
+

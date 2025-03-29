@@ -1,0 +1,33 @@
+From 0c20df597c0f329f122ae39fe6aeda21c9d117f2 Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Wed, 20 Mar 2019 12:59:17 +0100
+Subject: [PATCH 020/178] media: camera_v2: csiphy: Adapt PHY ctrl26 for
+ SDM630/636/660
+
+Following Qualcomm, adapt this control to "align with HPG for
+impedance value" on SDM 630/636/660 by adding runtime detection
+of it, since this PHY is used on MSM8996 as well.
+
+Change-Id: I86ead7e4cfecb96a6bcfd5c2bb55f31e882afe36
+---
+ .../media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c   | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+index 8d47f5bfe83a..d5af192953d5 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+@@ -2478,6 +2478,10 @@ static int csiphy_probe(struct platform_device *pdev)
+ 		new_csiphy_dev->csiphy_3phase = CSI_3PHASE_HW;
+ 	} else if (of_device_is_compatible(new_csiphy_dev->pdev->dev.of_node,
+ 		"qcom,csiphy-v3.5")) {
++		if (of_machine_is_compatible("qcom,sdm630") ||
++		    of_machine_is_compatible("qcom,sdm636") ||
++		    of_machine_is_compatible("qcom,sdm660"))
++			csiphy_v3_5_3ph.mipi_csiphy_3ph_lnn_ctrl26.data = 0x70;
+ 		new_csiphy_dev->ctrl_reg->csiphy_3ph_reg = csiphy_v3_5_3ph;
+ 		new_csiphy_dev->ctrl_reg->csiphy_reg = csiphy_v3_5;
+ 		new_csiphy_dev->hw_dts_version = CSIPHY_VERSION_V35;
+-- 
+2.49.0
+

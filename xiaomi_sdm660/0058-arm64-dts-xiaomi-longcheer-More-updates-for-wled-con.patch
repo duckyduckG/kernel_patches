@@ -1,0 +1,29 @@
+From 792f67aea5bb4cbd631b70137fa646b61fb43e98 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 28 Oct 2020 13:13:42 +0000
+Subject: [PATCH 058/178] arm64: dts: xiaomi: longcheer: More updates for wled
+ config for 4.14
+
+Change-Id: Iaf7dc7c19ce04b9b1f7264f09599b9080944e8c7
+---
+ .../vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi  | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
+index 95df9d319fc8..d9bac85094ab 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
+@@ -61,8 +61,8 @@
+ 
+ /* common diff with msm-pm660l.dtsi */
+ &pm660l_wled {
+-	/delete-property/ qcom,auto-calibration-enable;
+-	qcom,fs-curr-ua = <20000>;
++	/delete-property/ qcom,auto-calibration;
++	qcom,fs-current-limit = <20000>;
+ 	qcom,en-cabc;
+ 	qcom,string-cfg = <3>;
+ };
+-- 
+2.49.0
+

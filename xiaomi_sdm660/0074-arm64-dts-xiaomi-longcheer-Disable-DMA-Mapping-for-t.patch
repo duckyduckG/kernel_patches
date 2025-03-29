@@ -1,0 +1,31 @@
+From 6530ca834417030247968da9e27313e84d81d3d7 Mon Sep 17 00:00:00 2001
+From: Vaisakh Murali <vaisakhmurali@gmail.com>
+Date: Sun, 17 May 2020 17:29:48 +0600
+Subject: [PATCH 074/178] arm64: dts: xiaomi: longcheer: Disable DMA Mapping
+ for touchscreen explicitly
+
+* Apparently the older driver panics on dma mapping the video_mode memory addresses.
+  Which leads to i2c not DMA-ing the address.
+* Disabling explicitly avoid this panic.
+
+Signed-off-by: Vaisakh Murali <vaisakhmurali@gmail.com>
+Change-Id: I6157433d617c485921a8e044de324439eb49f1c3
+---
+ .../qcom/xiaomi/longcheer/common/longcheer-sdm660-base.dtsi   | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-base.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-base.dtsi
+index 371e84f3bc9b..4f1b50b37ad5 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-base.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-base.dtsi
+@@ -109,3 +109,7 @@
+ &pm660l_l3 {
+ 	regulator-always-on;
+ };
++
++&i2c_1 {
++	qcom,disable-dma;
++};
+-- 
+2.49.0
+

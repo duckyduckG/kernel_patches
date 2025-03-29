@@ -1,0 +1,73 @@
+From ebfaab63bc9aa8a77aebb9832e56f2cde5cfa73f Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Wed, 28 Aug 2019 19:22:42 +0200
+Subject: [PATCH 039/178] arm64: dts: xiaomi: Disable verify for system and
+ vendor
+
+Change-Id: I034feeb18fb24eb66c7ae49b12f3a9db265d3da8
+---
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi           | 2 +-
+ .../vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi | 4 ++--
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi             | 4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+index 1e7a3bb01bb3..b68ab0954e47 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+@@ -17,7 +17,7 @@
+ 		fstab {
+ 			vendor {
+ 				mnt_flags = "ro,barrier=1";
+-				fsmgr_flags = "wait,slotselect,verify";
++				fsmgr_flags = "wait,slotselect";
+ 			};
+ 		};
+ 	};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi
+index 5b7deb9f0c26..da16cc17a9de 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm636.dtsi
+@@ -16,7 +16,7 @@
+ 		fstab {
+ 			vendor {
+ 				mnt_flags = "ro,barrier=1";
+-				fsmgr_flags = "wait,verify";
++				fsmgr_flags = "wait";
+ 			};
+ 
+ 			system {
+@@ -24,7 +24,7 @@
+ 				dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/system";
+ 				type = "ext4";
+ 				mnt_flags = "ro,barrier=1";
+-				fsmgr_flags = "wait,verify";
++				fsmgr_flags = "wait";
+ 				status = "ok";
+ 			};
+ 		};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+index afeb9887d27e..f6fcd248628a 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+@@ -18,7 +18,7 @@
+ 		fstab {
+ 			vendor {
+ 				mnt_flags = "ro,barrier=1";
+-				fsmgr_flags = "wait,verify";
++				fsmgr_flags = "wait";
+ 			};
+ 
+ 			system {
+@@ -26,7 +26,7 @@
+ 				dev = "/dev/block/platform/soc/c0c4000.sdhci/by-name/system";
+ 				type = "ext4";
+ 				mnt_flags = "ro,barrier=1";
+-				fsmgr_flags = "wait,verify";
++				fsmgr_flags = "wait";
+ 				status = "ok";
+ 			};
+ 		};
+-- 
+2.49.0
+

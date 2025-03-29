@@ -1,0 +1,62 @@
+From 7e6a29de2a3b09189f49f6d06b0a77c98fab7ee3 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Sun, 28 Jun 2020 19:03:12 +0800
+Subject: [PATCH 093/178] input: fingerprint: goodix: Convert wakelock to
+ wakeup source
+
+Change-Id: I4e38a712602f73a1b62aa3282d2459dff17e53f7
+---
+ drivers/input/fingerprint/goodix/gf_spi.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/fingerprint/goodix/gf_spi.c b/drivers/input/fingerprint/goodix/gf_spi.c
+index 8f40c0ee5ae3..b63ba0a4a683 100644
+--- a/drivers/input/fingerprint/goodix/gf_spi.c
++++ b/drivers/input/fingerprint/goodix/gf_spi.c
+@@ -41,7 +41,6 @@
+ #include <linux/fb.h>
+ #include <linux/pm_qos.h>
+ #include <linux/cpufreq.h>
+-#include <linux/wakelock.h>
+ #include <linux/mdss_io_util.h>
+ #include "gf_spi.h"
+ 
+@@ -77,7 +76,7 @@ static int SPIDEV_MAJOR;
+ static DECLARE_BITMAP(minors, N_SPI_MINORS);
+ static LIST_HEAD(device_list);
+ static DEFINE_MUTEX(device_list_lock);
+-static struct wake_lock fp_wakelock;
++static struct wakeup_source fp_wakelock;
+ static struct gf_dev gf;
+ 
+ static struct gf_key_map maps[] = {
+@@ -326,7 +325,7 @@ static irqreturn_t gf_irq(int irq, void *handle)
+ #if defined(GF_NETLINK_ENABLE)
+ 	char msg = GF_NET_EVENT_IRQ;
+ 	struct gf_dev *gf_dev = &gf;
+-	wake_lock_timeout(&fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
++	__pm_wakeup_event(&fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
+ 	sendnlmsg(&msg);
+ 	if ((gf_dev->wait_finger_down == true) && (gf_dev->device_available == 1) && (gf_dev->fb_black == 1)) {
+ 		printk("%s:shedule_work\n",__func__);
+@@ -859,7 +858,7 @@ static int gf_probe(struct platform_device *pdev)
+ 		goto error_sysfs;
+ 	}
+ 
+-	wake_lock_init(&fp_wakelock, WAKE_LOCK_SUSPEND, "fp_wakelock");
++	wakeup_source_init(&fp_wakelock, "fp_wakelock");
+ 
+ 	pr_info("version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR, PATCH_LEVEL);
+ 
+@@ -899,7 +898,7 @@ static int gf_remove(struct platform_device *pdev)
+ {
+ 	struct gf_dev *gf_dev = &gf;
+ 
+-	wake_lock_destroy(&fp_wakelock);
++	wakeup_source_trash(&fp_wakelock);
+ 	fb_unregister_client(&gf_dev->notifier);
+ 	if (gf_dev->input)
+ 		input_unregister_device(gf_dev->input);
+-- 
+2.49.0
+

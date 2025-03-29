@@ -1,0 +1,943 @@
+From 1b6073160b52f49cc9e9229de9406aafd1c2b480 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Fri, 7 Feb 2020 15:46:03 +0800
+Subject: [PATCH 159/178] fbdev: msm: Import Xiaomi Mi board changes
+
+Change-Id: Id0ae2606bccd520dc7c48a7640d228ef84c1d039
+---
+ drivers/video/fbdev/core/fbmem.c         |  17 ++
+ drivers/video/fbdev/msm/mdss_dsi.c       |   9 +
+ drivers/video/fbdev/msm/mdss_dsi.h       |  14 ++
+ drivers/video/fbdev/msm/mdss_dsi_panel.c | 256 +++++++++++++++++++++++
+ drivers/video/fbdev/msm/mdss_fb.c        | 235 +++++++++++++++++++++
+ drivers/video/fbdev/msm/mdss_fb.h        |   5 +
+ drivers/video/fbdev/msm/mdss_panel.h     |  23 ++
+ include/linux/fb.h                       |   3 +
+ include/linux/mdss_io_util.h             |  13 ++
+ 9 files changed, 575 insertions(+)
+
+diff --git a/drivers/video/fbdev/core/fbmem.c b/drivers/video/fbdev/core/fbmem.c
+index 8e1963b9504e..817f1ce8283f 100644
+--- a/drivers/video/fbdev/core/fbmem.c
++++ b/drivers/video/fbdev/core/fbmem.c
+@@ -2,6 +2,7 @@
+  *  linux/drivers/video/fbmem.c
+  *
+  *  Copyright (C) 1994 Martin Schaller
++ *  Copyright (C) 2019 XiaoMi, Inc.
+  *
+  *	2001 - Documented with DocBook
+  *	- Brad Douglas <brad@neruo.com>
+@@ -1079,6 +1080,14 @@ fb_blank(struct fb_info *info, int blank)
+  	if (blank > FB_BLANK_POWERDOWN)
+  		blank = FB_BLANK_POWERDOWN;
+ 
++#ifdef CONFIG_MACH_MI
++	if (info->blank == blank) {
++		if (info->fbops->fb_blank)
++			ret = info->fbops->fb_blank(blank, info);
++		return ret;
++	}
++#endif
++
+ 	event.info = info;
+ 	event.data = &blank;
+ 
+@@ -1098,6 +1107,11 @@ fb_blank(struct fb_info *info, int blank)
+ 			fb_notifier_call_chain(FB_R_EARLY_EVENT_BLANK, &event);
+ 	}
+ 
++#ifdef CONFIG_MACH_MI
++	if (!ret)
++		info->blank = blank;
++#endif
++
+  	return ret;
+ }
+ EXPORT_SYMBOL(fb_blank);
+@@ -1685,6 +1699,9 @@ static int do_register_framebuffer(struct fb_info *fb_info)
+ 		if (!registered_fb[i])
+ 			break;
+ 	fb_info->node = i;
++#ifdef CONFIG_MACH_MI
++	fb_info->blank = -1;
++#endif
+ 	atomic_set(&fb_info->count, 1);
+ 	mutex_init(&fb_info->lock);
+ 	mutex_init(&fb_info->mm_lock);
+diff --git a/drivers/video/fbdev/msm/mdss_dsi.c b/drivers/video/fbdev/msm/mdss_dsi.c
+index 110e000b83a6..1fccdd42dc97 100644
+--- a/drivers/video/fbdev/msm/mdss_dsi.c
++++ b/drivers/video/fbdev/msm/mdss_dsi.c
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved. */
++/* Copyright (C) 2019 XiaoMi, Inc. */
+ 
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+@@ -4524,6 +4525,14 @@ static int mdss_dsi_parse_gpio_params(struct platform_device *ctrl_pdev,
+ 		pr_err("%s:%d, reset gpio not specified\n",
+ 						__func__, __LINE__);
+ 
++#ifdef CONFIG_MACH_MI
++	ctrl_pdata->tp_rst_gpio = of_get_named_gpio(ctrl_pdev->dev.of_node,
++			 "qcom,platform-tp-reset-gpio", 0);
++	if (!gpio_is_valid(ctrl_pdata->tp_rst_gpio))
++		pr_err("%s:%d, tp reset gpio not specified\n",
++						__func__, __LINE__);
++#endif
++
+ 	ctrl_pdata->lcd_mode_sel_gpio = of_get_named_gpio(
+ 			ctrl_pdev->dev.of_node, "qcom,panel-mode-gpio", 0);
+ 	if (!gpio_is_valid(ctrl_pdata->lcd_mode_sel_gpio)) {
+diff --git a/drivers/video/fbdev/msm/mdss_dsi.h b/drivers/video/fbdev/msm/mdss_dsi.h
+index 7b462ab40bb2..d01247380b69 100644
+--- a/drivers/video/fbdev/msm/mdss_dsi.h
++++ b/drivers/video/fbdev/msm/mdss_dsi.h
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved. */
++/* Copyright (C) 2019 XiaoMi, Inc. */
+ 
+ #ifndef MDSS_DSI_H
+ #define MDSS_DSI_H
+@@ -588,6 +589,19 @@ struct mdss_dsi_ctrl_pdata {
+ 	bool update_phy_timing; /* flag to recalculate PHY timings */
+ 
+ 	bool phy_power_off;
++
++#ifdef CONFIG_MACH_MI
++	bool dsi_panel_off_mode;
++	int tp_rst_gpio;
++	u32 bklt_level;
++
++	struct dsi_panel_cmds dispparam_dimmingon_cmds;
++	struct dsi_panel_cmds displayoff_cmds;
++	struct dsi_panel_cmds displayon_cmds;
++
++	struct delayed_work cmds_work;
++	struct delayed_work panel_dead_report_work;
++#endif
+ };
+ 
+ struct dsi_status_data {
+diff --git a/drivers/video/fbdev/msm/mdss_dsi_panel.c b/drivers/video/fbdev/msm/mdss_dsi_panel.c
+index ad20c2833888..c625b4972f5a 100644
+--- a/drivers/video/fbdev/msm/mdss_dsi_panel.c
++++ b/drivers/video/fbdev/msm/mdss_dsi_panel.c
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ /* Copyright (c) 2012-2021, The Linux Foundation. All rights reserved. */
++/* Copyright (C) 2019 XiaoMi, Inc. */
+ 
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+@@ -30,6 +31,42 @@
+ DEFINE_LED_TRIGGER(bl_led_trigger);
+ #endif
+ 
++#ifdef CONFIG_MACH_MI
++#define PANEL_DIMMING_ON_CMD 0xF00
++#define DISPLAY_OFF_MODE 0x60000
++#define DISPLAY_ON_MODE 0x70000
++
++#define PANEL_READ_CNT    32
++#define ESD_CHECK_CMD 3
++
++static bool mdss_panel_reset_skip;
++static struct mdss_panel_info *mdss_pinfo;
++
++bool mdss_prim_panel_is_dead(void)
++{
++	if (mdss_pinfo)
++		return mdss_pinfo->panel_dead;
++	return false;
++}
++
++void mdss_panel_reset_skip_enable(bool enable)
++{
++	mdss_panel_reset_skip = enable;
++}
++
++void mdss_dsi_ulps_enable(bool enable)
++{
++	if (mdss_pinfo)
++		mdss_pinfo->ulps_feature_enabled = enable;
++}
++
++void mdss_dsi_ulps_suspend_enable(bool enable)
++{
++	if (mdss_pinfo)
++		mdss_pinfo->ulps_suspend_enabled = enable;
++}
++#endif
++
+ void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
+ {
+ 	if (ctrl->pwm_pmi)
+@@ -386,6 +423,33 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
+ 				panel_data);
+ 
+ 	pinfo = &(ctrl_pdata->panel_data.panel_info);
++
++#ifdef CONFIG_MACH_MI
++	/* For TDDI ddic panel, LCD shares reset pin with touch.
++	 * If gesture wakeup feature is enabled, the reset pin
++	 * should be controlled by touch. In this case, reset pin
++	 * would keep high state when panel is off. Meanwhile,
++	 * reset action would be done by touch when panel is on.
++	 */
++	if (mdss_panel_reset_skip && !pinfo->panel_dead) {
++		pr_info("%s: panel reset skip\n", __func__);
++		return rc;
++	}
++
++	/* For some TDDI ddic panel, LCD RST and TP RST need control Individually.
++	 * so reset TPRST pin before LCD reset
++	 * it should be according to panel's request
++	 */
++	if (pdata->panel_info.tp_rst_seq_len) {
++		for (i = 0; i < pdata->panel_info.tp_rst_seq_len; ++i) {
++			gpio_set_value((ctrl_pdata->tp_rst_gpio),
++				pdata->panel_info.tp_rst_seq[i]);
++			if (pdata->panel_info.tp_rst_seq[++i])
++				usleep_range(pinfo->tp_rst_seq[i] * 1000, pinfo->tp_rst_seq[i] * 1000);
++		}
++	}
++#endif
++
+ 	if ((mdss_dsi_is_right_ctrl(ctrl_pdata) &&
+ 		mdss_dsi_is_hw_config_split(ctrl_pdata->shared_data)) ||
+ 			pinfo->is_dba_panel) {
+@@ -502,6 +566,17 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
+ 			gpio_set_value(ctrl_pdata->lcd_mode_sel_gpio, 0);
+ 			gpio_free(ctrl_pdata->lcd_mode_sel_gpio);
+ 		}
++
++#ifdef CONFIG_MACH_MI
++		/* For some TDDI ddic panel, LCD RST and TP RST need control Individually.
++		* so pull low TPRST pin after LCD RST pin pull low
++		* it should be according to panel's request
++		*/
++		if (pdata->panel_info.tp_rst_seq_len) {
++			usleep_range(5000, 5000);
++			gpio_set_value((ctrl_pdata->tp_rst_gpio), 0);
++		}
++#endif
+ 	}
+ 
+ exit:
+@@ -758,6 +833,43 @@ static int mdss_dsi_set_col_page_addr(struct mdss_panel_data *pdata,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_MACH_MI
++static inline void mdss_panel_disparam_set(struct mdss_dsi_ctrl_pdata *ctrl, uint32_t param)
++{
++	uint32_t temp = 0;
++
++	temp = param & 0x000F0000;
++	switch (temp) {
++	case DISPLAY_OFF_MODE:
++		if (ctrl->displayoff_cmds.cmd_cnt) {
++			pr_info("display off mode\n");
++			mdss_dsi_panel_cmds_send(ctrl, &ctrl->displayoff_cmds, CMD_REQ_COMMIT);
++		}
++		break;
++	case DISPLAY_ON_MODE:
++		if (ctrl->displayon_cmds.cmd_cnt) {
++			pr_info("display on mode\n");
++			mdss_dsi_panel_cmds_send(ctrl, &ctrl->displayon_cmds, CMD_REQ_COMMIT);
++		}
++		break;
++	default:
++		break;
++	}
++
++	temp = param & 0x00000F00;
++	switch (temp) {
++	case 0xF00:		/*dimming*/
++		if (ctrl->dispparam_dimmingon_cmds.cmd_cnt) {
++			pr_info("dimmingon\n");
++			mdss_dsi_panel_cmds_send(ctrl, &ctrl->dispparam_dimmingon_cmds, CMD_REQ_COMMIT);
++		}
++		break;
++	default:
++		break;
++	}
++}
++#endif
++
+ static int mdss_dsi_panel_apply_display_setting(struct mdss_panel_data *pdata,
+ 							u32 mode)
+ {
+@@ -874,6 +986,19 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
+ 	if ((bl_level < pdata->panel_info.bl_min) && (bl_level != 0))
+ 		bl_level = pdata->panel_info.bl_min;
+ 
++#ifdef CONFIG_MACH_MI
++	if (bl_level == 0) {
++		pr_debug("%s: set display off when bl_level=0\n", __func__);
++		mdss_panel_disparam_set(ctrl_pdata, DISPLAY_OFF_MODE);
++		ctrl_pdata->dsi_panel_off_mode = true;
++	} else {
++		if (ctrl_pdata->bklt_level == 0 && ctrl_pdata->dsi_panel_off_mode == true) {
++			pr_debug("%s: set display on when bklt_level=0\n", __func__);
++			mdss_panel_disparam_set(ctrl_pdata, DISPLAY_ON_MODE);
++		}
++	}
++#endif
++
+ 	/* enable the backlight gpio if present */
+ 	mdss_dsi_bl_gpio_ctrl(pdata, bl_level);
+ 
+@@ -917,8 +1042,47 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
+ 			__func__);
+ 		break;
+ 	}
++
++#ifdef CONFIG_MACH_MI
++	if (ctrl_pdata->bklt_level == 0 && bl_level) {
++		if (pdata->panel_info.panel_on_dimming_delay)
++			schedule_delayed_work(&ctrl_pdata->cmds_work,
++				msecs_to_jiffies(pdata->panel_info.panel_on_dimming_delay));
++	}
++	ctrl_pdata->bklt_level = bl_level;
++#endif
+ }
+ 
++#ifdef CONFIG_MACH_MI
++static void panelon_dimming_enable_delayed_work(struct work_struct *work)
++{
++	struct mdss_dsi_ctrl_pdata *ctrl = container_of(work,
++				struct mdss_dsi_ctrl_pdata, cmds_work.work);
++	mdss_panel_disparam_set(ctrl, PANEL_DIMMING_ON_CMD);
++}
++
++static char rbuf[PANEL_READ_CNT];
++static void mdss_dsi_initial_read_cb(u32 cb_result)
++{
++	u32 i;
++
++	pr_info("%s: 0x%x. \n", __func__, cb_result);
++	for (i = 0; i < cb_result; i++)
++		pr_err("ESD - initial, 0A:0x%x ", rbuf[i]);
++}
++
++static void panel_dead_report_delayed_work(struct work_struct *work)
++{
++	struct mdss_dsi_ctrl_pdata *ctrl = container_of(work,
++				struct mdss_dsi_ctrl_pdata, panel_dead_report_work.work);
++
++	if (ctrl && ctrl->panel_data.panel_dead_report) {
++		pr_info("%s: panel dead at the time of unblank\n", __func__);
++		ctrl->panel_data.panel_dead_report();
++	}
++}
++#endif
++
+ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
+ {
+ 	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
+@@ -954,6 +1118,24 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
+ 	if (on_cmds->cmd_cnt)
+ 		mdss_dsi_panel_cmds_send(ctrl, on_cmds, CMD_REQ_COMMIT);
+ 
++#ifdef CONFIG_MACH_MI
++	if (pinfo->panel_dead && pinfo->initial_esd_check.check_cmd
++		&& pinfo->initial_esd_check.check_value) {
++		memset((void *)rbuf, 0, PANEL_READ_CNT);
++		mdss_dsi_panel_cmd_read(ctrl, pinfo->initial_esd_check.check_cmd,
++			0x00, (void *)mdss_dsi_initial_read_cb, rbuf, 1);
++		if (rbuf[0] != pinfo->initial_esd_check.check_value) {
++			pr_info("%s: read panel fail, ret:%d\n", __func__, ret);
++			if (pinfo->initial_esd_check.panel_dead_report_delay)
++				schedule_delayed_work(&ctrl->panel_dead_report_work,
++					msecs_to_jiffies(pinfo->initial_esd_check.panel_dead_report_delay));
++		}
++	}
++
++	if (!pinfo->panel_on_dimming_delay)
++		mdss_panel_disparam_set(ctrl, PANEL_DIMMING_ON_CMD);
++#endif
++
+ 	if (pinfo->compression_mode == COMPRESSION_DSC)
+ 		mdss_dsi_panel_dsc_pps_send(ctrl, pinfo);
+ 
+@@ -963,6 +1145,10 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
+ 	/* Ensure low persistence mode is set as before */
+ 	mdss_dsi_panel_apply_display_setting(pdata, pinfo->persist_mode);
+ 
++#ifdef CONFIG_MACH_MI
++	ctrl->dsi_panel_off_mode = false;
++#endif
++
+ 	if (pdata->event_handler)
+ 		pdata->event_handler(pdata, MDSS_EVENT_UPDATE_LIVEDISPLAY,
+ 				(void *)(unsigned long) MODE_UPDATE_ALL);
+@@ -1027,6 +1213,11 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
+ 
+ 	pr_debug("%s: ctrl=%pK ndx=%d\n", __func__, ctrl, ctrl->ndx);
+ 
++#ifdef CONFIG_MACH_MI
++	cancel_delayed_work_sync(&ctrl->cmds_work);
++	cancel_delayed_work_sync(&ctrl->panel_dead_report_work);
++#endif
++
+ 	if (pinfo->dcs_cmd_by_left) {
+ 		if (ctrl->ndx != DSI_CTRL_LEFT)
+ 			goto end;
+@@ -2029,10 +2220,48 @@ static void mdss_dsi_parse_esd_params(struct device_node *np,
+ {
+ 	u32 tmp;
+ 	u32 i, status_len, *lenp;
++#ifdef CONFIG_MACH_MI
++	u32 esd_check_cmd[ESD_CHECK_CMD];
++#endif
+ 	int rc;
+ 	struct property *data;
+ 	const char *string;
+ 	struct mdss_panel_info *pinfo = &ctrl->panel_data.panel_info;
++#ifdef CONFIG_MACH_MI
++	enum of_gpio_flags esd_interrupt_flags = 0;
++
++	pinfo->esd_err_irq = 0;
++	pinfo->esd_err_irq_gpio = of_get_named_gpio_flags(np,
++		"qcom,esd-err-irq-gpio", 0, &esd_interrupt_flags);
++	pinfo->esd_interrupt_flags = (u32)esd_interrupt_flags;
++
++	if (gpio_is_valid(pinfo->esd_err_irq_gpio)) {
++		pinfo->esd_err_irq = gpio_to_irq(pinfo->esd_err_irq_gpio);
++
++		rc = gpio_request(pinfo->esd_err_irq_gpio, "esd_err_irq_gpio");
++		if (rc) {
++			pr_err("%s: Failed to get gpio %d (code: %d)",
++				__func__, pinfo->esd_err_irq_gpio, rc);
++		} else {
++			gpio_direction_input(pinfo->esd_err_irq_gpio);
++		}
++	}
++
++	rc = of_property_read_u32_array(np, "qcom,initial-esd-check-cmd",
++		esd_check_cmd, ESD_CHECK_CMD);
++	if (rc) {
++		pr_debug("%s:%d, Unable to read reset esd check cmd\n",
++		       __func__, __LINE__);
++	} else {
++		pinfo->initial_esd_check.check_cmd = esd_check_cmd[0];
++		pinfo->initial_esd_check.check_value = esd_check_cmd[1];
++		pinfo->initial_esd_check.panel_dead_report_delay = esd_check_cmd[2];
++		pr_info("%s, initial check cmd:0x%x, check value:0x%x, delay:%d\n",
++		       __func__, pinfo->initial_esd_check.check_cmd,
++		       pinfo->initial_esd_check.check_value,
++		       pinfo->initial_esd_check.panel_dead_report_delay);
++	}
++#endif
+ 
+ 	pinfo->esd_check_enabled = of_property_read_bool(np,
+ 		"qcom,esd-check-enabled");
+@@ -2986,6 +3215,18 @@ static int mdss_panel_parse_dt(struct device_node *np,
+ 	pinfo->mipi.force_clk_lane_hs = of_property_read_bool(np,
+ 		"qcom,mdss-dsi-force-clock-lane-hs");
+ 
++#ifdef CONFIG_MACH_MI
++	mdss_dsi_parse_reset_seq(np, pinfo->tp_rst_seq, &(pinfo->tp_rst_seq_len),
++		"qcom,mdss-dsi-tp-reset-sequence");
++	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->dispparam_dimmingon_cmds,
++		"qcom,mdss-dsi-dispparam-dimmingon-command", "qcom,mdss-dsi-dispparam-dimmingon-command-state");
++	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->displayoff_cmds,
++		"qcom,mdss-dsi-displayoff-command", "qcom,mdss-dsi-displayoff-command-state");
++
++	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->displayon_cmds,
++		"qcom,mdss-dsi-displayon-command", "qcom,mdss-dsi-displayon-command-state");
++#endif
++
+ 	rc = mdss_dsi_parse_panel_features(np, ctrl_pdata);
+ 	if (rc) {
+ 		pr_err("%s: failed to parse panel features\n", __func__);
+@@ -3043,6 +3284,9 @@ int mdss_dsi_panel_init(struct device_node *node,
+ 	}
+ 
+ 	pinfo = &ctrl_pdata->panel_data.panel_info;
++#ifdef CONFIG_MACH_MI
++	mdss_pinfo = pinfo;
++#endif
+ 
+ 	pr_debug("%s:%d\n", __func__, __LINE__);
+ 	pinfo->panel_name[0] = '\0';
+@@ -3060,6 +3304,18 @@ int mdss_dsi_panel_init(struct device_node *node,
+ 		return rc;
+ 	}
+ 
++#ifdef CONFIG_MACH_MI
++	INIT_DELAYED_WORK(&ctrl_pdata->cmds_work, panelon_dimming_enable_delayed_work);
++	INIT_DELAYED_WORK(&ctrl_pdata->panel_dead_report_work, panel_dead_report_delayed_work);
++
++	rc = of_property_read_u32(node, "qcom,mdss-panel-on-dimming-delay", &pinfo->panel_on_dimming_delay);
++	if (rc) {
++		pinfo->panel_on_dimming_delay = 0;
++		pr_info("Panel on dimming delay disabled\n");
++	} else
++		pr_info("Panel on dimming delay %d ms\n", pinfo->panel_on_dimming_delay);
++#endif
++
+ 	pinfo->dynamic_switch_pending = false;
+ 	pinfo->is_lpm_mode = false;
+ 	pinfo->esd_rdy = false;
+diff --git a/drivers/video/fbdev/msm/mdss_fb.c b/drivers/video/fbdev/msm/mdss_fb.c
+index 01e0e6b7f736..18a9491f7691 100644
+--- a/drivers/video/fbdev/msm/mdss_fb.c
++++ b/drivers/video/fbdev/msm/mdss_fb.c
+@@ -39,6 +39,11 @@
+ #include <linux/kthread.h>
+ #include <linux/sched.h>
+ #include <uapi/linux/sched/types.h>
++#ifdef CONFIG_MACH_MI
++#include <linux/interrupt.h>
++#include <linux/wakelock.h>
++#endif
++
+ #include "mdss_fb.h"
+ #include "mdss_mdp_splash_logo.h"
+ #define CREATE_TRACE_POINTS
+@@ -77,6 +82,9 @@
+ 
+ static struct fb_info *fbi_list[MAX_FBI_LIST];
+ static int fbi_list_index;
++#ifdef CONFIG_MACH_MI
++static struct msm_fb_data_type *mfd_data;
++#endif
+ 
+ static u32 mdss_fb_pseudo_palette[16] = {
+ 	0x00000000, 0xffffffff, 0xffffffff, 0xffffffff,
+@@ -116,6 +124,37 @@ static int mdss_fb_send_panel_event(struct msm_fb_data_type *mfd,
+ static void mdss_fb_set_mdp_sync_pt_threshold(struct msm_fb_data_type *mfd,
+ 		int type);
+ 
++#ifdef CONFIG_MACH_MI
++#define WAIT_RESUME_TIMEOUT 200
++static struct fb_info *prim_fbi;
++static struct delayed_work prim_panel_work;
++static atomic_t prim_panel_is_on;
++static struct wake_lock prim_panel_wakelock;
++static void prim_panel_off_delayed_work(struct work_struct *work)
++{
++#ifdef CONFIG_FRAMEBUFFER_CONSOLE
++	console_lock();
++#endif
++	if (!lock_fb_info(prim_fbi)) {
++#ifdef CONFIG_FRAMEBUFFER_CONSOLE
++		console_unlock();
++#endif
++		return;
++	}
++
++	if (atomic_read(&prim_panel_is_on)) {
++		fb_blank(prim_fbi, FB_BLANK_POWERDOWN);
++		atomic_set(&prim_panel_is_on, false);
++		wake_unlock(&prim_panel_wakelock);
++	}
++
++	unlock_fb_info(prim_fbi);
++#ifdef CONFIG_FRAMEBUFFER_CONSOLE
++	console_unlock();
++#endif
++}
++#endif
++
+ static inline void __user *to_user_ptr(uint64_t address)
+ {
+ 	return (void __user *)(uintptr_t)address;
+@@ -1265,6 +1304,46 @@ static int mdss_fb_init_panel_modes(struct msm_fb_data_type *mfd,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_MACH_MI
++static irqreturn_t esd_err_irq_handle(int irq, void *data)
++{
++	struct msm_fb_data_type *mfd = data;
++
++	if (mfd && mdss_fb_is_power_off(mfd)) {
++		pr_debug("%s: ESD at power off state \n", __func__);
++		return IRQ_HANDLED;
++	}
++
++	pr_info("%s: ESD ERR detected!\n", __func__);
++
++	if (mfd) {
++		struct mdss_panel_data *pdata =
++			dev_get_platdata(&mfd->pdev->dev);
++		if (pdata->panel_info.panel_dead == true) {
++			pr_err("%s:already in recoverying", __func__);
++			return IRQ_HANDLED;
++		}
++		mdss_fb_report_panel_dead(mfd);
++	}
++	else
++		pr_err("%s: mfd is NULL\n", __func__);
++
++	return IRQ_HANDLED;
++}
++
++void mdss_fb_prim_panel_recover(void)
++{
++	pr_info("Primary panel recover...\n");
++
++	if (mfd_data)
++		mdss_fb_report_panel_dead(mfd_data);
++	else
++		pr_err("%s: Primary panel mfd is NULL\n", __func__);
++
++	pr_info("Primary panel recover done\n");
++}
++#endif
++
+ static int mdss_fb_probe(struct platform_device *pdev)
+ {
+ 	struct msm_fb_data_type *mfd = NULL;
+@@ -1431,6 +1510,25 @@ static int mdss_fb_probe(struct platform_device *pdev)
+ 
+ 	INIT_DELAYED_WORK(&mfd->idle_notify_work, __mdss_fb_idle_notify_work);
+ 
++#ifdef CONFIG_MACH_MI
++	if (mfd->panel_info->esd_err_irq > 0) {
++		if (mfd->panel_info->esd_interrupt_flags) {
++			rc = request_threaded_irq(mfd->panel_info->esd_err_irq, NULL,
++				esd_err_irq_handle, (unsigned long)mfd->panel_info->esd_interrupt_flags,
++				"esd_err_irq", mfd);
++			if (rc < 0) {
++				pr_err("%s: request irq %d, flag:0x%x  failed\n", __func__, mfd->panel_info->esd_err_irq,
++					mfd->panel_info->esd_interrupt_flags);
++			}
++		}
++	}
++
++	if (mfd->panel_info->is_prim_panel) {
++		mfd_data = mfd;
++		pdata->panel_dead_report = mdss_fb_prim_panel_recover;
++	}
++#endif
++
+ 	return rc;
+ }
+ 
+@@ -1465,6 +1563,13 @@ static int mdss_fb_remove(struct platform_device *pdev)
+ 	if (!mfd)
+ 		return -ENODEV;
+ 
++#ifdef CONFIG_MACH_MI
++	if (mfd->panel_info && mfd->panel_info->is_prim_panel) {
++		atomic_set(&prim_panel_is_on, false);
++		cancel_delayed_work_sync(&prim_panel_work);
++		wake_lock_destroy(&prim_panel_wakelock);
++	}
++#endif
+ 	mdss_fb_remove_sysfs(mfd);
+ 
+ 	pm_runtime_disable(mfd->fbi->dev);
+@@ -1642,6 +1747,32 @@ static int mdss_fb_resume(struct platform_device *pdev)
+ #endif
+ 
+ #ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_MACH_MI
++static int mdss_fb_pm_prepare(struct device *dev)
++{
++	struct msm_fb_data_type *mfd = dev_get_drvdata(dev);
++
++	if (!mfd)
++		return -ENODEV;
++	if (mfd->panel_info->is_prim_panel)
++		atomic_inc(&mfd->resume_pending);
++	return 0;
++}
++
++static void mdss_fb_pm_complete(struct device *dev)
++{
++	struct msm_fb_data_type *mfd = dev_get_drvdata(dev);
++
++	if (!mfd)
++		return;
++	if (mfd->panel_info->is_prim_panel) {
++		atomic_set(&mfd->resume_pending, 0);
++		wake_up_all(&mfd->resume_wait_q);
++	}
++	return;
++}
++#endif
++
+ static int mdss_fb_pm_suspend(struct device *dev)
+ {
+ 	struct msm_fb_data_type *mfd = dev_get_drvdata(dev);
+@@ -1697,6 +1828,10 @@ static int mdss_fb_pm_resume(struct device *dev)
+ #endif
+ 
+ static const struct dev_pm_ops mdss_fb_pm_ops = {
++#ifdef CONFIG_MACH_MI
++	.prepare = mdss_fb_pm_prepare,
++	.complete = mdss_fb_pm_complete,
++#endif
+ 	SET_SYSTEM_SLEEP_PM_OPS(mdss_fb_pm_suspend, mdss_fb_pm_resume)
+ };
+ 
+@@ -2131,6 +2266,16 @@ static int mdss_fb_blank(int blank_mode, struct fb_info *info)
+ 	struct mdss_panel_data *pdata;
+ 	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)info->par;
+ 
++#ifdef CONFIG_MACH_MI
++	if ((info == prim_fbi) && (blank_mode == FB_BLANK_UNBLANK) &&
++		atomic_read(&prim_panel_is_on)) {
++		atomic_set(&prim_panel_is_on, false);
++		wake_unlock(&prim_panel_wakelock);
++		cancel_delayed_work_sync(&prim_panel_work);
++		return 0;
++	}
++#endif
++
+ 	ret = mdss_fb_pan_idle(mfd);
+ 	if (ret) {
+ 		pr_warn("mdss_fb_pan_idle for fb%d failed. ret=%d\n",
+@@ -2762,6 +2907,9 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	atomic_set(&mfd->commits_pending, 0);
+ 	atomic_set(&mfd->ioctl_ref_cnt, 0);
+ 	atomic_set(&mfd->kickoff_pending, 0);
++#ifdef CONFIG_MACH_MI
++	atomic_set(&mfd->resume_pending, 0);
++#endif
+ 
+ 	timer_setup(&mfd->no_update.timer, mdss_fb_no_update_notify_timer_cb,
+ 			 (unsigned long)mfd);
+@@ -2776,6 +2924,9 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	init_waitqueue_head(&mfd->idle_wait_q);
+ 	init_waitqueue_head(&mfd->ioctl_q);
+ 	init_waitqueue_head(&mfd->kickoff_wait_q);
++#ifdef CONFIG_MACH_MI
++	init_waitqueue_head(&mfd->resume_wait_q);
++#endif
+ 
+ 	ret = fb_alloc_cmap(&fbi->cmap, 256, 0);
+ 	if (ret)
+@@ -2793,6 +2944,14 @@ static int mdss_fb_register(struct msm_fb_data_type *mfd)
+ 	mdss_panel_debugfs_init(panel_info, panel_name);
+ 	pr_info("FrameBuffer[%d] %dx%d registered successfully!\n", mfd->index,
+ 					fbi->var.xres, fbi->var.yres);
++#ifdef CONFIG_MACH_MI
++	if (panel_info->is_prim_panel) {
++		prim_fbi = fbi;
++		atomic_set(&prim_panel_is_on, false);
++		INIT_DELAYED_WORK(&prim_panel_work, prim_panel_off_delayed_work);
++		wake_lock_init(&prim_panel_wakelock, WAKE_LOCK_SUSPEND, "prim_panel_wakelock");
++	}
++#endif
+ 
+ 	return 0;
+ }
+@@ -5238,6 +5397,25 @@ int mdss_fb_get_phys_info(dma_addr_t *start, unsigned long *len, int fb_num)
+ }
+ EXPORT_SYMBOL(mdss_fb_get_phys_info);
+ 
++#ifdef CONFIG_MACH_MI
++bool mdss_panel_is_prim(void *fbinfo)
++{
++	struct msm_fb_data_type *mfd;
++	struct mdss_panel_info *pinfo;
++	struct fb_info *fbi = fbinfo;
++
++	if (!fbi)
++		return false;
++	mfd = fbi->par;
++	if (!mfd)
++		return false;
++	pinfo = mfd->panel_info;
++	if (!pinfo)
++		return false;
++	return pinfo->is_prim_panel;
++}
++#endif
++
+ int __init mdss_fb_init(void)
+ {
+ 	int rc = -ENODEV;
+@@ -5354,3 +5532,60 @@ void mdss_fb_idle_pc(struct msm_fb_data_type *mfd)
+ 		sysfs_notify(&mfd->fbi->dev->kobj, NULL, "idle_power_collapse");
+ 	}
+ }
++
++#ifdef CONFIG_MACH_MI
++/*
++ * mdss_prim_panel_fb_unblank() - Unblank primary panel FB
++ * @timeout : >0 blank primary panel FB after timeout (ms)
++ */
++int mdss_prim_panel_fb_unblank(int timeout)
++{
++	int ret = 0;
++	struct msm_fb_data_type *mfd = NULL;
++
++	if (prim_fbi) {
++		mfd = (struct msm_fb_data_type *)prim_fbi->par;
++		ret = wait_event_timeout(mfd->resume_wait_q,
++				!atomic_read(&mfd->resume_pending),
++				msecs_to_jiffies(WAIT_RESUME_TIMEOUT));
++		if (!ret) {
++			pr_info("Primary fb resume timeout\n");
++			return -ETIMEDOUT;
++		}
++#ifdef CONFIG_FRAMEBUFFER_CONSOLE
++		console_lock();
++#endif
++		if (!lock_fb_info(prim_fbi)) {
++#ifdef CONFIG_FRAMEBUFFER_CONSOLE
++			console_unlock();
++#endif
++			return -ENODEV;
++		}
++		if (prim_fbi->blank == FB_BLANK_UNBLANK) {
++			unlock_fb_info(prim_fbi);
++#ifdef CONFIG_FRAMEBUFFER_CONSOLE
++			console_unlock();
++#endif
++			return 0;
++		}
++		wake_lock(&prim_panel_wakelock);
++		ret = fb_blank(prim_fbi, FB_BLANK_UNBLANK);
++		if (!ret) {
++			atomic_set(&prim_panel_is_on, true);
++			if (timeout > 0)
++				schedule_delayed_work(&prim_panel_work, msecs_to_jiffies(timeout));
++			else
++				wake_unlock(&prim_panel_wakelock);
++		} else
++			wake_unlock(&prim_panel_wakelock);
++		unlock_fb_info(prim_fbi);
++#ifdef CONFIG_FRAMEBUFFER_CONSOLE
++		console_unlock();
++#endif
++		return ret;
++	}
++
++	pr_err("primary panel is not existed\n");
++	return -EINVAL;
++}
++#endif
+diff --git a/drivers/video/fbdev/msm/mdss_fb.h b/drivers/video/fbdev/msm/mdss_fb.h
+index e6575e74b367..d14553fc29e0 100644
+--- a/drivers/video/fbdev/msm/mdss_fb.h
++++ b/drivers/video/fbdev/msm/mdss_fb.h
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /* Copyright (c) 2008-2018, 2020-2021, The Linux Foundation. All rights reserved. */
++/* Copyright (C) 2019 XiaoMi, Inc. */
+ 
+ #ifndef MDSS_FB_H
+ #define MDSS_FB_H
+@@ -332,6 +333,10 @@ struct msm_fb_data_type {
+ 	struct task_struct *disp_thread;
+ 	atomic_t commits_pending;
+ 	atomic_t kickoff_pending;
++#ifdef CONFIG_MACH_MI
++	atomic_t resume_pending;
++	wait_queue_head_t resume_wait_q;
++#endif
+ 	wait_queue_head_t commit_wait_q;
+ 	wait_queue_head_t idle_wait_q;
+ 	wait_queue_head_t kickoff_wait_q;
+diff --git a/drivers/video/fbdev/msm/mdss_panel.h b/drivers/video/fbdev/msm/mdss_panel.h
+index 443df92874eb..95a29d09ea52 100644
+--- a/drivers/video/fbdev/msm/mdss_panel.h
++++ b/drivers/video/fbdev/msm/mdss_panel.h
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /* Copyright (c) 2008-2018, 2020-2021, The Linux Foundation. All rights reserved. */
++/* Copyright (C) 2019 XiaoMi, Inc. */
+ 
+ #ifndef MDSS_PANEL_H
+ #define MDSS_PANEL_H
+@@ -780,6 +781,14 @@ struct mdss_panel_hdr_properties {
+ 	u32 blackness_level;
+ };
+ 
++#ifdef CONFIG_MACH_MI
++struct mdss_panel_esd_check {
++	unsigned char check_cmd;
++	unsigned char check_value;
++	unsigned int panel_dead_report_delay;
++};
++#endif
++
+ struct mdss_panel_info {
+ 	u32 xres;
+ 	u32 yres;
+@@ -942,6 +951,16 @@ struct mdss_panel_info {
+ 
+ 	/* esc clk recommended for the panel */
+ 	u32 esc_clk_rate_hz;
++
++#ifdef CONFIG_MACH_MI
++	u32 tp_rst_seq[MDSS_DSI_RST_SEQ_LEN];
++	u32 tp_rst_seq_len;
++	u32 esd_err_irq_gpio;
++	u32 esd_err_irq;
++	u32 esd_interrupt_flags;
++	struct mdss_panel_esd_check initial_esd_check;
++	uint32_t panel_on_dimming_delay;
++#endif
+ };
+ 
+ struct mdss_panel_timing {
+@@ -1015,6 +1034,10 @@ struct mdss_panel_data {
+ 
+ 	int panel_te_gpio;
+ 	struct completion te_done;
++
++#ifdef CONFIG_MACH_MI
++	void (*panel_dead_report)(void);
++#endif
+ };
+ 
+ struct mdss_panel_debugfs_info {
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index 08702b29797e..dc5236b3b5fc 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -537,6 +537,9 @@ struct fb_info {
+ 	} *apertures;
+ 
+ 	bool skip_vt_switch; /* no VT switch on suspend/resume required */
++#ifdef CONFIG_MACH_MI
++	int blank;
++#endif
+ };
+ 
+ static inline struct apertures_struct *alloc_apertures(unsigned int max_num) {
+diff --git a/include/linux/mdss_io_util.h b/include/linux/mdss_io_util.h
+index d4a4edf1c45a..4d81c9826e12 100644
+--- a/include/linux/mdss_io_util.h
++++ b/include/linux/mdss_io_util.h
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /* Copyright (c) 2012, 2017-2018, 2020, The Linux Foundation. All rights reserved. */
++/* Copyright (C) 2019 XiaoMi, Inc. */
+ 
+ #ifndef __MDSS_IO_UTIL_H__
+ #define __MDSS_IO_UTIL_H__
+@@ -113,5 +114,17 @@ int dss_i2c_byte_read(struct i2c_client *client, uint8_t slave_addr,
+ 		       uint8_t reg_offset, uint8_t *read_buf);
+ int dss_i2c_byte_write(struct i2c_client *client, uint8_t slave_addr,
+ 			uint8_t reg_offset, uint8_t *value);
++#ifdef CONFIG_MACH_MI
++bool mdss_panel_is_prim(void *fbinfo);
++bool mdss_prim_panel_is_dead(void);
++void mdss_panel_reset_skip_enable(bool enable);
++void mdss_dsi_ulps_enable(bool enable);
++void mdss_dsi_ulps_suspend_enable(bool enable);
++int mdss_prim_panel_fb_unblank(int timeout);
++void mdss_fb_prim_panel_recover(void);
++
++int mdss_prim_panel_fb_unblank(int timeout);
++void mdss_fb_prim_panel_recover(void);
++#endif
+ 
+ #endif /* __MDSS_IO_UTIL_H__ */
+-- 
+2.49.0
+

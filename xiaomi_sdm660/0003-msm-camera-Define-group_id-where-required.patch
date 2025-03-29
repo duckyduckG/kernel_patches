@@ -1,0 +1,311 @@
+From c35a121b489f21f3568d9fe70e73421ce97fc25b Mon Sep 17 00:00:00 2001
+From: Artem Borisov <dedsa2002@gmail.com>
+Date: Tue, 6 Nov 2018 13:08:49 +0400
+Subject: [PATCH 003/178] msm: camera: Define group_id where required
+
+Our camera blobs expect this to not be equal to 0.
+
+Change-Id: I201961618817eea9a193b1a2354e87df4077e2f1
+---
+ drivers/media/platform/msm/camera_v2/camera/camera.c        | 2 +-
+ drivers/media/platform/msm/camera_v2/isp/msm_isp.c          | 2 +-
+ drivers/media/platform/msm/camera_v2/ispif/msm_ispif.c      | 2 +-
+ drivers/media/platform/msm/camera_v2/msm.c                  | 2 +-
+ .../msm/camera_v2/msm_buf_mgr/msm_generic_buf_mgr.c         | 2 +-
+ drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c    | 2 +-
+ .../platform/msm/camera_v2/sensor/actuator/msm_actuator.c   | 4 ++--
+ drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c   | 2 +-
+ drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c | 2 +-
+ .../media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c | 2 +-
+ .../media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c | 6 +++---
+ .../media/platform/msm/camera_v2/sensor/flash/msm_flash.c   | 2 +-
+ .../media/platform/msm/camera_v2/sensor/ir_cut/msm_ir_cut.c | 2 +-
+ .../media/platform/msm/camera_v2/sensor/ir_led/msm_ir_led.c | 2 +-
+ .../platform/msm/camera_v2/sensor/laser_led/msm_laser_led.c | 2 +-
+ .../media/platform/msm/camera_v2/sensor/msm_sensor_driver.c | 4 ++--
+ .../media/platform/msm/camera_v2/sensor/msm_sensor_init.c   | 2 +-
+ drivers/media/platform/msm/camera_v2/sensor/ois/msm_ois.c   | 4 ++--
+ 18 files changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/camera/camera.c b/drivers/media/platform/msm/camera_v2/camera/camera.c
+index edce95d92212..44412175b79b 100644
+--- a/drivers/media/platform/msm/camera_v2/camera/camera.c
++++ b/drivers/media/platform/msm/camera_v2/camera/camera.c
+@@ -932,7 +932,7 @@ int camera_init_v4l2(struct device *dev, unsigned int *session)
+ 	rc = media_entity_pads_init(&pvdev->vdev->entity, 0, NULL);
+ 	if (WARN_ON(rc < 0))
+ 		goto entity_fail;
+-	pvdev->vdev->entity.function = QCAMERA_VNODE_GROUP_ID;
++	pvdev->vdev->entity.group_id = QCAMERA_VNODE_GROUP_ID;
+ #endif
+ 
+ 	v4l2_dev->notify = NULL;
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp.c
+index f7d0709aaba8..3bbeeb6d073a 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp.c
+@@ -715,7 +715,7 @@ int vfe_hw_probe(struct platform_device *pdev)
+ 	spin_lock_init(&vfe_dev->reset_completion_lock);
+ 	spin_lock_init(&vfe_dev->halt_completion_lock);
+ 	media_entity_pads_init(&vfe_dev->subdev.sd.entity, 0, NULL);
+-	vfe_dev->subdev.sd.entity.function = MSM_CAMERA_SUBDEV_VFE;
++	vfe_dev->subdev.sd.entity.group_id = MSM_CAMERA_SUBDEV_VFE;
+ 	//vfe_dev->subdev.sd.entity.group_id = MSM_CAMERA_SUBDEV_VFE;
+ 	vfe_dev->subdev.sd.entity.name = pdev->name;
+ 	vfe_dev->subdev.close_seq = MSM_SD_CLOSE_1ST_CATEGORY | 0x2;
+diff --git a/drivers/media/platform/msm/camera_v2/ispif/msm_ispif.c b/drivers/media/platform/msm/camera_v2/ispif/msm_ispif.c
+index 59ae81c92e9c..347174772cf3 100644
+--- a/drivers/media/platform/msm/camera_v2/ispif/msm_ispif.c
++++ b/drivers/media/platform/msm/camera_v2/ispif/msm_ispif.c
+@@ -2080,7 +2080,7 @@ static int ispif_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, &ispif->msm_sd.sd);
+ 
+ 	media_entity_pads_init(&ispif->msm_sd.sd.entity, 0, NULL);
+-	ispif->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_ISPIF;
++	ispif->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_ISPIF;
+ 	ispif->msm_sd.sd.entity.name = pdev->name;
+ 	ispif->msm_sd.close_seq = MSM_SD_CLOSE_1ST_CATEGORY | 0x1;
+ 	rc = msm_sd_register(&ispif->msm_sd);
+diff --git a/drivers/media/platform/msm/camera_v2/msm.c b/drivers/media/platform/msm/camera_v2/msm.c
+index 8ddf43ff8831..f2278f40e0a7 100644
+--- a/drivers/media/platform/msm/camera_v2/msm.c
++++ b/drivers/media/platform/msm/camera_v2/msm.c
+@@ -1374,7 +1374,7 @@ static int msm_probe(struct platform_device *pdev)
+ 			0, NULL)) < 0))
+ 		goto entity_fail;
+ 
+-	pvdev->vdev->entity.function = QCAMERA_VNODE_GROUP_ID;
++	pvdev->vdev->entity.group_id = QCAMERA_VNODE_GROUP_ID;
+ #endif
+ 
+ 	msm_v4l2_dev->notify = msm_sd_notify;
+diff --git a/drivers/media/platform/msm/camera_v2/msm_buf_mgr/msm_generic_buf_mgr.c b/drivers/media/platform/msm/camera_v2/msm_buf_mgr/msm_generic_buf_mgr.c
+index 1e9f732127dd..72baf81fb537 100644
+--- a/drivers/media/platform/msm/camera_v2/msm_buf_mgr/msm_generic_buf_mgr.c
++++ b/drivers/media/platform/msm/camera_v2/msm_buf_mgr/msm_generic_buf_mgr.c
+@@ -909,7 +909,7 @@ static int32_t __init msm_buf_mngr_init(void)
+ 	v4l2_set_subdevdata(&msm_buf_mngr_dev->subdev.sd, msm_buf_mngr_dev);
+ 
+ 	media_entity_pads_init(&msm_buf_mngr_dev->subdev.sd.entity, 0, NULL);
+-	msm_buf_mngr_dev->subdev.sd.entity.function =
++	msm_buf_mngr_dev->subdev.sd.entity.group_id =
+ 		MSM_CAMERA_SUBDEV_BUF_MNGR;
+ 	msm_buf_mngr_dev->subdev.sd.internal_ops =
+ 		&msm_generic_buf_mngr_subdev_internal_ops;
+diff --git a/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c b/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c
+index 8e214c439a12..f67bacd99ab7 100644
+--- a/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c
++++ b/drivers/media/platform/msm/camera_v2/pproc/cpp/msm_cpp.c
+@@ -4698,7 +4698,7 @@ static int cpp_probe(struct platform_device *pdev)
+ 		goto bus_de_init;
+ 
+ 	media_entity_pads_init(&cpp_dev->msm_sd.sd.entity, 0, NULL);
+-	cpp_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CPP;
++	cpp_dev->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_CPP;
+ 	cpp_dev->msm_sd.sd.entity.name = pdev->name;
+ 	cpp_dev->msm_sd.close_seq = MSM_SD_CLOSE_3RD_CATEGORY;
+ 	msm_sd_register(&cpp_dev->msm_sd);
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+index cedc0d5b716f..31c579391832 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/actuator/msm_actuator.c
+@@ -1920,7 +1920,7 @@ static int32_t msm_actuator_i2c_probe(struct i2c_client *client,
+ 	act_ctrl_t->msm_sd.sd.internal_ops = &msm_actuator_internal_ops;
+ 	act_ctrl_t->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+ 	media_entity_pads_init(&act_ctrl_t->msm_sd.sd.entity, 0, NULL);
+-	act_ctrl_t->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_ACTUATOR;
++	act_ctrl_t->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_ACTUATOR;
+ 	act_ctrl_t->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
+ 	msm_sd_register(&act_ctrl_t->msm_sd);
+ 	msm_cam_copy_v4l2_subdev_fops(&msm_actuator_v4l2_subdev_fops);
+@@ -2033,7 +2033,7 @@ static int32_t msm_actuator_platform_probe(struct platform_device *pdev)
+ 	snprintf(msm_actuator_t->msm_sd.sd.name,
+ 		ARRAY_SIZE(msm_actuator_t->msm_sd.sd.name), "msm_actuator");
+ 	media_entity_pads_init(&msm_actuator_t->msm_sd.sd.entity, 0, NULL);
+-	msm_actuator_t->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_ACTUATOR;
++	msm_actuator_t->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_ACTUATOR;
+ 	msm_actuator_t->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
+ 	msm_sd_register(&msm_actuator_t->msm_sd);
+ 	msm_actuator_t->actuator_state = ACT_DISABLE_STATE;
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c b/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
+index d7a47c721007..abb9ef5b94be 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
+@@ -2145,7 +2145,7 @@ static int msm_cci_probe(struct platform_device *pdev)
+ 	new_cci_dev->msm_sd.sd.internal_ops = &msm_cci_internal_ops;
+ 	new_cci_dev->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+ 	media_entity_pads_init(&new_cci_dev->msm_sd.sd.entity, 0, NULL);
+-	new_cci_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CCI;
++	new_cci_dev->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_CCI;
+ 	new_cci_dev->msm_sd.sd.entity.name = new_cci_dev->msm_sd.sd.name;
+ 	new_cci_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x6;
+ 	msm_sd_register(&new_cci_dev->msm_sd);
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+index 8bb3c9e850c9..a3d140446086 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+@@ -1358,7 +1358,7 @@ static int csid_probe(struct platform_device *pdev)
+ 	snprintf(new_csid_dev->msm_sd.sd.name,
+ 			ARRAY_SIZE(new_csid_dev->msm_sd.sd.name), "msm_csid");
+ 	media_entity_pads_init(&new_csid_dev->msm_sd.sd.entity, 0, NULL);
+-	new_csid_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CSID;
++	new_csid_dev->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_CSID;
+ 	new_csid_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x5;
+ 	msm_sd_register(&new_csid_dev->msm_sd);
+ 
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+index 2f86108d3ce8..1b8954b0dc4e 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csiphy/msm_csiphy.c
+@@ -2429,7 +2429,7 @@ static int csiphy_probe(struct platform_device *pdev)
+ 	snprintf(new_csiphy_dev->msm_sd.sd.name,
+ 		ARRAY_SIZE(new_csiphy_dev->msm_sd.sd.name), "msm_csiphy");
+ 	media_entity_pads_init(&new_csiphy_dev->msm_sd.sd.entity, 0, NULL);
+-	new_csiphy_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CSIPHY;
++	new_csiphy_dev->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_CSIPHY;
+ 	new_csiphy_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x4;
+ 	msm_sd_register(&new_csiphy_dev->msm_sd);
+ 
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c b/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
+index ec40f83e57f9..2f7edafab7b9 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/eeprom/msm_eeprom.c
+@@ -1026,7 +1026,7 @@ static int msm_eeprom_i2c_probe(struct i2c_client *client,
+ 	snprintf(e_ctrl->msm_sd.sd.name,
+ 		ARRAY_SIZE(e_ctrl->msm_sd.sd.name), "msm_eeprom");
+ 	media_entity_pads_init(&e_ctrl->msm_sd.sd.entity, 0, NULL);
+-	e_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_EEPROM;
++	e_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_EEPROM;
+ 	msm_sd_register(&e_ctrl->msm_sd);
+ 	e_ctrl->is_supported = (e_ctrl->is_supported << 1) | 1;
+ 	pr_err("%s success result=%d X\n", __func__, rc);
+@@ -1320,7 +1320,7 @@ static int msm_eeprom_spi_setup(struct spi_device *spi)
+ 	e_ctrl->msm_sd.sd.internal_ops = &msm_eeprom_internal_ops;
+ 	e_ctrl->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+ 	media_entity_pads_init(&e_ctrl->msm_sd.sd.entity, 0, NULL);
+-	e_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_EEPROM;
++	e_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_EEPROM;
+ 	msm_sd_register(&e_ctrl->msm_sd);
+ 	e_ctrl->is_supported = (e_ctrl->is_supported << 1) | 1;
+ 	CDBG("%s success result=%d supported=%x X\n", __func__, rc,
+@@ -1860,7 +1860,7 @@ static int msm_eeprom_platform_probe(struct platform_device *pdev)
+ 	snprintf(e_ctrl->msm_sd.sd.name,
+ 		ARRAY_SIZE(e_ctrl->msm_sd.sd.name), "msm_eeprom");
+ 	media_entity_pads_init(&e_ctrl->msm_sd.sd.entity, 0, NULL);
+-	e_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_EEPROM;
++	e_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_EEPROM;
+ 	msm_sd_register(&e_ctrl->msm_sd);
+ 
+ #ifdef CONFIG_COMPAT
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c b/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c
+index c0af5ac313e6..25f0dec68921 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c
+@@ -1299,7 +1299,7 @@ static int32_t msm_flash_platform_probe(struct platform_device *pdev)
+ 		ARRAY_SIZE(flash_ctrl->msm_sd.sd.name),
+ 		"msm_camera_flash");
+ 	media_entity_pads_init(&flash_ctrl->msm_sd.sd.entity, 0, NULL);
+-	flash_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_FLASH;
++	flash_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_FLASH;
+ 	flash_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x1;
+ 	msm_sd_register(&flash_ctrl->msm_sd);
+ 
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/ir_cut/msm_ir_cut.c b/drivers/media/platform/msm/camera_v2/sensor/ir_cut/msm_ir_cut.c
+index f656946d182b..a69500532088 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/ir_cut/msm_ir_cut.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/ir_cut/msm_ir_cut.c
+@@ -598,7 +598,7 @@ static int32_t msm_ir_cut_platform_probe(struct platform_device *pdev)
+ 		ARRAY_SIZE(ir_cut_ctrl->msm_sd.sd.name),
+ 		"msm_camera_ir_cut");
+ 	media_entity_pads_init(&ir_cut_ctrl->msm_sd.sd.entity, 0, NULL);
+-	ir_cut_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_IR_CUT;
++	ir_cut_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_IR_CUT;
+ 	ir_cut_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x1;
+ 	msm_sd_register(&ir_cut_ctrl->msm_sd);
+ 
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/ir_led/msm_ir_led.c b/drivers/media/platform/msm/camera_v2/sensor/ir_led/msm_ir_led.c
+index 32c27144c174..6bbe5b415d75 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/ir_led/msm_ir_led.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/ir_led/msm_ir_led.c
+@@ -398,7 +398,7 @@ static int32_t msm_ir_led_platform_probe(struct platform_device *pdev)
+ 		ARRAY_SIZE(ir_led_ctrl->msm_sd.sd.name),
+ 		"msm_camera_ir_led");
+ 	media_entity_pads_init(&ir_led_ctrl->msm_sd.sd.entity, 0, NULL);
+-	ir_led_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_IR_LED;
++	ir_led_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_IR_LED;
+ 	ir_led_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x1;
+ 	msm_sd_register(&ir_led_ctrl->msm_sd);
+ 
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/laser_led/msm_laser_led.c b/drivers/media/platform/msm/camera_v2/sensor/laser_led/msm_laser_led.c
+index e8497592920e..237c84bf8d72 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/laser_led/msm_laser_led.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/laser_led/msm_laser_led.c
+@@ -569,7 +569,7 @@ static int32_t msm_laser_led_platform_probe(struct platform_device *pdev)
+ 		ARRAY_SIZE(laser_led_ctrl->msm_sd.sd.name),
+ 		"msm_camera_laser_led");
+ 	media_entity_pads_init(&laser_led_ctrl->msm_sd.sd.entity, 0, NULL);
+-	laser_led_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_LASER_LED;
++	laser_led_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_LASER_LED;
+ 	laser_led_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x1;
+ 	msm_sd_register(&laser_led_ctrl->msm_sd);
+ 
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+index 309f59bc44eb..f200b9ba6af6 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+@@ -104,7 +104,7 @@ static int32_t msm_sensor_driver_create_i2c_v4l_subdev
+ 	v4l2_set_subdevdata(&s_ctrl->msm_sd.sd, client);
+ 	s_ctrl->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+ 	media_entity_pads_init(&s_ctrl->msm_sd.sd.entity, 0, NULL);
+-	s_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_SENSOR;
++	s_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR;
+ 	s_ctrl->msm_sd.sd.entity.name =	s_ctrl->msm_sd.sd.name;
+ 	s_ctrl->sensordata->sensor_info->session_id = session_id;
+ 	s_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x3;
+@@ -148,7 +148,7 @@ static int32_t msm_sensor_driver_create_v4l_subdev
+ 	v4l2_set_subdevdata(&s_ctrl->msm_sd.sd, s_ctrl->pdev);
+ 	s_ctrl->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+ 	media_entity_pads_init(&s_ctrl->msm_sd.sd.entity, 0, NULL);
+-	s_ctrl->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_SENSOR;
++	s_ctrl->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR;
+ 	s_ctrl->msm_sd.sd.entity.name = s_ctrl->msm_sd.sd.name;
+ 	s_ctrl->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x3;
+ 	rc = msm_sd_register(&s_ctrl->msm_sd);
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_init.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_init.c
+index 7809e742fd6c..b6dc97d03050 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_init.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_init.c
+@@ -188,7 +188,7 @@ static int __init msm_sensor_init_module(void)
+ 	s_init->msm_sd.sd.internal_ops = &msm_sensor_init_internal_ops;
+ 	s_init->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+ 	media_entity_pads_init(&s_init->msm_sd.sd.entity, 0, NULL);
+-	s_init->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_SENSOR_INIT;
++	s_init->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_SENSOR_INIT;
+ 	s_init->msm_sd.sd.entity.name = s_init->msm_sd.sd.name;
+ 	s_init->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x6;
+ 	ret = msm_sd_register(&s_init->msm_sd);
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/ois/msm_ois.c b/drivers/media/platform/msm/camera_v2/sensor/ois/msm_ois.c
+index 95f374cf07b3..42c3c18c1786 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/ois/msm_ois.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/ois/msm_ois.c
+@@ -832,7 +832,7 @@ static int32_t msm_ois_i2c_probe(struct i2c_client *client,
+ 	ois_ctrl_t->msm_sd.sd.internal_ops = &msm_ois_internal_ops;
+ 	ois_ctrl_t->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+ 	media_entity_pads_init(&ois_ctrl_t->msm_sd.sd.entity, 0, NULL);
+-	ois_ctrl_t->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_OIS;
++	ois_ctrl_t->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_OIS;
+ 	ois_ctrl_t->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
+ 	msm_sd_register(&ois_ctrl_t->msm_sd);
+ 	ois_ctrl_t->ois_state = OIS_DISABLE_STATE;
+@@ -1025,7 +1025,7 @@ static int32_t msm_ois_platform_probe(struct platform_device *pdev)
+ 	snprintf(msm_ois_t->msm_sd.sd.name,
+ 		ARRAY_SIZE(msm_ois_t->msm_sd.sd.name), "msm_ois");
+ 	media_entity_pads_init(&msm_ois_t->msm_sd.sd.entity, 0, NULL);
+-	msm_ois_t->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_OIS;
++	msm_ois_t->msm_sd.sd.entity.group_id = MSM_CAMERA_SUBDEV_OIS;
+ 	msm_ois_t->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x2;
+ 	msm_sd_register(&msm_ois_t->msm_sd);
+ 	msm_ois_t->ois_state = OIS_DISABLE_STATE;
+-- 
+2.49.0
+

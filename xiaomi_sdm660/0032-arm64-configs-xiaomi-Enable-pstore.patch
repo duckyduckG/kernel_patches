@@ -1,0 +1,28 @@
+From fb4ec496c5bf90b339f799e74b67885c68917be8 Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Date: Sun, 14 Jun 2020 16:55:00 +0530
+Subject: [PATCH 032/178] arm64: configs: xiaomi: Enable pstore
+
+Change-Id: I678581c473ddec0c02e4ec7115902db10b5ba69b
+---
+ arch/arm64/configs/vendor/xiaomi/sdm660_defconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+index 88be1163c380..08586b1bbd52 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
++++ b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+@@ -690,6 +690,10 @@ CONFIG_TMPFS_POSIX_ACL=y
+ CONFIG_ECRYPT_FS=y
+ CONFIG_ECRYPT_FS_MESSAGING=y
+ CONFIG_SDCARD_FS=y
++CONFIG_PSTORE=y
++CONFIG_PSTORE_CONSOLE=y
++CONFIG_PSTORE_PMSG=y
++CONFIG_PSTORE_RAM=y
+ CONFIG_NLS_CODEPAGE_437=y
+ CONFIG_NLS_ISO8859_1=y
+ CONFIG_SECURITY=y
+-- 
+2.49.0
+

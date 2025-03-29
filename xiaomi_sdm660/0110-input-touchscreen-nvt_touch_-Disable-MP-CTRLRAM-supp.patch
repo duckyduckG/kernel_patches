@@ -1,0 +1,83 @@
+From 7bcee9f0f0cf1a88abd401a5a329121ab581935e Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Date: Mon, 6 Apr 2020 20:55:45 +0530
+Subject: [PATCH 110/178] input: touchscreen: nvt_touch_*: Disable MP CTRLRAM
+ support
+
+Change-Id: Id052d3ade610b378ab3afc595f00ca65424915b3
+---
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx.h   | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h | 2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+index c585a557048b..e683cb5947bf 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+@@ -79,7 +79,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ 
+ #define NVT_TOUCH_PROC 1
+ #define NVT_TOUCH_EXT_PROC 1
+-#define NVT_TOUCH_MP 1
++#define NVT_TOUCH_MP 0
+ #define MT_PROTOCOL_B 1
+ #define WAKEUP_GESTURE 1
+ #if WAKEUP_GESTURE
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+index bfc4fa0960a4..e4ad57acc30d 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+@@ -70,7 +70,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ 
+ #define NVT_TOUCH_PROC 1
+ #define NVT_TOUCH_EXT_PROC 1
+-#define NVT_TOUCH_MP 1
++#define NVT_TOUCH_MP 0
+ #define MT_PROTOCOL_B 1
+ #define WAKEUP_GESTURE 1
+ #if WAKEUP_GESTURE
+diff --git a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
+index 31869be049f2..3bad79f33dec 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2t/nt36xxx.h
+@@ -74,7 +74,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ /*---Customerized func.---*/
+ #define NVT_TOUCH_PROC 1
+ #define NVT_TOUCH_EXT_PROC 1
+-#define NVT_TOUCH_MP 1
++#define NVT_TOUCH_MP 0
+ #define MT_PROTOCOL_B 1
+ #define WAKEUP_GESTURE 1
+ #if WAKEUP_GESTURE
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+index f3b846bfda30..daff1fd58a5b 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+@@ -70,7 +70,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ 
+ #define NVT_TOUCH_PROC 1
+ #define NVT_TOUCH_EXT_PROC 1
+-#define NVT_TOUCH_MP 1
++#define NVT_TOUCH_MP 0
+ #define MT_PROTOCOL_B 1
+ #define WAKEUP_GESTURE 1
+ #if WAKEUP_GESTURE
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+index 8e6e61a6c137..da2b046ee1cf 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+@@ -94,7 +94,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ 
+ #define NVT_TOUCH_PROC 1
+ #define NVT_TOUCH_EXT_PROC 1
+-#define NVT_TOUCH_MP 1
++#define NVT_TOUCH_MP 0
+ #define MT_PROTOCOL_B 1
+ #define WAKEUP_GESTURE 1
+ #if WAKEUP_GESTURE
+-- 
+2.49.0
+

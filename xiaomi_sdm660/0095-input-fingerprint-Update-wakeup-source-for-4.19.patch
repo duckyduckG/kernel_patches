@@ -1,0 +1,106 @@
+From cf58c8310b04b66290cc30c432f034a3a6b2ad83 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 28 Oct 2020 13:13:24 +0000
+Subject: [PATCH 095/178] input: fingerprint: Update wakeup source for 4.19
+
+Change-Id: I6cc5d30289b4bba6fb456c68d4cb8d7505401f83
+---
+ drivers/input/fingerprint/fpc/fpc1020_platform_tee.c | 8 ++++----
+ drivers/input/fingerprint/goodix/gf_spi.c            | 7 +++----
+ drivers/input/fingerprint/goodix/gf_spi.h            | 1 +
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/input/fingerprint/fpc/fpc1020_platform_tee.c b/drivers/input/fingerprint/fpc/fpc1020_platform_tee.c
+index 7d674b5bc94d..7e4258eff0dd 100644
+--- a/drivers/input/fingerprint/fpc/fpc1020_platform_tee.c
++++ b/drivers/input/fingerprint/fpc/fpc1020_platform_tee.c
+@@ -94,7 +94,7 @@ struct fpc1020_data {
+ 	struct pinctrl_state *pinctrl_state[ARRAY_SIZE(pctl_names)];
+ 	struct regulator *vreg[ARRAY_SIZE(vreg_conf)];
+ 
+-	struct wakeup_source ttw_wl;
++	struct wakeup_source *ttw_wl;
+ 	int irq_gpio;
+ 	int rst_gpio;
+ 	struct mutex lock; /* To set/get exported values in sysfs */
+@@ -637,7 +637,7 @@ static irqreturn_t fpc1020_irq_handler(int irq, void *handle)
+ 	dev_dbg(fpc1020->dev, "%s\n", __func__);
+ 
+ 	if (atomic_read(&fpc1020->wakeup_enabled)) {
+-		__pm_wakeup_event(&fpc1020->ttw_wl,
++		__pm_wakeup_event(fpc1020->ttw_wl,
+ 					msecs_to_jiffies(FPC_TTW_HOLD_TIME));
+ 	}
+ 
+@@ -881,7 +881,7 @@ static int fpc1020_probe(struct platform_device *pdev)
+ 
+ 	mutex_init(&fpc1020->lock);
+ 
+-	wakeup_source_init(&fpc1020->ttw_wl, "fpc_ttw_wl");
++	fpc1020->ttw_wl = wakeup_source_register(NULL, "fpc_ttw_wl");
+ 
+ #ifdef CONFIG_TOUCHSCREEN_COMMON
+ 	fpc1020->input_handler.filter = input_filter;
+@@ -949,7 +949,7 @@ static int fpc1020_remove(struct platform_device *pdev)
+ 	fb_unregister_client(&fpc1020->fb_notifier);
+ 	sysfs_remove_group(&pdev->dev.kobj, &attribute_group);
+ 	mutex_destroy(&fpc1020->lock);
+-	wakeup_source_trash(&fpc1020->ttw_wl);
++	wakeup_source_unregister(fpc1020->ttw_wl);
+ 	(void)vreg_setup(fpc1020, "vdd_ana", false);
+ #ifndef CONFIG_MACH_MI
+ 	(void)vreg_setup(fpc1020, "vdd_io", false);
+diff --git a/drivers/input/fingerprint/goodix/gf_spi.c b/drivers/input/fingerprint/goodix/gf_spi.c
+index b63ba0a4a683..b6524dd4147c 100644
+--- a/drivers/input/fingerprint/goodix/gf_spi.c
++++ b/drivers/input/fingerprint/goodix/gf_spi.c
+@@ -76,7 +76,6 @@ static int SPIDEV_MAJOR;
+ static DECLARE_BITMAP(minors, N_SPI_MINORS);
+ static LIST_HEAD(device_list);
+ static DEFINE_MUTEX(device_list_lock);
+-static struct wakeup_source fp_wakelock;
+ static struct gf_dev gf;
+ 
+ static struct gf_key_map maps[] = {
+@@ -325,7 +324,7 @@ static irqreturn_t gf_irq(int irq, void *handle)
+ #if defined(GF_NETLINK_ENABLE)
+ 	char msg = GF_NET_EVENT_IRQ;
+ 	struct gf_dev *gf_dev = &gf;
+-	__pm_wakeup_event(&fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
++	__pm_wakeup_event(gf_dev->fp_wakelock, msecs_to_jiffies(WAKELOCK_HOLD_TIME));
+ 	sendnlmsg(&msg);
+ 	if ((gf_dev->wait_finger_down == true) && (gf_dev->device_available == 1) && (gf_dev->fb_black == 1)) {
+ 		printk("%s:shedule_work\n",__func__);
+@@ -858,7 +857,7 @@ static int gf_probe(struct platform_device *pdev)
+ 		goto error_sysfs;
+ 	}
+ 
+-	wakeup_source_init(&fp_wakelock, "fp_wakelock");
++	gf_dev->fp_wakelock = wakeup_source_register(NULL, "fp_wakelock");
+ 
+ 	pr_info("version V%d.%d.%02d\n", VER_MAJOR, VER_MINOR, PATCH_LEVEL);
+ 
+@@ -898,7 +897,7 @@ static int gf_remove(struct platform_device *pdev)
+ {
+ 	struct gf_dev *gf_dev = &gf;
+ 
+-	wakeup_source_trash(&fp_wakelock);
++	wakeup_source_unregister(gf_dev->fp_wakelock);
+ 	fb_unregister_client(&gf_dev->notifier);
+ 	if (gf_dev->input)
+ 		input_unregister_device(gf_dev->input);
+diff --git a/drivers/input/fingerprint/goodix/gf_spi.h b/drivers/input/fingerprint/goodix/gf_spi.h
+index 8cc5a684ebb0..651e2e8095a7 100644
+--- a/drivers/input/fingerprint/goodix/gf_spi.h
++++ b/drivers/input/fingerprint/goodix/gf_spi.h
+@@ -139,6 +139,7 @@ struct gf_dev {
+ 	char fb_black;
+ 	char wait_finger_down;
+ 	struct work_struct work;
++	struct wakeup_source *fp_wakelock;
+ 	bool proximity_state; /* 0:far 1:near */
+ };
+ 
+-- 
+2.49.0
+

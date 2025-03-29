@@ -1,0 +1,36 @@
+From 987888664bd05bb3828135cdccb96861bab6e1c6 Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Date: Fri, 3 Jul 2020 11:58:03 +0530
+Subject: [PATCH 061/178] arm64: dts: xiaomi: wayne: Update gpio entry for
+ camera
+
+Change-Id: I25c14da620208cb456d1cc1ab3b0a5ec5df7ee3d
+---
+ .../qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi  | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi
+index 60b49b621f6b..db979f4225af 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi
+@@ -58,6 +58,8 @@
+ 		regulator-max-microvolt = <1350000>;
+ 		enable-active-high;
+ 		gpio = <&pm660l_gpios 3 0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cam_sensor_eldo3_default>;
+ 		vin-supply = <&pm660_s5>;
+ 	};
+ 
+@@ -68,6 +70,8 @@
+ 		regulator-max-microvolt = <1200000>;
+ 		enable-active-high;
+ 		gpio = <&pm660l_gpios 4 0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cam_sensor_eldo4_default>;
+ 		vin-supply = <&pm660_s5>;
+ 	};
+ };
+-- 
+2.49.0
+

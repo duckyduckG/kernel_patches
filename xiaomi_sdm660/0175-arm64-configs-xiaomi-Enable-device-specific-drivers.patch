@@ -1,0 +1,136 @@
+From 05e2785cec0c6dda472df3d111c0c2adb9a6900c Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 14 Sep 2022 23:48:30 +0200
+Subject: [PATCH 175/178] arm64: configs: xiaomi: Enable device-specific
+ drivers
+
+Change-Id: Ica8cb8d8e537982ff30de462b7b8d553674459bd
+---
+ arch/arm64/configs/vendor/xiaomi/jason.config     |  6 ++++++
+ arch/arm64/configs/vendor/xiaomi/lavender.config  | 13 +++++++++++++
+ arch/arm64/configs/vendor/xiaomi/platina.config   | 14 ++++++++++++++
+ arch/arm64/configs/vendor/xiaomi/sdm660_defconfig |  3 +++
+ arch/arm64/configs/vendor/xiaomi/tulip.config     |  7 +++++++
+ arch/arm64/configs/vendor/xiaomi/wayne.config     |  6 ++++++
+ arch/arm64/configs/vendor/xiaomi/whyred.config    | 13 +++++++++++++
+ 7 files changed, 62 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/jason.config b/arch/arm64/configs/vendor/xiaomi/jason.config
+index 8063b63d7270..b1b26674e465 100644
+--- a/arch/arm64/configs/vendor/xiaomi/jason.config
++++ b/arch/arm64/configs/vendor/xiaomi/jason.config
+@@ -1,2 +1,8 @@
+ # Platform
+ CONFIG_MACH_XIAOMI_JASON=y
++
++# Touchscreen
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_CORE_FORCE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI_DEV_FORCE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE_FORCE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_TEST_REPORTING_FORCE=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/lavender.config b/arch/arm64/configs/vendor/xiaomi/lavender.config
+index 1c250453d867..f40632d46f1c 100644
+--- a/arch/arm64/configs/vendor/xiaomi/lavender.config
++++ b/arch/arm64/configs/vendor/xiaomi/lavender.config
+@@ -3,3 +3,16 @@ CONFIG_MACH_XIAOMI_LAVENDER=y
+ 
+ # DTS
+ CONFIG_BUILD_ARM64_DT_OVERLAY=y
++
++# Touchscreen
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_F7A=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_I2C_F7A=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_CORE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_TOUCH=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_DEVICE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_TESTING=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_REFLASH=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_RECOVERY=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_ZEROFLASH=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_DIAGNOSTICS=y
++CONFIG_TOUCHSCREEN_NVT_F7A=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/platina.config b/arch/arm64/configs/vendor/xiaomi/platina.config
+index 7e9c06517a9c..b60e35a4d32d 100644
+--- a/arch/arm64/configs/vendor/xiaomi/platina.config
++++ b/arch/arm64/configs/vendor/xiaomi/platina.config
+@@ -1,2 +1,16 @@
+ # Platform
+ CONFIG_MACH_XIAOMI_PLATINA=y
++
++# Touchscreen
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_D2T=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_I2C_D2T=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_CORE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_TOUCH=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_DEVICE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_TESTING=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_REFLASH=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_RECOVERY=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_ZEROFLASH=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_TCM_DIAGNOSTICS=y
++CONFIG_TOUCHSCREEN_NVT_D2T=y
++CONFIG_TOUCHSCREEN_FOCAL_FT8719_D2T=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+index 055dfe1a898f..dc437d654e3c 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
++++ b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+@@ -357,6 +357,9 @@ CONFIG_INPUT_QPNP_POWER_ON=y
+ CONFIG_INPUT_QTI_HAPTICS=y
+ CONFIG_INPUT_UINPUT=y
+ CONFIG_INPUT_GPIO=y
++CONFIG_INPUT_FINGERPRINT=y
++CONFIG_FPC_FINGERPRINT=y
++CONFIG_GOODIX_FINGERPRINT=y
+ # CONFIG_SERIO_SERPORT is not set
+ # CONFIG_VT is not set
+ # CONFIG_LEGACY_PTYS is not set
+diff --git a/arch/arm64/configs/vendor/xiaomi/tulip.config b/arch/arm64/configs/vendor/xiaomi/tulip.config
+index d1d6b07c250f..392947e0d3e9 100644
+--- a/arch/arm64/configs/vendor/xiaomi/tulip.config
++++ b/arch/arm64/configs/vendor/xiaomi/tulip.config
+@@ -1,2 +1,9 @@
+ # Platform
+ CONFIG_MACH_XIAOMI_TULIP=y
++
++# Hall sensor
++CONFIG_INPUT_HALL_SENSOR_E7S=y
++
++# Touchscreen
++CONFIG_TOUCHSCREEN_NVT_A=y
++CONFIG_TOUCHSCREEN_FOCAL_FT8719_E7T=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/wayne.config b/arch/arm64/configs/vendor/xiaomi/wayne.config
+index e8218943231c..9417600d5ecc 100644
+--- a/arch/arm64/configs/vendor/xiaomi/wayne.config
++++ b/arch/arm64/configs/vendor/xiaomi/wayne.config
+@@ -1,2 +1,8 @@
+ # Platform
+ CONFIG_MACH_XIAOMI_WAYNE=y
++
++# Hall sensor
++CONFIG_INPUT_HALL_SENSOR_E7S=y
++
++# Touchscreen
++CONFIG_TOUCHSCREEN_NVT_D2S=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/whyred.config b/arch/arm64/configs/vendor/xiaomi/whyred.config
+index 712fd6c98743..5ddea3d808ae 100644
+--- a/arch/arm64/configs/vendor/xiaomi/whyred.config
++++ b/arch/arm64/configs/vendor/xiaomi/whyred.config
+@@ -1,2 +1,15 @@
+ # Platform
+ CONFIG_MACH_XIAOMI_WHYRED=y
++
++# Hall sensor
++CONFIG_INPUT_HALL_SENSOR_E7S=y
++
++# Touchscreen
++CONFIG_TOUCHSCREEN_NVT_E7S=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S_I2C=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S_CORE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S_RMI_DEV=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S_FW_UPDATE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S_GESTURE=y
++CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_E7S_TEST_REPORTING=y
+-- 
+2.49.0
+

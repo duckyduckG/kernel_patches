@@ -1,0 +1,138 @@
+From a5eebf401d17fc6d0d76959cafd89e1bc530d777 Mon Sep 17 00:00:00 2001
+From: Michael Bestas <mkbestas@lineageos.org>
+Date: Wed, 6 Jan 2021 19:01:29 +0200
+Subject: [PATCH 073/178] arm64: dts: xiaomi: Keep using old haptics driver
+
+* LED based driver doesn't have xiaomi changes ported
+  and that leads to poor haptics experience on most devices
+
+Change-Id: I3ac4b6b207744638e7a6c30a78e72ba3f95620da
+---
+ .../boot/dts/vendor/qcom/xiaomi/jasmine.dtsi  |  3 +-
+ .../boot/dts/vendor/qcom/xiaomi/jason.dtsi    |  2 +-
+ .../boot/dts/vendor/qcom/xiaomi/lavender.dtsi |  3 +-
+ .../boot/dts/vendor/qcom/xiaomi/tulip.dtsi    |  2 +-
+ .../boot/dts/vendor/qcom/xiaomi/wayne.dtsi    |  3 +-
+ .../boot/dts/vendor/qcom/xiaomi/whyred.dtsi   |  2 +-
+ .../qcom/xiaomi/xiaomi-sdm660-common.dtsi     | 30 +++++++++++++++++++
+ 7 files changed, 39 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+index 9152ad6a4312..7d383036b698 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+@@ -9,8 +9,9 @@
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  */
+-#include "longcheer/common/longcheer-sdm660-base.dtsi"
++
+ #include "xiaomi-sdm660-common.dtsi"
++#include "longcheer/common/longcheer-sdm660-base.dtsi"
+ #include "longcheer/wayne/wayne-common-base.dtsi"
+ 
+ &firmware {
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi
+index 127d0d9cfb42..737249034297 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi
+@@ -1,3 +1,3 @@
+-#include "mi/mi-sdm660-common.dtsi"
+ #include "xiaomi-sdm660-common.dtsi"
++#include "mi/mi-sdm660-common.dtsi"
+ #include "mi/jason/jason-sdm660.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi
+index 482ebcb4ea93..8f56aff61c74 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi
+@@ -9,6 +9,7 @@
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  */
+-#include "longcheer/common/longcheer-sdm660-base.dtsi"
++
+ #include "xiaomi-sdm660-common.dtsi"
++#include "longcheer/common/longcheer-sdm660-base.dtsi"
+ #include "longcheer/lavender/lavender-base.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi
+index b64161267a39..fa9fe05c3e95 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi
+@@ -10,7 +10,7 @@
+  * GNU General Public License for more details.
+  */
+ 
++#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/common/longcheer-sdm660-base.dtsi"
+ #include "longcheer/common/longcheer-sdm636.dtsi"
+-#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/tulip/tulip-base.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+index 23227262ea0a..c87b22594f7c 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+@@ -9,8 +9,9 @@
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  */
+-#include "longcheer/common/longcheer-sdm660-base.dtsi"
++
+ #include "xiaomi-sdm660-common.dtsi"
++#include "longcheer/common/longcheer-sdm660-base.dtsi"
+ #include "longcheer/wayne/wayne-common-base.dtsi"
+ 
+ /* sdm660.dtsi wayne specific diff */
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi
+index 28ebad1ae5bd..65476bb46142 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi
+@@ -10,7 +10,7 @@
+  * GNU General Public License for more details.
+  */
+ 
++#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/common/longcheer-sdm660-base.dtsi"
+ #include "longcheer/common/longcheer-sdm636.dtsi"
+-#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/whyred/whyred-base.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+index b090a198ac62..db4fceb63cb4 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+@@ -3,3 +3,33 @@
+ 		qcom,force-warm-reboot;
+ 	};
+ };
++
++&spmi_bus {
++	qcom,pm660@1 {
++		/delete-node/ qcom,haptics@c000;
++		pm660_haptics: qcom,haptic@c000 {
++			compatible = "qcom,qpnp-haptic";
++			reg = <0xc000 0x100>;
++			interrupts = <0x1 0xc0 0x0 IRQ_TYPE_EDGE_BOTH>,
++					<0x1 0xc0 0x1 IRQ_TYPE_EDGE_BOTH>;
++			interrupt-names = "sc-irq", "play-irq";
++			qcom,pmic-revid = <&pm660_revid>;
++			qcom,pmic-misc = <&pm660_misc>;
++			qcom,misc-clk-trim-error-reg = <0xf3>;
++			qcom,actuator-type = "lra";
++			qcom,play-mode = "direct";
++			qcom,vmax-mv = <3200>;
++			qcom,ilim-ma = <800>;
++			qcom,wave-shape = "square";
++			qcom,wave-play-rate-us = <6667>;
++			qcom,int-pwm-freq-khz = <505>;
++			qcom,sc-deb-cycles = <8>;
++			qcom,en-brake;
++			qcom,brake-pattern = [03 03 00 00];
++			qcom,lra-high-z = "opt0";
++			qcom,lra-auto-res-mode = "qwd";
++			qcom,lra-calibrate-at-eop = <0>;
++			qcom,correct-lra-drive-freq;
++		};
++	};
++};
+-- 
+2.49.0
+

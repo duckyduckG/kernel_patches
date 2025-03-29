@@ -1,0 +1,42 @@
+From fbcc510f3e3e04b36dbc6484623786d0fa689af3 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Fri, 2 Feb 2018 17:31:04 +0800
+Subject: [PATCH 091/178] input: fingerprint: goodix: Respect capacitive keys
+ state
+
+ * Only report home key event when capacitive keys enabled
+
+Change-Id: Id30ba1fd7a589b2fce7bd3d2f433a6b1d756b37d
+---
+ drivers/input/fingerprint/goodix/gf_spi.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/input/fingerprint/goodix/gf_spi.c b/drivers/input/fingerprint/goodix/gf_spi.c
+index baf31edfb878..8f40c0ee5ae3 100644
+--- a/drivers/input/fingerprint/goodix/gf_spi.c
++++ b/drivers/input/fingerprint/goodix/gf_spi.c
+@@ -52,6 +52,10 @@
+ #include <linux/platform_device.h>
+ #endif
+ 
++#ifdef CONFIG_TOUCHSCREEN_COMMON
++#include <linux/input/tp_common.h>
++#endif
++
+ #define VER_MAJOR   1
+ #define VER_MINOR   2
+ #define PATCH_LEVEL 10
+@@ -371,6 +375,10 @@ static void gf_kernel_key_input(struct gf_dev *gf_dev, struct gf_key *gf_key)
+ 	uint32_t key_input = 0;
+ 
+ 	if (gf_key->key == GF_KEY_HOME) {
++#ifdef CONFIG_TOUCHSCREEN_COMMON
++		if (!capacitive_keys_enabled)
++			return;
++#endif
+ 		key_input = GF_KEY_INPUT_HOME;
+ 	} else if (gf_key->key == GF_KEY_POWER) {
+ 		key_input = GF_KEY_INPUT_POWER;
+-- 
+2.49.0
+

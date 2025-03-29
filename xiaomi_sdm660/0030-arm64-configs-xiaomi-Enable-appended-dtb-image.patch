@@ -1,0 +1,25 @@
+From 7017122e132937be534ba7dd596d8f3df243f198 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Sat, 29 Feb 2020 18:49:20 +0800
+Subject: [PATCH 030/178] arm64: configs: xiaomi: Enable appended dtb image
+
+Change-Id: I7276ed50f7839d517f7e096460cea807b3c8fb60
+---
+ arch/arm64/configs/vendor/xiaomi/sdm660_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+index 36fb4f41bd5d..27f403cdb643 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
++++ b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+@@ -68,6 +68,7 @@ CONFIG_ARM64_SW_TTBR0_PAN=y
+ CONFIG_RANDOMIZE_BASE=y
+ CONFIG_CMDLINE="cgroup_disable=pressure"
+ CONFIG_CMDLINE_EXTEND=y
++CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE=y
+ CONFIG_COMPAT=y
+ CONFIG_PM_WAKELOCKS=y
+ CONFIG_PM_WAKELOCKS_LIMIT=0
+-- 
+2.49.0
+

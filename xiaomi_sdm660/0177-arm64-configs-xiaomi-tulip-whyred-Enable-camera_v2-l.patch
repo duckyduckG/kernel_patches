@@ -1,0 +1,43 @@
+From 312727ef530790955a768ab6c4fc0a537b38dbb8 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Tue, 23 Aug 2022 16:21:28 +0200
+Subject: [PATCH 177/178] arm64: configs: xiaomi: tulip/whyred: Enable
+ camera_v2-legacy
+
+Change-Id: I842de7e2aa858ea9ab2ebaa1e2a7fc5a929e3909
+---
+ arch/arm64/configs/vendor/xiaomi/tulip.config  | 3 +++
+ arch/arm64/configs/vendor/xiaomi/whyred.config | 3 +++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/tulip.config b/arch/arm64/configs/vendor/xiaomi/tulip.config
+index 392947e0d3e9..88ffd32d2d90 100644
+--- a/arch/arm64/configs/vendor/xiaomi/tulip.config
++++ b/arch/arm64/configs/vendor/xiaomi/tulip.config
+@@ -1,6 +1,9 @@
+ # Platform
+ CONFIG_MACH_XIAOMI_TULIP=y
+ 
++# Camera
++CONFIG_MSMB_CAMERA_LEGACY=y
++
+ # Hall sensor
+ CONFIG_INPUT_HALL_SENSOR_E7S=y
+ 
+diff --git a/arch/arm64/configs/vendor/xiaomi/whyred.config b/arch/arm64/configs/vendor/xiaomi/whyred.config
+index 5ddea3d808ae..f0bd9e7715c3 100644
+--- a/arch/arm64/configs/vendor/xiaomi/whyred.config
++++ b/arch/arm64/configs/vendor/xiaomi/whyred.config
+@@ -1,6 +1,9 @@
+ # Platform
+ CONFIG_MACH_XIAOMI_WHYRED=y
+ 
++# Camera
++CONFIG_MSMB_CAMERA_LEGACY=y
++
+ # Hall sensor
+ CONFIG_INPUT_HALL_SENSOR_E7S=y
+ 
+-- 
+2.49.0
+

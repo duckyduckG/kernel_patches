@@ -1,0 +1,26 @@
+From 36cf44a8a4da81c3a1479e0642d0c4756172213c Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Sat, 15 Feb 2020 14:48:17 +0100
+Subject: [PATCH 041/178] arm64: dts: xiaomi: longcheer: Add some fp props
+
+Change-Id: I315152588e5f1e392521a2f48abda8d31f8940f8
+---
+ .../qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi      | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+index 97d3cbd28146..8138effd7e39 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+@@ -87,6 +87,8 @@
+ 		pinctrl-0 = <&msm_gpio_20>;
+ 		pinctrl-1 = <&msm_gpio_20_output_high>;
+ 		pinctrl-2 = <&msm_gpio_72>;
++		fpc,enable-on-boot;
++		fpc,enable-wakeup;
+ 	};
+ 
+ 	ant_check {
+-- 
+2.49.0
+

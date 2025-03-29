@@ -1,0 +1,27 @@
+From 8ff4cf3de3d85d3a6ff1131689c2d7b6c0730284 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Sat, 29 Feb 2020 23:23:49 +0800
+Subject: [PATCH 056/178] arm64: dts: xiaomi: longcheer: Update WLED
+ configuration
+
+Change-Id: Ida6873ff7ff5d6a667486955a9b853ecd0a16e68
+---
+ .../qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi      | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+index 1e2e2b606e92..bc47314b8f6c 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+@@ -26,7 +26,7 @@
+ 
+ &pm660l_wled {
+ 	qcom,fs-curr-ua = <18000>;
+-	qcom,led-strings-list = [00 01];
++	qcom,string-cfg = <3>;
+ };
+ 
+ &dsi_nt36672_tianma_fhd_video {
+-- 
+2.49.0
+

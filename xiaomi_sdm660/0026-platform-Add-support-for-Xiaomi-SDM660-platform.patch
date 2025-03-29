@@ -1,0 +1,118 @@
+From 0272d346eae728f3b3202cc3ac63c8801bed2747 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Thu, 22 Aug 2019 02:27:05 +0200
+Subject: [PATCH 026/178] platform: Add support for Xiaomi SDM660 platform
+
+platform: xiaomi: Add config entry per ODM
+
+Change-Id: Iafe754d230de56b1afc5a84734e251d223436b31
+Signed-off-by: Isaac Chen <tingyi364@gmail.com>
+
+platform: Add jason board
+
+Change-Id: I8adfc8bdc77eda222cd4edfe818ee541d65b81cd
+
+drivers: platform: Add support for xiaomi lavender
+
+Change-Id: Icd084ad957aa9dc97112df16afd4c55400939ec8
+
+platform: xiaomi: Add support to platina
+
+* Xiaomi Mi 8 Lite
+
+Change-Id: If3163ea5dfdd819c426ba4512c89e0c953d606a9
+
+Change-Id: I3bbfd60dfa0dea0abf080d35fd3d6d14dec6e094
+---
+ drivers/platform/Kconfig        |  4 ++
+ drivers/platform/xiaomi/Kconfig | 66 +++++++++++++++++++++++++++++++++
+ 2 files changed, 70 insertions(+)
+ create mode 100644 drivers/platform/xiaomi/Kconfig
+
+diff --git a/drivers/platform/Kconfig b/drivers/platform/Kconfig
+index c0db71f6eea9..27adb4821ae3 100644
+--- a/drivers/platform/Kconfig
++++ b/drivers/platform/Kconfig
+@@ -12,3 +12,7 @@ source "drivers/platform/chrome/Kconfig"
+ source "drivers/platform/mellanox/Kconfig"
+ 
+ source "drivers/platform/msm/Kconfig"
++
++if ARCH_QCOM
++source "drivers/platform/xiaomi/Kconfig"
++endif
+diff --git a/drivers/platform/xiaomi/Kconfig b/drivers/platform/xiaomi/Kconfig
+new file mode 100644
+index 000000000000..4afbef127733
+--- /dev/null
++++ b/drivers/platform/xiaomi/Kconfig
+@@ -0,0 +1,66 @@
++# Xiaomi configuration options
++
++config MACH_XIAOMI
++	bool "Xiaomi device"
++	depends on ARCH_QCOM
++	help
++	  Support for Xiaomi products
++
++config MACH_XIAOMI_SDM660
++	bool "Xiaomi SDM660"
++	depends on ARCH_QCOM
++	select MACH_XIAOMI
++	help
++	  Support for Xiaomi SDM660 devices
++
++menu "Xiaomi board selection"
++
++	config MACH_MI
++		bool "Mi board"
++		select MACH_XIAOMI_SDM660
++		help
++		  Support for Mi boards
++
++	config MACH_XIAOMI_JASON
++		bool "Xiaomi jason board"
++		select MACH_MI
++		help
++		  Support for Xiaomi Mi Note 3
++
++	config MACH_XIAOMI_PLATINA
++		bool "Xiaomi platina board"
++		select MACH_MI
++		help
++		  Support for Xiaomi Mi 8 Lite
++
++	config MACH_LONGCHEER
++		bool "Longcheer board"
++		select MACH_XIAOMI_SDM660
++		help
++		  Support for Longcheer boards
++
++	config MACH_XIAOMI_LAVENDER
++		bool "Xiaomi lavender board"
++		select MACH_LONGCHEER
++		help
++		  Support for Xiaomi Redmi Note 7
++
++	config MACH_XIAOMI_TULIP
++		bool "Xiaomi tulip board"
++		select MACH_LONGCHEER
++		help
++		  Support for Xiaomi Redmi Note 6 Pro
++
++	config MACH_XIAOMI_WAYNE
++		bool "Xiaomi wayne board"
++		select MACH_LONGCHEER
++		help
++		  Support for Xiaomi MI 6X variant
++
++	config MACH_XIAOMI_WHYRED
++		bool "Xiaomi whyred board"
++		select MACH_LONGCHEER
++		help
++		  Support for Xiaomi Redmi Note 5 (Pro)
++
++endmenu
+-- 
+2.49.0
+

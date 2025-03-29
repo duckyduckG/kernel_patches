@@ -1,0 +1,183 @@
+From 48ff5ce96eae25afb0a9069a818e3a85d597f3e3 Mon Sep 17 00:00:00 2001
+From: klozz <klozz@TheXPerienceProject.org>
+Date: Tue, 5 Jan 2021 09:06:32 +0100
+Subject: [PATCH 171/178] techpack: audio: elliptic: adapt driver to kernel
+ 4.19
+
+Change-Id: Ib8029f796298b3beded376962b4e552fe083f669
+---
+ techpack/audio/Makefile                              |  1 +
+ techpack/audio/asoc/msm-pcm-routing-v2.c             |  4 ++--
+ techpack/audio/dsp/apr_elliptic.c                    |  8 ++++----
+ techpack/audio/dsp/elliptic/elliptic.c               |  5 +++--
+ .../audio/dsp/elliptic/elliptic_mixer_controls.c     | 12 +++++-------
+ .../elliptic/io_modules/msm/elliptic_data_msm_io.c   |  4 ++--
+ techpack/audio/include/dsp/apr_elliptic.h            |  2 +-
+ .../audio/include/elliptic/elliptic_mixer_controls.h |  4 ++--
+ 8 files changed, 20 insertions(+), 20 deletions(-)
+
+diff --git a/techpack/audio/Makefile b/techpack/audio/Makefile
+index 357525074003..3e10f657e2e3 100644
+--- a/techpack/audio/Makefile
++++ b/techpack/audio/Makefile
+@@ -37,6 +37,7 @@ USERINCLUDE     += \
+ # Needed to be compatible with the O= option
+ LINUXINCLUDE    += \
+                 -I$(srctree)/techpack/audio/include/uapi \
++                -I$(srctree)/techpack/audio/include/elliptic \
+                 -I$(srctree)/techpack/audio/include
+ 
+ ifeq ($(CONFIG_ARCH_SDXPOORWILLS), y)
+diff --git a/techpack/audio/asoc/msm-pcm-routing-v2.c b/techpack/audio/asoc/msm-pcm-routing-v2.c
+index d1a989f165c9..ea5b1eafe18c 100644
+--- a/techpack/audio/asoc/msm-pcm-routing-v2.c
++++ b/techpack/audio/asoc/msm-pcm-routing-v2.c
+@@ -33,7 +33,7 @@
+ #include <dsp/q6common.h>
+ #include <dsp/audio_cal_utils.h>
+ #ifdef CONFIG_ELLIPTICLABS
+-#include <sound/apr_elliptic.h>
++#include <dsp/apr_elliptic.h>
+ #include <elliptic/elliptic_mixer_controls.h>
+ #endif
+ 
+@@ -31726,7 +31726,7 @@ static int msm_routing_probe(struct snd_soc_component *component)
+ 				      ARRAY_SIZE(mclk_src_controls));
+ 
+ #ifdef CONFIG_ELLIPTICLABS
+-	elliptic_add_platform_controls(platform);
++	elliptic_add_component_controls(component);
+ #endif
+ 
+ 	return 0;
+diff --git a/techpack/audio/dsp/apr_elliptic.c b/techpack/audio/dsp/apr_elliptic.c
+index 9aa0dedea5c3..b3d67edfba09 100644
+--- a/techpack/audio/dsp/apr_elliptic.c
++++ b/techpack/audio/dsp/apr_elliptic.c
+@@ -8,10 +8,10 @@
+ #include <sound/asound.h>
+ #include <sound/soc.h>
+ #include <sound/control.h>
+-#include "msm-pcm-routing-v2.h"
+-#include <sound/q6audio-v2.h>
+-#include <sound/q6common.h>
+-#include <sound/apr_audio-v2.h>
++#include "../asoc/msm-pcm-routing-v2.h"
++#include <dsp/q6audio-v2.h>
++#include <dsp/q6common.h>
++#include <dsp/apr_audio-v2.h>
+ #include <dsp/apr_elliptic.h>
+ #include <elliptic/elliptic_mixer_controls.h>
+ #include <elliptic/elliptic_data_io.h>
+diff --git a/techpack/audio/dsp/elliptic/elliptic.c b/techpack/audio/dsp/elliptic/elliptic.c
+index 2023b4db9b47..b0f938d01606 100644
+--- a/techpack/audio/dsp/elliptic/elliptic.c
++++ b/techpack/audio/dsp/elliptic/elliptic.c
+@@ -34,6 +34,7 @@
+ #include <elliptic/elliptic_device.h>
+ #include <elliptic/elliptic_data_io.h>
+ #include <elliptic/elliptic_mixer_controls.h>
++#include <dsp/apr_elliptic.h>
+ 
+ 
+ /* Alternative mechanism to load calibration data.
+@@ -699,7 +700,7 @@ static int32_t elliptic_send_calibration_to_engine(size_t calib_data_size)
+ #endif
+ 
+ 
+-static int __init elliptic_driver_init(void)
++int __init elliptic_driver_init(void)
+ {
+ 	int err;
+ 	int i;
+@@ -786,7 +787,7 @@ static int __init elliptic_driver_init(void)
+ 	return err;
+ }
+ 
+-static void elliptic_driver_exit(void)
++void elliptic_driver_exit(void)
+ {
+ 	if (wake_source) {
+ 		wakeup_source_trash(wake_source);
+diff --git a/techpack/audio/dsp/elliptic/elliptic_mixer_controls.c b/techpack/audio/dsp/elliptic/elliptic_mixer_controls.c
+index ff05829bbca0..db0e8078eb36 100644
+--- a/techpack/audio/dsp/elliptic/elliptic_mixer_controls.c
++++ b/techpack/audio/dsp/elliptic/elliptic_mixer_controls.c
+@@ -1285,16 +1285,14 @@ static const struct snd_kcontrol_new ultrasound_filter_mixer_controls[] = {
+ 
+ };
+ 
+-
+-
+-unsigned int elliptic_add_platform_controls(void *platform)
++unsigned int elliptic_add_component_controls(void *component)
+ {
+ 	const unsigned int num_controls =
+ 		ARRAY_SIZE(ultrasound_filter_mixer_controls);
+ 
+-	if (platform != NULL) {
+-		snd_soc_add_platform_controls(
+-			(struct snd_soc_platform *)platform,
++	if (component != NULL) {
++		snd_soc_add_component_controls(
++			(struct snd_soc_component *)component,
+ 			ultrasound_filter_mixer_controls,
+ 			num_controls);
+ 	} else {
+@@ -1303,7 +1301,7 @@ unsigned int elliptic_add_platform_controls(void *platform)
+ 
+ 	return num_controls;
+ }
+-
++EXPORT_SYMBOL(elliptic_add_component_controls);
+ 
+ int elliptic_trigger_version_msg(void)
+ {
+diff --git a/techpack/audio/dsp/elliptic/io_modules/msm/elliptic_data_msm_io.c b/techpack/audio/dsp/elliptic/io_modules/msm/elliptic_data_msm_io.c
+index 515e6f795b9e..3f77f968f0e1 100644
+--- a/techpack/audio/dsp/elliptic/io_modules/msm/elliptic_data_msm_io.c
++++ b/techpack/audio/dsp/elliptic/io_modules/msm/elliptic_data_msm_io.c
+@@ -48,8 +48,8 @@
+ #include <elliptic/elliptic_data_io.h>
+ #include <elliptic/elliptic_device.h>
+ 
+-#include <sound/apr_elliptic.h>
+-#include <sound/q6afe-v2.h>
++#include <dsp/apr_elliptic.h>
++#include <dsp/q6afe-v2.h>
+ 
+ #define IO_PING_PONG_BUFFER_SIZE 512
+ #define AFE_MSM_RX_PSEUDOPORT_ID 0x8001
+diff --git a/techpack/audio/include/dsp/apr_elliptic.h b/techpack/audio/include/dsp/apr_elliptic.h
+index 5d42a37c7489..e98bcf73f0a6 100644
+--- a/techpack/audio/include/dsp/apr_elliptic.h
++++ b/techpack/audio/include/dsp/apr_elliptic.h
+@@ -1,7 +1,7 @@
+ #pragma once
+ 
+ #include <linux/types.h>
+-#include <sound/apr_audio-v2.h>
++#include <dsp/apr_audio-v2.h>
+ #include <elliptic/elliptic_data_io.h>
+ #include <linux/delay.h>
+ 
+diff --git a/techpack/audio/include/elliptic/elliptic_mixer_controls.h b/techpack/audio/include/elliptic/elliptic_mixer_controls.h
+index 771d3aea9c11..0082b627d7a5 100644
+--- a/techpack/audio/include/elliptic/elliptic_mixer_controls.h
++++ b/techpack/audio/include/elliptic/elliptic_mixer_controls.h
+@@ -101,10 +101,10 @@ struct elliptic_shared_data_block {
+ struct elliptic_shared_data_block *elliptic_get_shared_obj(uint32_t
+ 	object_id);
+ 
+-unsigned int elliptic_add_platform_controls(void *platform);
+-
+ void elliptic_set_calibration_data(uint8_t *calib_data, size_t size);
+ 
++extern unsigned int elliptic_add_component_controls(void *component);
++
+ enum elliptic_system_configuration_parameter_type {
+ 
+ 	ESCPT_SPEAKER_SCALING = 1,
+-- 
+2.49.0
+

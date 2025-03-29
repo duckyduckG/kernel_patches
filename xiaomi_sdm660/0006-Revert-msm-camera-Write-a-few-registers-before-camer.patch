@@ -1,0 +1,290 @@
+From bf45d8a210ea70d20cae287a364dcec694088972 Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Date: Fri, 26 Jun 2020 21:20:24 +0530
+Subject: [PATCH 006/178] Revert "msm: camera: Write a few registers before
+ camera probe"
+
+This reverts commit 13e62deb41dce2c38e446e78f1749d0c4b5123b1.
+
+Change-Id: I643553d0ceed2175fdf64d63d5703fc1b5659409
+---
+ .../msm/camera_v2/sensor/msm_sensor.c         | 14 ---
+ .../msm/camera_v2/sensor/msm_sensor_driver.c  | 86 +------------------
+ include/media/msm_cam_sensor.h                | 25 ++----
+ include/soc/qcom/camera2.h                    |  1 -
+ include/uapi/media/msm_camsensor_sdk.h        | 19 ++--
+ 5 files changed, 18 insertions(+), 127 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+index e75fcadd3be0..4e743f60caf3 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor.c
+@@ -83,13 +83,9 @@ static void msm_sensor_misc_regulator(
+ 
+ int32_t msm_sensor_free_sensor_data(struct msm_sensor_ctrl_t *s_ctrl)
+ {
+-	struct msm_camera_sensor_slave_info *slave_info = NULL;
+-
+ 	if (!s_ctrl->pdev && !s_ctrl->sensor_i2c_client->client)
+ 		return 0;
+ 	kfree(s_ctrl->sensordata->slave_info);
+-	slave_info = s_ctrl->sensordata->cam_slave_info;
+-	kfree(slave_info->sensor_id_info.setting.reg_setting);
+ 	kfree(s_ctrl->sensordata->cam_slave_info);
+ 	kfree(s_ctrl->sensordata->actuator_info);
+ 	kfree(s_ctrl->sensordata->power_info.gpio_conf->gpio_num_info);
+@@ -269,16 +265,6 @@ int msm_sensor_match_id(struct msm_sensor_ctrl_t *s_ctrl)
+ 		return -EINVAL;
+ 	}
+ 
+-	if (slave_info->setting && slave_info->setting->size > 0) {
+-		rc = s_ctrl->sensor_i2c_client->i2c_func_tbl->i2c_write_table(
+-			s_ctrl->sensor_i2c_client, slave_info->setting);
+-		if (rc < 0)
+-			pr_err("Write array failed prior to probe\n");
+-
+-	} else {
+-		CDBG("No writes needed for this sensor before probe\n");
+-	}
+-
+ 	rc = sensor_i2c_client->i2c_func_tbl->i2c_read(
+ 		sensor_i2c_client, slave_info->sensor_id_reg_addr,
+ 		&chipid, MSM_CAMERA_I2C_WORD_DATA);
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+index f200b9ba6af6..6568b94f006c 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/msm_sensor_driver.c
+@@ -758,8 +758,6 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 
+ 	unsigned long                        mount_pos = 0;
+ 	uint32_t                             is_yuv;
+-	struct msm_camera_i2c_reg_array     *reg_setting = NULL;
+-	struct msm_sensor_id_info_t         *id_info = NULL;
+ 
+ 	/* Validate input parameters */
+ 	if (!setting) {
+@@ -808,56 +806,7 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 		slave_info->camera_id = slave_info32->camera_id;
+ 
+ 		slave_info->i2c_freq_mode = slave_info32->i2c_freq_mode;
+-		slave_info->sensor_id_info.sensor_id_reg_addr =
+-			slave_info32->sensor_id_info.sensor_id_reg_addr;
+-		slave_info->sensor_id_info.sensor_id_mask =
+-			slave_info32->sensor_id_info.sensor_id_mask;
+-		slave_info->sensor_id_info.sensor_id =
+-			slave_info32->sensor_id_info.sensor_id;
+-
+-		slave_info->sensor_id_info.setting.addr_type =
+-			slave_info32->sensor_id_info.setting.addr_type;
+-		slave_info->sensor_id_info.setting.data_type =
+-			slave_info32->sensor_id_info.setting.data_type;
+-		slave_info->sensor_id_info.setting.delay =
+-			slave_info32->sensor_id_info.setting.delay;
+-		slave_info->sensor_id_info.setting.size =
+-			slave_info32->sensor_id_info.setting.size;
+-
+-		if (!slave_info->sensor_id_info.setting.size ||
+-			(slave_info->sensor_id_info.setting.size >
+-				I2C_REG_DATA_MAX)) {
+-			CDBG("%s:No writes needed to probe\n", __func__);
+-			slave_info->sensor_id_info.setting.reg_setting = NULL;
+-		} else {
+-			id_info = &(slave_info->sensor_id_info);
+-			reg_setting =
+-				kzalloc(id_info->setting.size *
+-					(sizeof
+-					(struct msm_camera_i2c_reg_array)),
+-					GFP_KERNEL);
+-			if (!reg_setting) {
+-				kfree(slave_info32);
+-				rc = -ENOMEM;
+-				goto free_slave_info;
+-			}
+-			if (copy_from_user(reg_setting,
+-				(void __user *)
+-				compat_ptr(slave_info32->sensor_id_info
+-				.setting.reg_setting),
+-				slave_info->sensor_id_info.setting.size *
+-				sizeof(struct msm_camera_i2c_reg_array))) {
+-				pr_err("%s:%d: sensor id info copy failed\n",
+-					__func__, __LINE__);
+-				kfree(reg_setting);
+-				kfree(slave_info32);
+-				rc = -EFAULT;
+-				goto free_slave_info;
+-			}
+-
+-			slave_info->sensor_id_info.setting.reg_setting =
+-				reg_setting;
+-		}
++		slave_info->sensor_id_info = slave_info32->sensor_id_info;
+ 
+ 		slave_info->slave_addr = slave_info32->slave_addr;
+ 		slave_info->power_setting_array.size =
+@@ -893,37 +842,6 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 			rc = -EFAULT;
+ 			goto free_slave_info;
+ 		}
+-		if (!slave_info->sensor_id_info.setting.size ||
+-			slave_info->sensor_id_info.setting.size >
+-			I2C_REG_DATA_MAX) {
+-			CDBG("%s:No writes needed to probe\n", __func__);
+-			slave_info->sensor_id_info.setting.reg_setting = NULL;
+-		} else {
+-			id_info = &(slave_info->sensor_id_info);
+-			reg_setting =
+-				kzalloc(id_info->setting.size *
+-					(sizeof
+-					(struct msm_camera_i2c_reg_array)),
+-					GFP_KERNEL);
+-			if (!reg_setting) {
+-				rc = -ENOMEM;
+-				goto free_slave_info;
+-			}
+-			if (copy_from_user(reg_setting,
+-				(void __user *)
+-				slave_info->sensor_id_info.setting.reg_setting,
+-				slave_info->sensor_id_info.setting.size *
+-				sizeof(struct msm_camera_i2c_reg_array))) {
+-				pr_err("%s:%d: sensor id info copy failed\n",
+-					__func__, __LINE__);
+-				kfree(reg_setting);
+-				rc = -EFAULT;
+-				goto free_slave_info;
+-			}
+-
+-			slave_info->sensor_id_info.setting.reg_setting =
+-				reg_setting;
+-		}
+ 	}
+ 
+ 	if (strlen(slave_info->sensor_name) >= MAX_SENSOR_NAME ||
+@@ -1038,7 +956,6 @@ int32_t msm_sensor_driver_probe(void *setting,
+ 		slave_info->sensor_id_info.sensor_id_reg_addr;
+ 	camera_info->sensor_id = slave_info->sensor_id_info.sensor_id;
+ 	camera_info->sensor_id_mask = slave_info->sensor_id_info.sensor_id_mask;
+-	camera_info->setting = &(slave_info->sensor_id_info.setting);
+ 
+ 	/* Fill CCI master, slave address and CCI default params */
+ 	if (!s_ctrl->sensor_i2c_client) {
+@@ -1199,7 +1116,6 @@ int32_t msm_sensor_driver_probe(void *setting,
+ free_camera_info:
+ 	kfree(camera_info);
+ free_slave_info:
+-	kfree(slave_info->sensor_id_info.setting.reg_setting);
+ 	kfree(slave_info);
+ 	return rc;
+ }
+diff --git a/include/media/msm_cam_sensor.h b/include/media/msm_cam_sensor.h
+index 858b164863c0..af9256da2c74 100644
+--- a/include/media/msm_cam_sensor.h
++++ b/include/media/msm_cam_sensor.h
+@@ -41,21 +41,6 @@ struct msm_sensor_power_setting_array32 {
+ 	uint16_t size_down;
+ };
+ 
+-struct msm_camera_i2c_reg_setting32 {
+-	compat_uptr_t reg_setting;
+-	uint16_t size;
+-	enum msm_camera_i2c_reg_addr_type addr_type;
+-	enum msm_camera_i2c_data_type data_type;
+-	uint16_t delay;
+-};
+-
+-struct msm_sensor_id_info_t32 {
+-	unsigned short sensor_id_reg_addr;
+-	unsigned short sensor_id;
+-	unsigned short sensor_id_mask;
+-	struct msm_camera_i2c_reg_setting32 setting;
+-};
+-
+ struct msm_camera_sensor_slave_info32 {
+ 	char sensor_name[32];
+ 	char eeprom_name[32];
+@@ -66,7 +51,7 @@ struct msm_camera_sensor_slave_info32 {
+ 	uint16_t slave_addr;
+ 	enum i2c_freq_mode_t i2c_freq_mode;
+ 	enum msm_camera_i2c_reg_addr_type addr_type;
+-	struct msm_sensor_id_info_t32 sensor_id_info;
++	struct msm_sensor_id_info_t sensor_id_info;
+ 	struct msm_sensor_power_setting_array32 power_setting_array;
+ 	uint8_t  is_init_params_valid;
+ 	struct msm_sensor_init_params sensor_init_params;
+@@ -161,6 +146,14 @@ struct msm_camera_i2c_seq_reg_setting32 {
+ 	uint16_t delay;
+ };
+ 
++struct msm_camera_i2c_reg_setting32 {
++	compat_uptr_t reg_setting;
++	uint16_t size;
++	enum msm_camera_i2c_reg_addr_type addr_type;
++	enum msm_camera_i2c_data_type data_type;
++	uint16_t delay;
++};
++
+ struct msm_camera_i2c_array_write_config32 {
+ 	struct msm_camera_i2c_reg_setting32 conf_array;
+ 	uint16_t slave_addr;
+diff --git a/include/soc/qcom/camera2.h b/include/soc/qcom/camera2.h
+index ea4b75190b25..b3d6cc288f30 100644
+--- a/include/soc/qcom/camera2.h
++++ b/include/soc/qcom/camera2.h
+@@ -48,7 +48,6 @@ struct msm_camera_slave_info {
+ 	uint16_t sensor_id_reg_addr;
+ 	uint16_t sensor_id;
+ 	uint16_t sensor_id_mask;
+-	struct msm_camera_i2c_reg_setting *setting;
+ };
+ 
+ struct msm_cam_clk_info {
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index 35014ace9e40..03def893a403 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -51,8 +51,6 @@
+ 
+ #define MSM_SENSOR_BYPASS_VIDEO_NODE    1
+ 
+-#define SENSOR_PROBE_WRITE
+-
+ #define SECURE_CAMERA
+ 
+ #define SECURE_CAM_RST_MODULES
+@@ -304,19 +302,10 @@ struct msm_sensor_init_params {
+ 	unsigned int            sensor_mount_angle;
+ };
+ 
+-struct msm_camera_i2c_reg_setting {
+-	struct msm_camera_i2c_reg_array *reg_setting;
+-	unsigned short size;
+-	enum msm_camera_i2c_reg_addr_type addr_type;
+-	enum msm_camera_i2c_data_type data_type;
+-	unsigned short delay;
+-};
+-
+ struct msm_sensor_id_info_t {
+ 	unsigned short sensor_id_reg_addr;
+ 	unsigned short sensor_id;
+ 	unsigned short sensor_id_mask;
+-	struct msm_camera_i2c_reg_setting setting;
+ };
+ 
+ struct msm_camera_sensor_slave_info {
+@@ -343,6 +332,14 @@ struct msm_camera_i2c_reg_array {
+ 	unsigned int delay;
+ };
+ 
++struct msm_camera_i2c_reg_setting {
++	struct msm_camera_i2c_reg_array *reg_setting;
++	unsigned short size;
++	enum msm_camera_i2c_reg_addr_type addr_type;
++	enum msm_camera_i2c_data_type data_type;
++	unsigned short delay;
++};
++
+ struct msm_camera_csid_vc_cfg {
+ 	unsigned char cid;
+ 	unsigned char dt;
+-- 
+2.49.0
+

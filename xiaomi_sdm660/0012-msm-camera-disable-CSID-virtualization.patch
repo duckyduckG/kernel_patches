@@ -1,0 +1,94 @@
+From c8546e3e41361532aadba2621e40003b7f001198 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Thu, 2 Jul 2020 20:06:57 +0800
+Subject: [PATCH 012/178] msm: camera: disable CSID virtualization
+
+Change-Id: Ia0cd98411d14e306cefa8df6f980b125d7ea79bd
+---
+ drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c | 6 ++++++
+ include/media/msm_cam_sensor.h                              | 1 -
+ include/uapi/media/msm_camsensor_sdk.h                      | 3 ---
+ 3 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+index 8d778b89e3b9..22fe895b8407 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+@@ -373,6 +373,7 @@ static int msm_csid_config(struct csid_device *csid_dev,
+ 		return -EINVAL;
+ 	}
+ 
++#if 0
+ 	if (csid_params->is_secure == 1) {
+ 		struct scm_desc desc = {0};
+ 
+@@ -390,6 +391,7 @@ static int msm_csid_config(struct csid_device *csid_dev,
+ 		}
+ 		msm_camera_tz_clear_tzbsp_status();
+ 	}
++#endif
+ 
+ 	csid_dev->csid_lane_cnt = csid_params->lane_cnt;
+ 	rc = msm_csid_reset(csid_dev);
+@@ -753,6 +755,7 @@ static int msm_csid_release(struct csid_device *csid_dev)
+ 	CDBG("%s:%d, hw_version = 0x%x\n", __func__, __LINE__,
+ 		csid_dev->hw_version);
+ 
++#if 0
+ 	if (csid_dev->current_csid_params.is_secure == 1) {
+ 		struct scm_desc desc = {0};
+ 
+@@ -768,6 +771,7 @@ static int msm_csid_release(struct csid_device *csid_dev)
+ 		}
+ 		msm_camera_tz_clear_tzbsp_status();
+ 	}
++#endif
+ 
+ 	irq = msm_camera_vio_r(csid_dev->base,
+ 		csid_dev->ctrl_reg->csid_reg.csid_irq_status_addr,
+@@ -1006,7 +1010,9 @@ static int32_t msm_csid_cmd32(struct csid_device *csid_dev, void *arg)
+ 		csid_params.phy_sel = csid_params32.phy_sel;
+ 		csid_params.csi_clk = csid_params32.csi_clk;
+ 		csid_params.csi_3p_sel = csid_params32.csi_3p_sel;
++#if 0
+ 		csid_params.is_secure = csid_params32.is_secure;
++#endif
+ 
+ 		lut_par32 = csid_params32.lut_params;
+ 		csid_params.lut_params.num_cid = lut_par32.num_cid;
+diff --git a/include/media/msm_cam_sensor.h b/include/media/msm_cam_sensor.h
+index 0c6e2f1b1730..2b107134cdbb 100644
+--- a/include/media/msm_cam_sensor.h
++++ b/include/media/msm_cam_sensor.h
+@@ -70,7 +70,6 @@ struct msm_camera_csid_params32 {
+ 	uint32_t csi_clk;
+ 	struct msm_camera_csid_lut_params32 lut_params;
+ 	uint8_t csi_3p_sel;
+-	uint8_t is_secure;
+ };
+ 
+ struct msm_camera_csi2_params32 {
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index b5bbf80a10a9..cfee9b1b9ab3 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -51,8 +51,6 @@
+ 
+ #define MSM_SENSOR_BYPASS_VIDEO_NODE    1
+ 
+-#define SECURE_CAMERA
+-
+ #define FRONT_AUX_SENSOR_SUPPORT
+ 
+ enum msm_sensor_camera_id_t {
+@@ -360,7 +358,6 @@ struct msm_camera_csid_params {
+ 	unsigned int csi_clk;
+ 	struct msm_camera_csid_lut_params lut_params;
+ 	unsigned char csi_3p_sel;
+-	unsigned char is_secure;
+ };
+ 
+ struct msm_camera_csid_testmode_parms {
+-- 
+2.49.0
+

@@ -1,0 +1,204 @@
+From 3ce353fb25c3ac82ef95f4374a3d03f241bbe412 Mon Sep 17 00:00:00 2001
+From: Demon000 <demonsingur@gmail.com>
+Date: Sun, 19 Jul 2020 23:21:20 +0300
+Subject: [PATCH 157/178] staging: android: import timed output driver
+
+Change-Id: I320dc41c325103ebb8d0a577460d737c51f63aaa
+---
+ drivers/staging/android/Kconfig        |   4 +
+ drivers/staging/android/Makefile       |   1 +
+ drivers/staging/android/timed_output.c | 111 +++++++++++++++++++++++++
+ drivers/staging/android/timed_output.h |  38 +++++++++
+ 4 files changed, 154 insertions(+)
+ create mode 100644 drivers/staging/android/timed_output.c
+ create mode 100644 drivers/staging/android/timed_output.h
+
+diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+index 17c5587805f5..aad453b0f653 100644
+--- a/drivers/staging/android/Kconfig
++++ b/drivers/staging/android/Kconfig
+@@ -23,6 +23,10 @@ config ANDROID_VSOC
+ 	  a 'cuttlefish' Android image inside QEmu. The driver interacts with
+ 	  a QEmu ivshmem device. If built as a module, it will be called vsoc.
+ 
++config ANDROID_TIMED_OUTPUT
++	bool "Timed output class driver"
++	default y
++
+ source "drivers/staging/android/ion/Kconfig"
+ 
+ endif # if ANDROID
+diff --git a/drivers/staging/android/Makefile b/drivers/staging/android/Makefile
+index 90e6154f11a4..d45c888c6634 100644
+--- a/drivers/staging/android/Makefile
++++ b/drivers/staging/android/Makefile
+@@ -3,4 +3,5 @@ ccflags-y += -I$(src)			# needed for trace events
+ obj-y					+= ion/
+ 
+ obj-$(CONFIG_ASHMEM)			+= ashmem.o
++obj-$(CONFIG_ANDROID_TIMED_OUTPUT)	+= timed_output.o
+ obj-$(CONFIG_ANDROID_VSOC)		+= vsoc.o
+diff --git a/drivers/staging/android/timed_output.c b/drivers/staging/android/timed_output.c
+new file mode 100644
+index 000000000000..02b3f415aaa6
+--- /dev/null
++++ b/drivers/staging/android/timed_output.c
+@@ -0,0 +1,111 @@
++/* drivers/misc/timed_output.c
++ *
++ * Copyright (C) 2009 Google, Inc.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ * Author: Mike Lockwood <lockwood@android.com>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#define pr_fmt(fmt) "timed_output: " fmt
++
++#include <linux/init.h>
++#include <linux/export.h>
++#include <linux/types.h>
++#include <linux/device.h>
++#include <linux/fs.h>
++#include <linux/err.h>
++
++#include "timed_output.h"
++
++static struct class *timed_output_class;
++static atomic_t device_count;
++
++static ssize_t enable_show(struct device *dev, struct device_attribute *attr,
++			   char *buf)
++{
++	struct timed_output_dev *tdev = dev_get_drvdata(dev);
++	int remaining = tdev->get_time(tdev);
++
++	return sprintf(buf, "%d\n", remaining);
++}
++
++static ssize_t enable_store(struct device *dev, struct device_attribute *attr,
++			    const char *buf, size_t size)
++{
++	struct timed_output_dev *tdev = dev_get_drvdata(dev);
++	int value;
++	int rc;
++
++	rc = kstrtoint(buf, 0, &value);
++	if (rc != 0)
++		return -EINVAL;
++
++	tdev->enable(tdev, value);
++
++	return size;
++}
++static DEVICE_ATTR_RW(enable);
++
++static struct attribute *timed_output_attrs[] = {
++	&dev_attr_enable.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(timed_output);
++
++static int create_timed_output_class(void)
++{
++	if (!timed_output_class) {
++		timed_output_class = class_create(THIS_MODULE, "timed_output");
++		if (IS_ERR(timed_output_class))
++			return PTR_ERR(timed_output_class);
++		atomic_set(&device_count, 0);
++		timed_output_class->dev_groups = timed_output_groups;
++	}
++
++	return 0;
++}
++
++int timed_output_dev_register(struct timed_output_dev *tdev)
++{
++	int ret;
++
++	if (!tdev || !tdev->name || !tdev->enable || !tdev->get_time)
++		return -EINVAL;
++
++	ret = create_timed_output_class();
++	if (ret < 0)
++		return ret;
++
++	tdev->index = atomic_inc_return(&device_count);
++	tdev->dev = device_create(timed_output_class, NULL,
++		MKDEV(0, tdev->index), NULL, "%s", tdev->name);
++	if (IS_ERR(tdev->dev))
++		return PTR_ERR(tdev->dev);
++
++	dev_set_drvdata(tdev->dev, tdev);
++	tdev->state = 0;
++	return 0;
++}
++EXPORT_SYMBOL_GPL(timed_output_dev_register);
++
++void timed_output_dev_unregister(struct timed_output_dev *tdev)
++{
++	tdev->enable(tdev, 0);
++	device_destroy(timed_output_class, MKDEV(0, tdev->index));
++}
++EXPORT_SYMBOL_GPL(timed_output_dev_unregister);
++
++static int __init timed_output_init(void)
++{
++	return create_timed_output_class();
++}
++device_initcall(timed_output_init);
+diff --git a/drivers/staging/android/timed_output.h b/drivers/staging/android/timed_output.h
+new file mode 100644
+index 000000000000..6056119edeb6
+--- /dev/null
++++ b/drivers/staging/android/timed_output.h
+@@ -0,0 +1,38 @@
++/* include/linux/timed_output.h
++ *
++ * Copyright (C) 2008 Google, Inc.
++ * Copyright (C) 2020 XiaoMi, Inc.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++*/
++
++#ifndef _LINUX_TIMED_OUTPUT_H
++#define _LINUX_TIMED_OUTPUT_H
++
++struct timed_output_dev {
++	const char	*name;
++
++	/* enable the output and set the timer */
++	void (*enable)(struct timed_output_dev *sdev, int timeout);
++
++	/* returns the current number of milliseconds remaining on the timer */
++	int (*get_time)(struct timed_output_dev *sdev);
++
++	/* private data */
++	struct device	*dev;
++	int		index;
++	int		state;
++};
++
++int timed_output_dev_register(struct timed_output_dev *dev);
++void timed_output_dev_unregister(struct timed_output_dev *dev);
++
++#endif
+-- 
+2.49.0
+

@@ -1,0 +1,29 @@
+From 150ac2a3c5cf4d143da7a1380c73cd8d79d7c96a Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Sat, 22 Sep 2018 20:56:38 +0800
+Subject: [PATCH 156/178] soc: qcom: watchdog_v2: Import Xiaomi MI changes
+
+Change-Id: Id34caf7e8652d013c8f7ff57ef98f4251708daaa
+---
+ drivers/soc/qcom/watchdog_v2.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/soc/qcom/watchdog_v2.c b/drivers/soc/qcom/watchdog_v2.c
+index c9996ffafb01..45990b84bb8e 100644
+--- a/drivers/soc/qcom/watchdog_v2.c
++++ b/drivers/soc/qcom/watchdog_v2.c
+@@ -897,7 +897,11 @@ static void init_watchdog_data(struct msm_watchdog_data *wdog_dd)
+ 	wdog_dd->min_slack_ns = ULLONG_MAX;
+ 	timeout = (wdog_dd->bark_time * WDT_HZ)/1000;
+ 	__raw_writel(timeout, wdog_dd->base + WDT0_BARK_TIME);
++#ifndef CONFIG_MACH_MI
+ 	__raw_writel(timeout + 3*WDT_HZ, wdog_dd->base + WDT0_BITE_TIME);
++#else
++	__raw_writel(timeout + 10*WDT_HZ, wdog_dd->base + WDT0_BITE_TIME);
++#endif
+ 
+ 	wdog_dd->panic_blk.notifier_call = panic_wdog_handler;
+ 	atomic_notifier_chain_register(&panic_notifier_list,
+-- 
+2.49.0
+

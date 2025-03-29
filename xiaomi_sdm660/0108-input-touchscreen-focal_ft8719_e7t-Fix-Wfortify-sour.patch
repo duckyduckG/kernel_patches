@@ -1,0 +1,54 @@
+From 3870642228dc746d09e1ba3e250a891d08db1b1c Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Sat, 13 Mar 2021 12:30:10 +0100
+Subject: [PATCH 108/178] input: touchscreen: focal_ft8719_e7t: Fix
+ Wfortify-source warnings
+
+drivers/input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c:158:9: error: 'snprintf' size argument is too large; destination buffer has size 25, but size argument is 4096 [-Werror,-Wfortify-source]
+        snprintf(tmp, PAGE_SIZE, "%s", writebuf + 1);
+        ^
+drivers/input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c:932:5: error: 'snprintf' size argument is too large; destination buffer has size 128, but size argument is 4096 [-Werror,-Wfortify-source]
+    snprintf(fwname, PAGE_SIZE, "%s", buf);
+    ^
+drivers/input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c:975:5: error: 'snprintf' size argument is too large; destination buffer has size 128, but size argument is 4096 [-Werror,-Wfortify-source]
+    snprintf(fwname, PAGE_SIZE, "%s", buf);
+
+Change-Id: I7445a37c618e83209ec2b6cf2c00b64bd77b5f0b
+---
+ .../input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c   | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c b/drivers/input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c
+index af2af3b4dc75..db8d44acd977 100644
+--- a/drivers/input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c
++++ b/drivers/input/touchscreen/focal_ft8719_e7t/focaltech_ex_fun.c
+@@ -155,7 +155,7 @@ static ssize_t fts_debug_write(struct file *filp, const char __user *buff, size_
+         break;
+ 
+     case PROC_HW_RESET:
+-        snprintf(tmp, PAGE_SIZE, "%s", writebuf + 1);
++        snprintf(tmp, sizeof(tmp), "%s", writebuf + 1);
+         tmp[buflen - 1] = '\0';
+         if (strncmp(tmp, "focal_driver", 12) == 0) {
+             FTS_INFO("APK execute HW Reset");
+@@ -929,7 +929,7 @@ static ssize_t fts_fwupgradebin_store(struct device *dev, struct device_attribut
+         return -EINVAL;
+     }
+     memset(fwname, 0, sizeof(fwname));
+-    snprintf(fwname, PAGE_SIZE, "%s", buf);
++    snprintf(fwname, sizeof(fwname), "%s", buf);
+     fwname[count - 1] = '\0';
+ 
+     FTS_INFO("upgrade with bin file through sysfs node");
+@@ -972,7 +972,7 @@ static ssize_t fts_fwforceupg_store(struct device *dev, struct device_attribute
+         return -EINVAL;
+     }
+     memset(fwname, 0, sizeof(fwname));
+-    snprintf(fwname, PAGE_SIZE, "%s", buf);
++    snprintf(fwname, sizeof(fwname), "%s", buf);
+     fwname[count - 1] = '\0';
+ 
+     FTS_INFO("force upgrade through sysfs node");
+-- 
+2.49.0
+

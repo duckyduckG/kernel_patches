@@ -1,0 +1,143 @@
+From cd32613c9d4f655a77f8cb13c7d4fc8da5789cd1 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Wed, 8 Jan 2020 21:35:32 +0100
+Subject: [PATCH 045/178] arm64: dts: xiaomi: Commonize LED configuration
+
+dts: xiaomi: Set use-blink for led
+dts: xiaomi: rewrite notification led configuration
+dts: xiaomi: Rename led node to white
+
+Change-Id: I0ca1ce1d87b58b9c990e7e08cf0b048484ea15d8
+---
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi   |  1 +
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi     |  1 +
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi  |  1 +
+ .../qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi |  8 --------
+ .../dts/vendor/qcom/xiaomi/mi/mi-sdm660-common.dtsi   |  8 --------
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi     |  1 +
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi     |  1 +
+ arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi    |  1 +
+ .../dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi  | 11 +++++++++++
+ 9 files changed, 17 insertions(+), 16 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+index b68ab0954e47..29f1f64066b5 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jasmine.dtsi
+@@ -10,6 +10,7 @@
+  * GNU General Public License for more details.
+  */
+ #include "longcheer/common/longcheer-sdm660-base.dtsi"
++#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/wayne/wayne-common-base.dtsi"
+ 
+ &firmware {
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi
+index cc0ebe4d5f77..127d0d9cfb42 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/jason.dtsi
+@@ -1,2 +1,3 @@
+ #include "mi/mi-sdm660-common.dtsi"
++#include "xiaomi-sdm660-common.dtsi"
+ #include "mi/jason/jason-sdm660.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi
+index cc5f4d54d703..482ebcb4ea93 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/lavender.dtsi
+@@ -10,4 +10,5 @@
+  * GNU General Public License for more details.
+  */
+ #include "longcheer/common/longcheer-sdm660-base.dtsi"
++#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/lavender/lavender-base.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
+index cd8980bc6828..b6fca1976acf 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
+@@ -60,14 +60,6 @@
+ };
+ 
+ /* common diff with msm-pm660l.dtsi */
+-&red_led {
+-	qcom,ramp-step-ms = <128>;
+-	qcom,idx-len = <26>;
+-	qcom,duty-pcts =
+-		[3C 3C 3B 3A 3B 37 35 33 31 2E 2A 27 23
+-		1F 1B 17 13 0E 09 05 00 00 00 00 00 00];
+-};
+-
+ &pm660l_wled {
+ 	/delete-property/ qcom,auto-calibration-enable;
+ 	qcom,fs-curr-ua = <20000>;
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/mi-sdm660-common.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/mi-sdm660-common.dtsi
+index e63defbeab1c..6cfb6afef291 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/mi-sdm660-common.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/mi-sdm660-common.dtsi
+@@ -273,14 +273,6 @@
+ 	status = "ok";
+ };
+ 
+-/* Red led was used for powersupply of White led */
+-&red_led {
+-	linux,name = "white";
+-	qcom,duty-pcts =
+-			[01 03 05 07 0a 0d 10 13 16 19 1c
+-			1c 19 16 13 10 0d 0a 07 05 03 01];
+-};
+-
+ &pm660_vadc {
+ 	chan@4d {
+ 		label = "cam_therm0";
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi
+index 0b8757abe05c..b64161267a39 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/tulip.dtsi
+@@ -12,4 +12,5 @@
+ 
+ #include "longcheer/common/longcheer-sdm660-base.dtsi"
+ #include "longcheer/common/longcheer-sdm636.dtsi"
++#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/tulip/tulip-base.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+index f6fcd248628a..2c1a4b0a352d 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/wayne.dtsi
+@@ -10,6 +10,7 @@
+  * GNU General Public License for more details.
+  */
+ #include "longcheer/common/longcheer-sdm660-base.dtsi"
++#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/wayne/wayne-common-base.dtsi"
+ 
+ /* sdm660.dtsi wayne specific diff */
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi
+index 267befca7adf..28ebad1ae5bd 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/whyred.dtsi
+@@ -12,4 +12,5 @@
+ 
+ #include "longcheer/common/longcheer-sdm660-base.dtsi"
+ #include "longcheer/common/longcheer-sdm636.dtsi"
++#include "xiaomi-sdm660-common.dtsi"
+ #include "longcheer/whyred/whyred-base.dtsi"
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+new file mode 100644
+index 000000000000..8f32b4b38cbe
+--- /dev/null
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+@@ -0,0 +1,11 @@
++/* Red led was used for powersupply of White led */
++&red_led {
++	linux,name = "white";
++	qcom,duty-pcts = [ 00 0E 1C 2A 38 46 54 64 ];
++	qcom,idx-len = <8>;
++	qcom,pause-lo = <500>;
++	qcom,pause-hi = <500>;
++	qcom,ramp-step-ms = <50>;
++	qcom,lut-flags = <31>; /* loop, ramp up, reverse, pause hi, pause lo */
++	qcom,use-blink;
++};
+-- 
+2.49.0
+

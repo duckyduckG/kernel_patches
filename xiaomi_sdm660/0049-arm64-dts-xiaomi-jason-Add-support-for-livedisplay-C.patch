@@ -1,0 +1,93 @@
+From 0ed188ac89969c5f626957dacc25a81f87522cbe Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Sun, 28 Jan 2018 23:25:33 +0800
+Subject: [PATCH 049/178] arm64: dts: xiaomi: jason: Add support for
+ livedisplay CABC
+
+Change-Id: I536ec42eb0f23b85b345e0dc9efe698707253aaa
+---
+ .../jason/dsi-panel-jdi-fhd-r63452-cmd.dtsi   | 29 +++++++++++++++++++
+ .../jason/dsi-panel-sharp-fhd-td4322-cmd.dtsi | 29 +++++++++++++++++++
+ 2 files changed, 58 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-jdi-fhd-r63452-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-jdi-fhd-r63452-cmd.dtsi
+index acd2ec396bfb..8ef75a01e4c5 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-jdi-fhd-r63452-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-jdi-fhd-r63452-cmd.dtsi
+@@ -113,5 +113,34 @@
+ 		qcom,mdss-dsi-dispparam-dimmingon-command = [
+ 			39 01 00 00 01 00 02 53 2C
+ 			];
++
++		cm,mdss-livedisplay-command-state = "dsi_lp_mode";
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++			29 01 00 00 00 00 02 B0 04
++			15 01 00 00 00 00 02 55 81
++			29 01 00 00 00 00 08 B8 89 51 0D 00 02 00 00
++			29 01 00 00 00 00 1A CE 55 40 4C 5A 69 77 84 93 A2 B1 C1 D1 E0 F0 F1 F2 FF 04 00 04 04 42 00 69 5A
++			29 01 00 00 00 00 0A F9 66 3F E0 BE 00 8D BF 80 00
++			29 01 00 00 00 00 02 B0 03
++		];
++		cm,mdss-livedisplay-cabc-image-cmd = [
++			29 01 00 00 00 00 02 B0 04
++			15 01 00 00 00 00 02 55 82
++			29 01 00 00 00 00 08 B9 FF 27 37 00 04 00 00
++			29 01 00 00 00 00 1A CE 55 40 4C 5A 69 77 84 93 A2 B1 C1 D1 E0 F0 F1 F2 FF 04 00 04 04 42 00 69 5A
++			29 01 00 00 00 00 0A F9 66 3F E0 BE 00 8D BF 80 00
++			29 01 00 00 00 00 02 B0 03
++		];
++		cm,mdss-livedisplay-cabc-video-cmd = [
++			29 01 00 00 00 00 02 B0 04
++			15 01 00 00 00 00 02 55 83
++			29 01 00 00 00 00 08 BA BB 3D 22 00 03 00 00
++			29 01 00 00 00 00 1A CE 55 40 4C 5A 69 77 84 93 A2 B1 C1 D1 E0 F0 F1 F2 FF 04 00 04 04 42 00 69 5A
++			29 01 00 00 00 00 0A F9 66 3F E0 BE 00 8D BF 80 00
++			29 01 00 00 00 00 02 B0 03
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++			39 01 00 00 01 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-sharp-fhd-td4322-cmd.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-sharp-fhd-td4322-cmd.dtsi
+index 9bceecfef245..365bb5306962 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-sharp-fhd-td4322-cmd.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/dsi-panel-sharp-fhd-td4322-cmd.dtsi
+@@ -101,5 +101,34 @@
+ 		qcom,mdss-dsi-dispparam-dimmingon-command = [
+ 			39 01 00 00 01 00 02 53 2C
+ 			];
++
++		cm,mdss-livedisplay-command-state = "dsi_lp_mode";
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++			29 01 00 00 00 00 02 B0 04
++			15 01 00 00 00 00 02 55 81
++			29 01 00 00 00 00 08 B8 89 51 0D 00 02 00 00
++			29 01 00 00 00 00 1A CE 55 40 4C 5A 69 77 84 93 A2 B1 C1 D1 E0 F0 F1 F2 FF 04 00 04 04 42 00 69 5A
++			29 01 00 00 00 00 0A F9 66 3F E0 BE 00 8D BF 80 00
++			29 01 00 00 00 00 02 B0 03
++		];
++		cm,mdss-livedisplay-cabc-image-cmd = [
++			29 01 00 00 00 00 02 B0 04
++			15 01 00 00 00 00 02 55 82
++			29 01 00 00 00 00 08 B9 FF 27 37 00 04 00 00
++			29 01 00 00 00 00 1A CE 55 40 4C 5A 69 77 84 93 A2 B1 C1 D1 E0 F0 F1 F2 FF 04 00 04 04 42 00 69 5A
++			29 01 00 00 00 00 0A F9 66 3F E0 BE 00 8D BF 80 00
++			29 01 00 00 00 00 02 B0 03
++		];
++		cm,mdss-livedisplay-cabc-video-cmd = [
++			29 01 00 00 00 00 02 B0 04
++			15 01 00 00 00 00 02 55 83
++			29 01 00 00 00 00 08 BA BB 3D 22 00 03 00 00
++			29 01 00 00 00 00 1A CE 55 40 4C 5A 69 77 84 93 A2 B1 C1 D1 E0 F0 F1 F2 FF 04 00 04 04 42 00 69 5A
++			29 01 00 00 00 00 0A F9 66 3F E0 BE 00 8D BF 80 00
++			29 01 00 00 00 00 02 B0 03
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++			39 01 00 00 01 00 02 55 00
++		];
+ 	};
+ };
+-- 
+2.49.0
+

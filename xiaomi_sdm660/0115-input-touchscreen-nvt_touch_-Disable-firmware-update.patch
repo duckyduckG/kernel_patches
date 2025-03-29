@@ -1,0 +1,69 @@
+From 880deda6075dc9e435d892e73f5552bfc3368253 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Thu, 5 Mar 2020 19:00:52 +0100
+Subject: [PATCH 115/178] input: touchscreen: nvt_touch_*: Disable firmware
+ update
+
+Change-Id: I05926efbd973bf797b278b88dfedb6b2189b29c2
+---
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx.h   | 2 +-
+ drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h | 2 +-
+ drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+index 4a7ac3024037..84a98e74eb0a 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+@@ -85,7 +85,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ #if WAKEUP_GESTURE
+ extern const uint16_t gesture_key_array[];
+ #endif
+-#define BOOT_UPDATE_FIRMWARE 1
++#define BOOT_UPDATE_FIRMWARE 0
+ /* add by yangjiangzhu compatible to shenchao and tianma TP FW  2018/3/16  start */
+ #define BOOT_UPDATE_FIRMWARE_NAME_TIANMA "novatek/tianma_nt36672a_miui_e7t.bin"
+ #define BOOT_UPDATE_FIRMWARE_NAME_TIANMA_GG5 "novatek/tianma_nt36672a_miui_e7t.bin"
+diff --git a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+index 17c903483c0d..76cd1ea9d721 100644
+--- a/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_d2s/nt36xxx.h
+@@ -76,7 +76,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ #if WAKEUP_GESTURE
+ extern const uint16_t gesture_key_array[];
+ #endif
+-#define BOOT_UPDATE_FIRMWARE 1
++#define BOOT_UPDATE_FIRMWARE 0
+ #define BOOT_UPDATE_FIRMWARE_NAME_TIANMA "novatek/tianma_nt36672_miui_d2s.bin"
+ #define BOOT_UPDATE_FIRMWARE_NAME_JDI "novatek/jdi_nt36672_miui_d2s.bin"
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+index 6fb7e8e065a6..d562aa546358 100644
+--- a/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_e7s/nt36xxx.h
+@@ -76,7 +76,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ #if WAKEUP_GESTURE
+ extern const uint16_t gesture_key_array[];
+ #endif
+-#define BOOT_UPDATE_FIRMWARE 1
++#define BOOT_UPDATE_FIRMWARE 0
+ #define BOOT_UPDATE_FIRMWARE_NAME "novatek/nt36672_miui_e7s.bin"
+ #define BOOT_UPDATE_FIRMWARE_NAME_TWO "novatek/hx_nt36672_miui_e7s.bin"
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+index 182ff2d29138..78ef7367b1b1 100644
+--- a/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_f7a/nt36xxx.h
+@@ -82,7 +82,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ #if WAKEUP_GESTURE
+ extern const uint16_t gesture_key_array[];
+ #endif
+-#define BOOT_UPDATE_FIRMWARE 1
++#define BOOT_UPDATE_FIRMWARE 0
+ /* add by yangjiangzhu compatible to shenchao and tianma TP FW  2018/3/16  start */
+ #define BOOT_UPDATE_FIRMWARE_NAME_TIANMA "novatek/tianma_nt36672a_miui_f7a.bin"
+ #define BOOT_UPDATE_FIRMWARE_NAME_TIANMA_GG5 "novatek/tianma_nt36672a_miui_f7a.bin"
+-- 
+2.49.0
+

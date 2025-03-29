@@ -1,0 +1,44 @@
+From 82f294795b4a62e0586a9ed15435fff4f0917cfb Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@aosip.dev>
+Date: Sun, 22 Nov 2020 17:38:07 +0530
+Subject: [PATCH 057/178] arm64: dts: xiaomi: longcheer: Overlay pm660l_wled
+ node at longcheer-pm660.dtsi only
+
+Signed-off-by: Subhajeet Muhuri <subhajeet.muhuri@aosip.dev>
+Change-Id: Ie256c204ab3d6792f06d59c54c7ea48e5e33541a
+---
+ .../vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi | 1 +
+ .../qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi   | 5 -----
+ 2 files changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
+index b6fca1976acf..95df9d319fc8 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-pm660.dtsi
+@@ -64,6 +64,7 @@
+ 	/delete-property/ qcom,auto-calibration-enable;
+ 	qcom,fs-curr-ua = <20000>;
+ 	qcom,en-cabc;
++	qcom,string-cfg = <3>;
+ };
+ 
+ &pm660l_flash0 {
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+index bc47314b8f6c..41a10ec9a3d7 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-mtp.dtsi
+@@ -24,11 +24,6 @@
+ 	/delete-property/ qcom,dsi-pref-prim-pan;
+ };
+ 
+-&pm660l_wled {
+-	qcom,fs-curr-ua = <18000>;
+-	qcom,string-cfg = <3>;
+-};
+-
+ &dsi_nt36672_tianma_fhd_video {
+ 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_wled";
+ 	qcom,mdss-dsi-bl-min-level = <1>;
+-- 
+2.49.0
+

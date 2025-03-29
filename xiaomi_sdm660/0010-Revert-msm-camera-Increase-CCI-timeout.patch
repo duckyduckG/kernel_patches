@@ -1,0 +1,28 @@
+From f1194d2f388667745c0fb8a7f0cd90a225ac5f57 Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <subhajeet.muhuri@gmail.com>
+Date: Fri, 26 Jun 2020 20:39:53 +0530
+Subject: [PATCH 010/178] Revert "msm: camera: Increase CCI timeout"
+
+This reverts commit e55b7ac8005a1b7a8070dacd39a67646c4327ca5.
+
+Change-Id: I22db9234dcbdfe208242fad6dcd869545871b738
+---
+ drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c b/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
+index abb9ef5b94be..834b0b5c4ebf 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/cci/msm_cci.c
+@@ -33,7 +33,7 @@
+ #define CYCLES_PER_MICRO_SEC_DEFAULT 4915
+ #define CCI_MAX_DELAY 1000000
+ 
+-#define CCI_TIMEOUT msecs_to_jiffies(500)
++#define CCI_TIMEOUT msecs_to_jiffies(100)
+ 
+ /* TODO move this somewhere else */
+ #define MSM_CCI_DRV_NAME "msm_cci"
+-- 
+2.49.0
+

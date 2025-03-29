@@ -1,0 +1,38 @@
+From c7104b2ab587c59c70f88d0e2a4cf2109946fabf Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Wed, 26 Feb 2020 16:07:45 +0800
+Subject: [PATCH 044/178] arm64: dts: xiaomi: jason: Update dts entry of
+ fpc/goodix driver
+
+Change-Id: Idcab2586468d915d2c8b3dfcdba720d90edc9165
+---
+ .../boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi  | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
+index ba9a024cf689..8858416b8b32 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/mi/jason/jason-sdm660.dtsi
+@@ -155,7 +155,7 @@
+ 		fpc,gpio_irq    = <&tlmm 72 0x0>;
+ 		vdd_ana-supply  = <&fp_vdd_vreg>;
+ 		/* fpc,enable-on-boot; */
+-		/* fpc,enable-wakeup; */
++		fpc,enable-wakeup;
+ 
+ 		pinctrl-names = "fpc1020_reset_reset",
+ 			"fpc1020_reset_active",
+@@ -169,8 +169,8 @@
+ 
+ 	fingerprint_goodix {
+ 		compatible = "goodix,fingerprint";
+-		gooidx,gpio-reset = <&tlmm 55 0x0>;
+-		goodix,gpio-irq = <&tlmm 72 0x0>;
++		fp-gpio-reset = <&tlmm 55 0x0>;
++		fp-gpio-irq = <&tlmm 72 0x0>;
+ 		status = "ok";
+ 	};
+ 
+-- 
+2.49.0
+

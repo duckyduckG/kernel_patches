@@ -1,0 +1,28 @@
+From 9cf5e4f5a23e6948407a1d98b28679e6497887ac Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Sat, 17 Sep 2022 02:50:52 +0200
+Subject: [PATCH 178/178] arm64: configs: xiaomi: Build QCACLD as a module
+
+* whyred isn't able to boot kernel images bigger than 18MB
+
+Change-Id: I99ceca96f76590c85b6d0ff5677e7f18d1e0896e
+---
+ arch/arm64/configs/vendor/xiaomi/sdm660_defconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+index f85000d4769c..e65a7ec96116 100644
+--- a/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
++++ b/arch/arm64/configs/vendor/xiaomi/sdm660_defconfig
+@@ -551,7 +551,7 @@ CONFIG_ASHMEM=y
+ CONFIG_ION=y
+ CONFIG_ION_LEGACY=y
+ CONFIG_ION_POOL_AUTO_REFILL=y
+-CONFIG_QCA_CLD_WLAN=y
++CONFIG_QCA_CLD_WLAN=m
+ CONFIG_QPNP_REVID=y
+ CONFIG_SPS=y
+ CONFIG_SPS_SUPPORT_NDP_BAM=y
+-- 
+2.49.0
+

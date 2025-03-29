@@ -1,0 +1,125 @@
+From edb4d41ef20d452398eed87f166d53baf0a5a00f Mon Sep 17 00:00:00 2001
+From: Subhajeet Muhuri <kenny3fcb@gmail.com>
+Date: Wed, 28 Aug 2019 18:41:23 +0200
+Subject: [PATCH 038/178] arm64: dts: xiaomi: Keep CAF pm660l_gpios
+
+* For some unknown reasons rewriting the same exact nodes through device specific camera dts breaks camera for wayne/jasmine
+
+Change-Id: Ic4668028c56d636a136771fc10220d153a1363b8
+Signed-off-by: Davide Garberi <dade.garberi@gmail.com>
+---
+ .../common/longcheer-sdm660-camera.dtsi       |  5 -----
+ .../tulip/tulip-camera-sensor-mtp.dtsi        | 22 -------------------
+ .../wayne/wayne-camera-sensor-mtp.dtsi        | 22 -------------------
+ .../whyred/whyred-camera-sensor-mtp.dtsi      | 22 -------------------
+ 4 files changed, 71 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-camera.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-camera.dtsi
+index 546387590dd4..835aceecc64f 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-camera.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/longcheer-sdm660-camera.dtsi
+@@ -32,11 +32,6 @@
+ 	/delete-node/ qcom,camera@3;
+ };
+ 
+-&pm660l_gpios {
+-	/delete-node/ gpio@c300;
+-	/delete-node/ gpio@c200;
+-};
+-
+ /* sdm660-camera.dtsi common diff */
+ &soc {
+ 	qcom,csiphy@c824000 {
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi
+index 9ddfb12504b7..bd84aaaa2cc5 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/tulip/tulip-camera-sensor-mtp.dtsi
+@@ -944,25 +944,3 @@
+ 		qcom,clock-rates = <24000000 0>;
+ 	};
+ };
+-
+-&pm660l_gpios {
+-	gpio@c300 { /* GPIO4 -CAMERA SENSOR 0 VDIG*/
+-		qcom,mode = <1>;                /* Output */
+-		qcom,pull = <5>;                /* No Pull */
+-		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
+-		qcom,src-sel = <0>;             /* GPIO */
+-		qcom,invert = <0>;              /* Invert */
+-		qcom,master-en = <1>;           /* Enable GPIO */
+-		status = "ok";
+-	};
+-
+-	gpio@c200 { /* GPIO3 -CAMERA SENSOR 2 VDIG*/
+-		qcom,mode = <1>;                /* Output */
+-		qcom,pull = <5>;                /* No Pull */
+-		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
+-		qcom,src-sel = <0>;             /* GPIO */
+-		qcom,invert = <0>;              /* Invert */
+-		qcom,master-en = <1>;           /* Enable GPIO */
+-		status = "ok";
+-	};
+-};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi
+index 6984c63b71b5..60b49b621f6b 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/wayne/wayne-camera-sensor-mtp.dtsi
+@@ -386,25 +386,3 @@
+ 	};
+ 
+ };
+-
+-&pm660l_gpios {
+-	gpio@c300 { /* GPIO4 -CAMERA SENSOR 0 VDIG*/
+-		qcom,mode = <1>;                /* Output */
+-		qcom,pull = <5>;                /* No Pull */
+-		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
+-		qcom,src-sel = <0>;             /* GPIO */
+-		qcom,invert = <0>;              /* Invert */
+-		qcom,master-en = <1>;           /* Enable GPIO */
+-		status = "ok";
+-	};
+-
+-	gpio@c200 { /* GPIO3 -CAMERA SENSOR 2 VDIG*/
+-		qcom,mode = <1>;                /* Output */
+-		qcom,pull = <5>;                /* No Pull */
+-		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
+-		qcom,src-sel = <0>;             /* GPIO */
+-		qcom,invert = <0>;              /* Invert */
+-		qcom,master-en = <1>;           /* Enable GPIO */
+-		status = "ok";
+-	};
+-};
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi
+index b70dad716264..cdf434ccca49 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/whyred/whyred-camera-sensor-mtp.dtsi
+@@ -924,25 +924,3 @@ eeprom3: qcom,eeprom@3 {
+ 		qcom,clock-rates = <24000000 0>;
+ 	};*/
+ };
+-
+-&pm660l_gpios {
+-	gpio@c300 { /* GPIO4 -CAMERA SENSOR 0 VDIG*/
+-		qcom,mode = <1>;                /* Output */
+-		qcom,pull = <5>;                /* No Pull */
+-		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
+-		qcom,src-sel = <0>;             /* GPIO */
+-		qcom,invert = <0>;              /* Invert */
+-		qcom,master-en = <1>;           /* Enable GPIO */
+-		status = "ok";
+-	};
+-
+-	gpio@c200 { /* GPIO3 -CAMERA SENSOR 2 VDIG*/
+-		qcom,mode = <1>;                /* Output */
+-		qcom,pull = <5>;                /* No Pull */
+-		qcom,vin-sel = <0>;             /* VIN1 GPIO_LV */
+-		qcom,src-sel = <0>;             /* GPIO */
+-		qcom,invert = <0>;              /* Invert */
+-		qcom,master-en = <1>;           /* Enable GPIO */
+-		status = "ok";
+-	};
+-};
+-- 
+2.49.0
+

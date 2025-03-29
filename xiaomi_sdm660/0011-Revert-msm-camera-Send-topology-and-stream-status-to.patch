@@ -1,0 +1,303 @@
+From f69a949c196b1d2962acc40d95e4882ba04d9df9 Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Wed, 1 Jul 2020 20:27:45 +0800
+Subject: [PATCH 011/178] Revert "msm: camera: Send topology and stream status
+ to TZ"
+
+This reverts commit b1beed57e76a802aa43d9a651d3227bdf7b14068.
+
+Change-Id: I4301e8930d41e2d80d61f2a22ad2c123478b49a5
+---
+ .../msm/camera_v2/sensor/csid/msm_csid.c      | 143 +-----------------
+ include/media/msm_cam_sensor.h                |   4 -
+ include/uapi/media/msm_cam_sensor.h           |   2 -
+ include/uapi/media/msm_camera.h               |   3 -
+ include/uapi/media/msm_camsensor_sdk.h        |   4 -
+ 5 files changed, 4 insertions(+), 152 deletions(-)
+
+diff --git a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+index a3d140446086..8d778b89e3b9 100644
+--- a/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
++++ b/drivers/media/platform/msm/camera_v2/sensor/csid/msm_csid.c
+@@ -63,14 +63,7 @@
+ #define SOF_DEBUG_DISABLE                    0
+ 
+ #define SCM_SVC_CAMERASS                     0x18
+-#define SECURE_SYSCALL_ID                    0x7
+-#define TOPOLOGY_SYSCALL_ID                  0x8
+-#define STREAM_NOTIF_SYSCALL_ID              0x9
+-
+-#define CSIPHY_0_LANES_MASK                  0x000f
+-#define CSIPHY_1_LANES_MASK                  0x00f0
+-#define CSIPHY_2_LANES_MASK                  0x0f00
+-#define CSIPHY_3_LANES_MASK                  0xf000
++#define SECURE_SYSCALL_ID                    0x6
+ 
+ #define TRUE   1
+ #define FALSE  0
+@@ -81,13 +74,6 @@
+ #undef CDBG
+ #define CDBG(fmt, args...) pr_debug(fmt, ##args)
+ 
+-static const uint32_t CSIPHY_LANES_MASKS[] = {
+-	CSIPHY_0_LANES_MASK,
+-	CSIPHY_1_LANES_MASK,
+-	CSIPHY_2_LANES_MASK,
+-	CSIPHY_3_LANES_MASK,
+-};
+-
+ static struct camera_vreg_t csid_vreg_info[] = {
+ 	{"qcom,mipi-csi-vdd", 0, 0, 12000},
+ };
+@@ -355,63 +341,6 @@ static bool msm_csid_find_max_clk_rate(struct csid_device *csid_dev)
+ 	}
+ 	return ret;
+ }
+-
+-static int msm_csid_seccam_send_topology(struct csid_device *csid_dev,
+-	struct msm_camera_csid_params *csid_params)
+-{
+-	void __iomem *csidbase;
+-	struct scm_desc desc = {0};
+-
+-	csidbase = csid_dev->base;
+-	if (!csidbase || !csid_params) {
+-		pr_err("%s:%d csidbase %pK, csid params %pK\n", __func__,
+-			__LINE__, csidbase, csid_params);
+-		return -EINVAL;
+-	}
+-
+-	desc.arginfo = SCM_ARGS(2, SCM_VAL, SCM_VAL);
+-	desc.args[0] = csid_params->phy_sel;
+-	desc.args[1] = csid_params->topology;
+-
+-	CDBG("phy_sel %d, topology %d\n",
+-		csid_params->phy_sel, csid_params->topology);
+-	if (scm_call2(SCM_SIP_FNID(SCM_SVC_CAMERASS,
+-		TOPOLOGY_SYSCALL_ID), &desc)) {
+-		pr_err("%s:%d scm call to hypervisor failed\n",
+-			__func__, __LINE__);
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+-static int msm_csid_seccam_reset_pipeline(struct csid_device *csid_dev,
+-	struct msm_camera_csid_params *csid_params)
+-{
+-	void __iomem *csidbase;
+-	struct scm_desc desc = {0};
+-
+-	csidbase = csid_dev->base;
+-	if (!csidbase || !csid_params) {
+-		pr_err("%s:%d csidbase %pK, csid params %pK\n", __func__,
+-			__LINE__, csidbase, csid_params);
+-		return -EINVAL;
+-	}
+-
+-	desc.arginfo = SCM_ARGS(2, SCM_VAL, SCM_VAL);
+-	desc.args[0] = csid_params->phy_sel;
+-	desc.args[1] = csid_params->is_streamon;
+-
+-	CDBG("phy_sel %d, is_streamon %d\n",
+-		csid_params->phy_sel, csid_params->is_streamon);
+-	if (scm_call2(SCM_SIP_FNID(SCM_SVC_CAMERASS,
+-		STREAM_NOTIF_SYSCALL_ID), &desc)) {
+-		pr_err("%s:%d scm call to hypervisor failed\n",
+-			__func__, __LINE__);
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+ static int msm_csid_config(struct csid_device *csid_dev,
+ 	struct msm_camera_csid_params *csid_params)
+ {
+@@ -449,19 +378,17 @@ static int msm_csid_config(struct csid_device *csid_dev,
+ 
+ 		desc.arginfo = SCM_ARGS(2, SCM_VAL, SCM_VAL);
+ 		desc.args[0] = csid_params->is_secure;
+-		desc.args[1] = CSIPHY_LANES_MASKS[csid_params->phy_sel];
++		desc.args[1] = csid_params->phy_sel;
+ 
+ 		CDBG("phy_sel : %d, secure : %d\n",
+ 			csid_params->phy_sel, csid_params->is_secure);
+-
+-		msm_camera_tz_clear_tzbsp_status();
+-
+ 		if (scm_call2(SCM_SIP_FNID(SCM_SVC_CAMERASS,
+ 			SECURE_SYSCALL_ID), &desc)) {
+ 			pr_err("%s:%d scm call to hypervisor failed\n",
+ 				__func__, __LINE__);
+ 			return -EINVAL;
+ 		}
++		msm_camera_tz_clear_tzbsp_status();
+ 	}
+ 
+ 	csid_dev->csid_lane_cnt = csid_params->lane_cnt;
+@@ -831,8 +758,7 @@ static int msm_csid_release(struct csid_device *csid_dev)
+ 
+ 		desc.arginfo = SCM_ARGS(2, SCM_VAL, SCM_VAL);
+ 		desc.args[0] = 0;
+-		desc.args[1] = CSIPHY_LANES_MASKS[
+-				csid_dev->current_csid_params.phy_sel];
++		desc.args[1] = csid_dev->current_csid_params.phy_sel;
+ 
+ 		if (scm_call2(SCM_SIP_FNID(SCM_SVC_CAMERASS,
+ 			SECURE_SYSCALL_ID), &desc)) {
+@@ -955,32 +881,6 @@ static int32_t msm_csid_cmd(struct csid_device *csid_dev, void *arg)
+ 			kfree(csid_params.lut_params.vc_cfg[i]);
+ 		break;
+ 	}
+-	case CSID_SECCAM_TOPOLOGY: {
+-		struct msm_camera_csid_params csid_params;
+-
+-		if (copy_from_user(&csid_params,
+-			(void __user *)cdata->cfg.csid_params,
+-			sizeof(struct msm_camera_csid_params))) {
+-			pr_err("%s: %d failed\n", __func__, __LINE__);
+-			rc = -EFAULT;
+-			break;
+-		}
+-		rc = msm_csid_seccam_send_topology(csid_dev, &csid_params);
+-		break;
+-	}
+-	case CSID_SECCAM_RESET: {
+-		struct msm_camera_csid_params csid_params;
+-
+-		if (copy_from_user(&csid_params,
+-			(void __user *)cdata->cfg.csid_params,
+-			sizeof(struct msm_camera_csid_params))) {
+-			pr_err("%s: %d failed\n", __func__, __LINE__);
+-			rc = -EFAULT;
+-			break;
+-		}
+-		rc = msm_csid_seccam_reset_pipeline(csid_dev, &csid_params);
+-		break;
+-	}
+ 	case CSID_RELEASE:
+ 		rc = msm_csid_release(csid_dev);
+ 		break;
+@@ -1153,41 +1053,6 @@ static int32_t msm_csid_cmd32(struct csid_device *csid_dev, void *arg)
+ 		}
+ 		break;
+ 	}
+-	case CSID_SECCAM_TOPOLOGY: {
+-		struct msm_camera_csid_params csid_params;
+-		struct msm_camera_csid_params32 csid_params32;
+-
+-		if (copy_from_user(&csid_params32,
+-			(void __user *)compat_ptr(arg32->cfg.csid_params),
+-			sizeof(struct msm_camera_csid_params32))) {
+-			pr_err("%s: %d failed\n", __func__, __LINE__);
+-			rc = -EFAULT;
+-			break;
+-		}
+-
+-		csid_params.topology = csid_params32.topology;
+-		csid_params.phy_sel = csid_params32.phy_sel;
+-
+-		rc = msm_csid_seccam_send_topology(csid_dev, &csid_params);
+-		break;
+-	}
+-	case CSID_SECCAM_RESET: {
+-		struct msm_camera_csid_params csid_params;
+-		struct msm_camera_csid_params32 csid_params32;
+-
+-		if (copy_from_user(&csid_params32,
+-			(void __user *)compat_ptr(arg32->cfg.csid_params),
+-			sizeof(struct msm_camera_csid_params32))) {
+-			pr_err("%s: %d failed\n", __func__, __LINE__);
+-			rc = -EFAULT;
+-			break;
+-		}
+-
+-		csid_params.is_streamon = csid_params32.is_streamon;
+-		csid_params.phy_sel = csid_params32.phy_sel;
+-		rc = msm_csid_seccam_reset_pipeline(csid_dev, &csid_params);
+-		break;
+-	}
+ 	case CSID_RELEASE:
+ 		rc = msm_csid_release(csid_dev);
+ 		break;
+diff --git a/include/media/msm_cam_sensor.h b/include/media/msm_cam_sensor.h
+index af9256da2c74..0c6e2f1b1730 100644
+--- a/include/media/msm_cam_sensor.h
++++ b/include/media/msm_cam_sensor.h
+@@ -19,8 +19,6 @@
+ 
+ #include <linux/compat.h>
+ 
+-#define SECURE_CAM_RST_MODULES
+-
+ #ifdef CONFIG_COMPAT
+ 
+ struct msm_sensor_power_setting32 {
+@@ -73,8 +71,6 @@ struct msm_camera_csid_params32 {
+ 	struct msm_camera_csid_lut_params32 lut_params;
+ 	uint8_t csi_3p_sel;
+ 	uint8_t is_secure;
+-	uint32_t topology;
+-	uint8_t is_streamon;
+ };
+ 
+ struct msm_camera_csi2_params32 {
+diff --git a/include/uapi/media/msm_cam_sensor.h b/include/uapi/media/msm_cam_sensor.h
+index d25e0d41e530..44776c1f1e34 100644
+--- a/include/uapi/media/msm_cam_sensor.h
++++ b/include/uapi/media/msm_cam_sensor.h
+@@ -156,8 +156,6 @@ enum csid_cfg_type_t {
+ 	CSID_CFG,
+ 	CSID_TESTMODE_CFG,
+ 	CSID_RELEASE,
+-	CSID_SECCAM_TOPOLOGY,
+-	CSID_SECCAM_RESET,
+ };
+ 
+ enum csiphy_cfg_type_t {
+diff --git a/include/uapi/media/msm_camera.h b/include/uapi/media/msm_camera.h
+index 24d07500e85b..58845e56147a 100644
+--- a/include/uapi/media/msm_camera.h
++++ b/include/uapi/media/msm_camera.h
+@@ -1368,7 +1368,6 @@ struct msm_camera_csid_params {
+ 	uint8_t lane_cnt;
+ 	uint16_t lane_assign;
+ 	uint8_t phy_sel;
+-	uint32_t topology;
+ 	struct msm_camera_csid_lut_params lut_params;
+ };
+ 
+@@ -1413,8 +1412,6 @@ struct csic_cfg_data {
+ enum csid_cfg_type_t {
+ 	CSID_INIT,
+ 	CSID_CFG,
+-	CSID_SECCAM_TOPOLOGY,
+-	CSID_SECCAM_RESET,
+ };
+ 
+ struct csid_cfg_data {
+diff --git a/include/uapi/media/msm_camsensor_sdk.h b/include/uapi/media/msm_camsensor_sdk.h
+index a4610da9d670..b5bbf80a10a9 100644
+--- a/include/uapi/media/msm_camsensor_sdk.h
++++ b/include/uapi/media/msm_camsensor_sdk.h
+@@ -53,8 +53,6 @@
+ 
+ #define SECURE_CAMERA
+ 
+-#define SECURE_CAM_RST_MODULES
+-
+ #define FRONT_AUX_SENSOR_SUPPORT
+ 
+ enum msm_sensor_camera_id_t {
+@@ -363,8 +361,6 @@ struct msm_camera_csid_params {
+ 	struct msm_camera_csid_lut_params lut_params;
+ 	unsigned char csi_3p_sel;
+ 	unsigned char is_secure;
+-	uint32_t topology;
+-	unsigned char is_streamon;
+ };
+ 
+ struct msm_camera_csid_testmode_parms {
+-- 
+2.49.0
+

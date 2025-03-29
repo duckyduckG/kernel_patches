@@ -1,0 +1,61 @@
+From 5e58b22424f36cb35560e8c45900d0b332bc8ff2 Mon Sep 17 00:00:00 2001
+From: Sebastiano Barezzi <barezzisebastiano@gmail.com>
+Date: Wed, 14 Sep 2022 23:37:24 +0200
+Subject: [PATCH 034/178] arm64: configs: xiaomi: Enable device-specific
+ platform
+
+Change-Id: Ic9bc1c3b7cba4f5a7ca02d9a07eebb26f87c2f4e
+---
+ arch/arm64/configs/vendor/xiaomi/jason.config    | 2 ++
+ arch/arm64/configs/vendor/xiaomi/lavender.config | 2 ++
+ arch/arm64/configs/vendor/xiaomi/platina.config  | 2 ++
+ arch/arm64/configs/vendor/xiaomi/tulip.config    | 2 ++
+ arch/arm64/configs/vendor/xiaomi/wayne.config    | 2 ++
+ arch/arm64/configs/vendor/xiaomi/whyred.config   | 2 ++
+ 6 files changed, 12 insertions(+)
+
+diff --git a/arch/arm64/configs/vendor/xiaomi/jason.config b/arch/arm64/configs/vendor/xiaomi/jason.config
+index e69de29bb2d1..8063b63d7270 100644
+--- a/arch/arm64/configs/vendor/xiaomi/jason.config
++++ b/arch/arm64/configs/vendor/xiaomi/jason.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_JASON=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/lavender.config b/arch/arm64/configs/vendor/xiaomi/lavender.config
+index e69de29bb2d1..c4cfe0d2590e 100644
+--- a/arch/arm64/configs/vendor/xiaomi/lavender.config
++++ b/arch/arm64/configs/vendor/xiaomi/lavender.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_LAVENDER=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/platina.config b/arch/arm64/configs/vendor/xiaomi/platina.config
+index e69de29bb2d1..7e9c06517a9c 100644
+--- a/arch/arm64/configs/vendor/xiaomi/platina.config
++++ b/arch/arm64/configs/vendor/xiaomi/platina.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_PLATINA=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/tulip.config b/arch/arm64/configs/vendor/xiaomi/tulip.config
+index e69de29bb2d1..d1d6b07c250f 100644
+--- a/arch/arm64/configs/vendor/xiaomi/tulip.config
++++ b/arch/arm64/configs/vendor/xiaomi/tulip.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_TULIP=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/wayne.config b/arch/arm64/configs/vendor/xiaomi/wayne.config
+index e69de29bb2d1..e8218943231c 100644
+--- a/arch/arm64/configs/vendor/xiaomi/wayne.config
++++ b/arch/arm64/configs/vendor/xiaomi/wayne.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_WAYNE=y
+diff --git a/arch/arm64/configs/vendor/xiaomi/whyred.config b/arch/arm64/configs/vendor/xiaomi/whyred.config
+index e69de29bb2d1..712fd6c98743 100644
+--- a/arch/arm64/configs/vendor/xiaomi/whyred.config
++++ b/arch/arm64/configs/vendor/xiaomi/whyred.config
+@@ -0,0 +1,2 @@
++# Platform
++CONFIG_MACH_XIAOMI_WHYRED=y
+-- 
+2.49.0
+

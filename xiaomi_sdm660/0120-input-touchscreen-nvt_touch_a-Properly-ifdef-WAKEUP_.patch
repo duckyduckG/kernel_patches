@@ -1,0 +1,104 @@
+From d2bac36ea2da772881d30212847cb954e14fa7b8 Mon Sep 17 00:00:00 2001
+From: Davide Garberi <dade.garberi@gmail.com>
+Date: Thu, 5 Mar 2020 22:08:13 +0100
+Subject: [PATCH 120/178] input: touchscreen: nvt_touch_a: Properly ifdef
+ WAKEUP_GESTURE
+
+Change-Id: Ia7b63e69555540b876d418fe66d1f4d38fe7d13b
+---
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx.c | 13 +++++++++++++
+ drivers/input/touchscreen/nvt_touch_a/nt36xxx.h |  2 +-
+ 2 files changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
+index 93d58251aa8c..1504244dc072 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.c
+@@ -39,6 +39,7 @@
+ #if NVT_TOUCH_ESD_PROTECT
+ #include <linux/jiffies.h>
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
++
+ /* add tp vendor information by yangjiangzhu  2018/3/19 start */
+ extern char g_lcd_id[128];  
+ /* add tp vendor information by yangjiangzhu  2018/3/19 end */
+@@ -1516,6 +1517,7 @@ static int32_t nvt_ts_suspend(struct device *dev)
+ 	nvt_esd_check_enable(false);
+ #endif /* #if NVT_TOUCH_ESD_PROTECT */
+ 
++#if WAKEUP_GESTURE
+ 	if (enable_gesture_mode) {
+ 
+ 	buf[0] = EVENT_MAP_HOST_CMD;
+@@ -1532,13 +1534,16 @@ static int32_t nvt_ts_suspend(struct device *dev)
+ 
+ 	NVT_LOG("Enabled touch wakeup gesture\n");
+ 	} else {
++#endif
+ 	disable_irq(ts->client->irq);
+ 
+ 
+ 	buf[0] = EVENT_MAP_HOST_CMD;
+ 	buf[1] = 0x11;
+ 	CTP_I2C_WRITE(ts->client, I2C_FW_Address, buf, 2);
++#if WAKEUP_GESTURE
+ 	}
++#endif
+ 
+ 	/* release all touches */
+ #if MT_PROTOCOL_B
+@@ -1558,7 +1563,9 @@ static int32_t nvt_ts_suspend(struct device *dev)
+ 	msleep(50);
+ 
+ 	mutex_unlock(&ts->lock);
++#if WAKEUP_GESTURE
+ 	suspend_state = true;
++#endif
+ 
+ 	NVT_LOG("end\n");
+ 
+@@ -1590,6 +1597,7 @@ static int32_t nvt_ts_resume(struct device *dev)
+ 	nvt_bootloader_reset();
+ 	nvt_check_fw_reset_state(RESET_STATE_REK);
+ 
++#if WAKEUP_GESTURE
+ if (delay_gesture) {
+ 	enable_gesture_mode = !enable_gesture_mode;
+ }
+@@ -1601,6 +1609,9 @@ if (!enable_gesture_mode) {
+ if (delay_gesture) {
+ 	enable_gesture_mode = !enable_gesture_mode;
+ }
++#else
++enable_irq(ts->client->irq);
++#endif
+ 
+ #if NVT_TOUCH_ESD_PROTECT
+ 	queue_delayed_work(nvt_esd_check_wq, &nvt_esd_check_work,
+@@ -1610,8 +1621,10 @@ if (delay_gesture) {
+ 	bTouchIsAwake = 1;
+ 
+ 	mutex_unlock(&ts->lock);
++#if WAKEUP_GESTURE
+ 	suspend_state = false;
+ 	delay_gesture = false;
++#endif
+ 
+ 	NVT_LOG("end\n");
+ 
+diff --git a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+index a623af9fcebf..5d38124fa49f 100644
+--- a/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
++++ b/drivers/input/touchscreen/nvt_touch_a/nt36xxx.h
+@@ -76,7 +76,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
+ #define NVT_TOUCH_EXT_PROC 0
+ #define NVT_TOUCH_MP 0
+ #define MT_PROTOCOL_B 1
+-#define WAKEUP_GESTURE 1
++#define WAKEUP_GESTURE 0
+ #if WAKEUP_GESTURE
+ extern const uint16_t gesture_key_array[];
+ #endif
+-- 
+2.49.0
+

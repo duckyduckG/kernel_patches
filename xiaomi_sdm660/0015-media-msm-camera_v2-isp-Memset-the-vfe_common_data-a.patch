@@ -1,0 +1,28 @@
+From 1b8f93bf5a1431b9bf67c08f0c2ebd36097905d4 Mon Sep 17 00:00:00 2001
+From: "Angelo G. Del Regno" <kholk11@gmail.com>
+Date: Sat, 11 Aug 2018 15:20:36 +0200
+Subject: [PATCH 015/178] media: msm: camera_v2: isp: Memset the
+ vfe_common_data at probe
+
+This struct shall be initialized to zero for enhanced reliability.
+
+Change-Id: I2adf9a8c72d6f711a08a759d7344b6d8f7e5c144
+---
+ drivers/media/platform/msm/camera_v2/isp/msm_isp.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/platform/msm/camera_v2/isp/msm_isp.c b/drivers/media/platform/msm/camera_v2/isp/msm_isp.c
+index 3bbeeb6d073a..a953a841a4e3 100644
+--- a/drivers/media/platform/msm/camera_v2/isp/msm_isp.c
++++ b/drivers/media/platform/msm/camera_v2/isp/msm_isp.c
+@@ -560,6 +560,7 @@ static int vfe_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	vfe_parent_dev->common_sd->common_data = &vfe_common_data;
++	memset(&vfe_common_data, 0, sizeof(vfe_common_data));
+ 	mutex_init(&vfe_common_data.vfe_common_mutex);
+ 	spin_lock_init(&vfe_common_data.common_dev_data_lock);
+ 	spin_lock_init(&vfe_common_data.vfe_irq_dump.common_dev_irq_dump_lock);
+-- 
+2.49.0
+

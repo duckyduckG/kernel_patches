@@ -1,0 +1,24 @@
+From 9179bcd107dbf6b7fee65bcfc6599632b9beb152 Mon Sep 17 00:00:00 2001
+From: Edwin Moquete <edwinmmoquete@gmail.com>
+Date: Wed, 28 Oct 2020 13:13:35 +0000
+Subject: [PATCH 070/178] arm64: dts: xiaomi: Force warm reboot
+
+Change-Id: Ida94aa24808f7ec609021d580eca52a304da9a0c
+---
+ .../boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi   | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+index 8b137891791f..b090a198ac62 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/xiaomi-sdm660-common.dtsi
+@@ -1 +1,5 @@
+-
++&soc {
++	restart@10ac000 {
++		qcom,force-warm-reboot;
++	};
++};
+-- 
+2.49.0
+

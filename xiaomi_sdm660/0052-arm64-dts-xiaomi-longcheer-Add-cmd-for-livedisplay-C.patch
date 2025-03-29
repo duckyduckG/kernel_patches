@@ -1,0 +1,669 @@
+From f1b13d239e467646cf6a989da754e8ad51adab9f Mon Sep 17 00:00:00 2001
+From: dianlujitao <dianlujitao@lineageos.org>
+Date: Wed, 26 Feb 2020 21:39:39 +0800
+Subject: [PATCH 052/178] arm64: dts: xiaomi: longcheer: Add cmd for
+ livedisplay CABC
+
+Change-Id: I4de381f66a34cfb57cc8d1bbc89822ad5f58639e
+---
+ .../dsi-panel-boe-e7t-ft8719-1080p-video.dtsi |   5 +
+ .../dsi-panel-boe-td4320-1080p-video.dtsi     |   7 +
+ ...dsi-panel-huaxing-nt36672-1080p-video.dtsi |  35 ++++
+ .../dsi-panel-jdi-nt36672-1080p-video.dtsi    |  30 ++++
+ ...nel-shenchao-e7t-nt36672a-1080p-video.dtsi |  41 +++++
+ ...i-panel-shenchao-nt36672a-1080p-video.dtsi | 163 ++++++++++++++++++
+ ...dsi-panel-shenchao-td4310-1080p-video.dtsi |  10 ++
+ ...panel-tianma-e7t-nt36672a-1080p-video.dtsi |  41 +++++
+ .../dsi-panel-tianma-nt36672-1080p-video.dtsi |  30 ++++
+ ...dsi-panel-tianma-nt36672a-1080p-video.dtsi | 163 ++++++++++++++++++
+ .../dsi-panel-tianma-td4310-1080p-video.dtsi  |  10 ++
+ 11 files changed, 535 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-e7t-ft8719-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-e7t-ft8719-1080p-video.dtsi
+index a9b01c4a1472..9bb0cc490e15 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-e7t-ft8719-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-e7t-ft8719-1080p-video.dtsi
+@@ -118,5 +118,10 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-cmd = [
++				39 01 00 00 00 00 02 55 00
++		];
++		cm,mdss-livedisplay-cabc-ui-value = <0x01>;
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-td4320-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-td4320-1080p-video.dtsi
+index 2d7b5fc08d4d..fb2273dcad6d 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-td4320-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-boe-td4320-1080p-video.dtsi
+@@ -94,5 +94,12 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x1c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 55 00
++		];
++		cm,mdss-livedisplay-cabc-ui-value = <0x01>;
++		cm,mdss-livedisplay-cabc-image-value = <0x02>;
++		cm,mdss-livedisplay-cabc-video-value = <0x03>;
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-huaxing-nt36672-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-huaxing-nt36672-1080p-video.dtsi
+index 094247eae473..3c5622f59ac5 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-huaxing-nt36672-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-huaxing-nt36672-1080p-video.dtsi
+@@ -85,5 +85,40 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 FB 01
++				15 00 00 00 00 00 02 07 20
++				15 00 00 00 00 00 02 08 05
++				15 00 00 00 00 00 02 09 00
++				15 00 00 00 00 00 02 10 20
++				15 00 00 00 00 00 02 11 01
++				15 00 00 00 00 00 02 12 A4
++				15 00 00 00 00 00 02 15 E6
++				15 00 00 00 00 00 02 16 0C
++				15 00 00 00 00 00 02 30 FF
++				15 00 00 00 00 00 02 31 FF
++				15 00 00 00 00 00 02 32 FF
++				15 00 00 00 00 00 02 33 FF
++				15 00 00 00 00 00 02 34 FF
++				15 00 00 00 00 00 02 35 FF
++				15 00 00 00 00 00 02 36 FF
++				15 00 00 00 00 00 02 37 FF
++				15 00 00 00 00 00 02 38 FF
++				15 00 00 00 00 00 02 39 FF
++				15 00 00 00 00 00 02 3A FF
++				15 00 00 00 00 00 02 3B FA
++				15 00 00 00 00 00 02 3D F5
++				15 00 00 00 00 00 02 3F EA
++				15 01 00 00 00 00 02 40 DA
++				15 01 00 00 00 00 02 41 98
++
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 55 01
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-jdi-nt36672-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-jdi-nt36672-1080p-video.dtsi
+index 4ba54916ed38..aea841eca466 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-jdi-nt36672-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-jdi-nt36672-1080p-video.dtsi
+@@ -86,5 +86,35 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++			15 01 00 00 00 00 02 FF 23
++			15 00 00 00 00 00 02 07 20
++			15 00 00 00 00 00 02 08 05
++			15 00 00 00 00 00 02 09 00
++			15 00 00 00 00 00 02 10 95
++			15 00 00 00 00 00 02 30 FF
++			15 00 00 00 00 00 02 31 FF
++			15 00 00 00 00 00 02 32 FF
++			15 00 00 00 00 00 02 33 FF
++			15 00 00 00 00 00 02 34 FF
++			15 01 00 00 00 00 02 35 FF
++			15 00 00 00 00 00 02 36 FF
++			15 00 00 00 00 00 02 37 FF
++			15 00 00 00 00 00 02 38 FF
++			15 00 00 00 00 00 02 39 FF
++			15 00 00 00 00 00 02 3A FF
++			15 00 00 00 00 00 02 3B F9
++			15 00 00 00 00 00 02 3D D9
++			15 00 00 00 00 00 02 3F B9
++			15 00 00 00 00 00 02 40 AB
++			15 00 00 00 00 00 02 41 98
++			15 01 00 00 00 00 02 FF 10
++			15 01 00 00 00 00 02 55 01
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++			15 01 00 00 00 00 02 FF 10
++			15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-e7t-nt36672a-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-e7t-nt36672a-1080p-video.dtsi
+index 6e95823fbc4c..adacc5e86be8 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-e7t-nt36672a-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-e7t-nt36672a-1080p-video.dtsi
+@@ -93,5 +93,46 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 01 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 01 84
++				15 01 00 00 00 00 02 04 08
++				15 01 00 00 00 00 02 05 2D
++				15 01 00 00 00 00 02 06 00
++				15 01 00 00 00 00 02 11 01
++				15 01 00 00 00 00 02 12 80
++				15 01 00 00 00 00 02 15 6D
++				15 01 00 00 00 00 02 16 0B
++				15 01 00 00 00 00 02 29 0A
++				15 01 00 00 00 00 02 30 FF
++				15 01 00 00 00 00 02 31 FF
++				15 01 00 00 00 00 02 32 FF
++				15 01 00 00 00 00 02 33 FF
++				15 01 00 00 00 00 02 34 FF
++				15 01 00 00 00 00 02 35 FF
++				15 01 00 00 00 00 02 36 FF
++				15 01 00 00 00 00 02 37 FF
++				15 01 00 00 00 00 02 38 FC
++				15 01 00 00 00 00 02 39 F8
++				15 01 00 00 00 00 02 3A F4
++				15 01 00 00 00 00 02 3B F1
++				15 01 00 00 00 00 02 3D EE
++				15 01 00 00 00 00 02 3F EB
++				15 01 00 00 00 00 02 40 E8
++				15 01 00 00 00 00 02 41 E5
++
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 51 FF
++				15 01 00 00 00 00 02 53 2C
++				15 01 00 00 00 00 02 55 01
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-nt36672a-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-nt36672a-1080p-video.dtsi
+index bde250a38278..376ba26d0d09 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-nt36672a-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-nt36672a-1080p-video.dtsi
+@@ -112,5 +112,168 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 FB 01
++				15 00 00 00 00 00 02 01 84
++				15 00 00 00 00 00 02 05 04
++				15 00 00 00 00 00 02 05 2D
++				15 00 00 00 00 00 02 06 00
++				15 00 00 00 00 00 02 07 60
++				15 00 00 00 00 00 02 11 01
++				15 00 00 00 00 00 02 12 8A
++				15 00 00 00 00 00 02 15 6A
++				15 00 00 00 00 00 02 16 0B
++				15 00 00 00 00 00 02 19 00
++				15 00 00 00 00 00 02 1A 04
++				15 00 00 00 00 00 02 1B 08
++				15 00 00 00 00 00 02 1C 0C
++				15 00 00 00 00 00 02 1D 10
++				15 00 00 00 00 00 02 1E 2A
++				15 00 00 00 00 00 02 1F 3F
++				15 00 00 00 00 00 02 20 3F
++				15 00 00 00 00 00 02 21 30
++				15 01 00 00 00 00 02 22 2E
++				15 00 00 00 00 00 02 23 30
++				15 00 00 00 00 00 02 24 37
++				15 00 00 00 00 00 02 25 38
++				15 00 00 00 00 00 02 26 2C
++				15 00 00 00 00 00 02 27 24
++				15 00 00 00 00 00 02 28 28
++				15 00 00 00 00 00 02 29 80
++				15 00 00 00 00 00 02 30 FD
++				15 00 00 00 00 00 02 31 FC
++				15 00 00 00 00 00 02 32 F8
++				15 00 00 00 00 00 02 33 F6
++				15 00 00 00 00 00 02 34 F5
++				15 00 00 00 00 00 02 35 F4
++				15 00 00 00 00 00 02 36 F3
++				15 00 00 00 00 00 02 37 F3
++				15 00 00 00 00 00 02 38 F2
++				15 00 00 00 00 00 02 39 F0
++				15 00 00 00 00 00 02 3A EE
++				15 00 00 00 00 00 02 3B EC
++				15 01 00 00 00 00 02 3D EA
++				15 00 00 00 00 00 02 3F E8
++				15 00 00 00 00 00 02 40 E6
++				15 00 00 00 00 00 02 41 E5
++				15 00 00 00 00 00 02 FF 10
++				15 00 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 01
++		];
++		cm,mdss-livedisplay-cabc-image-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 FB 01
++				//dimming enable
++				15 00 00 00 00 00 02 01 84
++				15 00 00 00 00 00 02 05 04
++				15 00 00 00 00 00 02 05 2D
++				15 00 00 00 00 00 02 06 00
++				//PWM Feq=30KHz
++				15 00 00 00 00 00 02 07 60
++				//resolution 1080*2340
++				15 00 00 00 00 00 02 11 01
++				15 00 00 00 00 00 02 12 8A
++				15 00 00 00 00 00 02 15 6A
++				15 01 00 00 00 00 02 16 0B
++				//CABC Gamma
++				15 00 00 00 00 00 02 19 00
++				15 00 00 00 00 00 02 1A 04
++				15 00 00 00 00 00 02 1B 08
++				15 00 00 00 00 00 02 1C 0C
++				15 00 00 00 00 00 02 1D 10
++				15 00 00 00 00 00 02 1E 2A
++				15 00 00 00 00 00 02 1F 3F
++				15 00 00 00 00 00 02 20 3F
++				15 00 00 00 00 00 02 21 30
++				15 01 00 00 00 00 02 22 2E
++				15 00 00 00 00 00 02 23 30
++				15 00 00 00 00 00 02 24 37
++				15 00 00 00 00 00 02 25 38
++				15 00 00 00 00 00 02 26 2C
++				15 00 00 00 00 00 02 27 24
++				15 00 00 00 00 00 02 28 28
++				//STILL mode
++				15 00 00 00 00 00 02 2A 3F
++				//Still_PWM DUTY
++				15 00 00 00 00 00 02 45 E4
++				15 00 00 00 00 00 02 46 E4
++				15 01 00 00 00 00 02 47 E4
++				15 00 00 00 00 00 02 48 E4
++				15 00 00 00 00 00 02 49 E4
++				15 00 00 00 00 00 02 4A E4
++				15 00 00 00 00 00 02 4B D0
++				15 00 00 00 00 00 02 4C B2
++				15 00 00 00 00 00 02 4D AF
++				15 00 00 00 00 00 02 4E AA
++				15 00 00 00 00 00 02 4F A4
++				15 00 00 00 00 00 02 50 9A
++				15 01 00 00 00 00 02 51 90
++				15 00 00 00 00 00 02 52 85
++				15 00 00 00 00 00 02 53 7A
++				15 01 00 00 00 00 02 54 66
++				15 01 00 00 00 00 02 FF 10
++				15 00 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 02
++		];
++		cm,mdss-livedisplay-cabc-video-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 FB 01
++				//dimming enable
++				15 00 00 00 00 00 02 01 84
++				15 00 00 00 00 00 02 05 04
++				15 00 00 00 00 00 02 05 2D
++				15 00 00 00 00 00 02 06 00
++				//PWM Feq=30KHz
++				15 00 00 00 00 00 02 07 60
++				//resolution 1080*2340
++				15 00 00 00 00 00 02 11 01
++				15 00 00 00 00 00 02 12 8A
++				15 00 00 00 00 00 02 15 6A
++				15 01 00 00 00 00 02 16 0B
++				//CABC Gamma
++				15 00 00 00 00 00 02 19 00
++				15 00 00 00 00 00 02 1A 04
++				15 00 00 00 00 00 02 1B 08
++				15 00 00 00 00 00 02 1C 0C
++				15 00 00 00 00 00 02 1D 10
++				15 00 00 00 00 00 02 1E 2A
++				15 00 00 00 00 00 02 1F 3F
++				15 00 00 00 00 00 02 20 3F
++				15 00 00 00 00 00 02 21 30
++				15 01 00 00 00 00 02 22 2E
++				15 00 00 00 00 00 02 23 30
++				15 00 00 00 00 00 02 24 37
++				15 00 00 00 00 00 02 25 38
++				15 00 00 00 00 00 02 26 2C
++				15 00 00 00 00 00 02 27 24
++				15 00 00 00 00 00 02 28 28
++				//MOVING mode
++				15 00 00 00 00 00 02 2B 87
++				15 00 00 00 00 00 02 58 E4
++				15 00 00 00 00 00 02 59 E4
++				15 01 00 00 00 00 02 5A E4
++				15 00 00 00 00 00 02 5B E4
++				15 00 00 00 00 00 02 5C E4
++				15 00 00 00 00 00 02 5D E4
++				15 00 00 00 00 00 02 5E DF
++				15 00 00 00 00 00 02 5F DA
++				15 00 00 00 00 00 02 60 D7
++				15 00 00 00 00 00 02 61 D0
++				15 00 00 00 00 00 02 62 CD
++				15 00 00 00 00 00 02 63 CA
++				15 01 00 00 00 00 02 64 C8
++				15 00 00 00 00 00 02 65 C1
++				15 00 00 00 00 00 02 66 BB
++				15 01 00 00 00 00 02 67 B3
++				15 01 00 00 00 00 02 FF 10
++				15 00 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 03
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-td4310-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-td4310-1080p-video.dtsi
+index b8f3be5f7fc7..cb321846478c 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-td4310-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-shenchao-td4310-1080p-video.dtsi
+@@ -81,5 +81,15 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x1c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 00 00 00 00 00 02 55 01
++				29 00 00 00 00 00 08 B8 89 51 0d 00 02 00 00
++				29 00 00 00 00 00 1A CE 55 40 4d 6a 75 97 a7 b6 c9 d0 d4 e7 e8 e9 f2 fb ff 04 00 00 04 46 04 69 5a
++				29 01 00 00 00 00 0A F9 64 FF E0 BE 00 8D BF 80 00
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-e7t-nt36672a-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-e7t-nt36672a-1080p-video.dtsi
+index ec5b1b6923f9..a1f5fac510b3 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-e7t-nt36672a-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-e7t-nt36672a-1080p-video.dtsi
+@@ -110,5 +110,46 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 01 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 01 84
++				15 01 00 00 00 00 02 04 08
++				15 01 00 00 00 00 02 05 2D
++				15 01 00 00 00 00 02 06 00
++				15 01 00 00 00 00 02 11 01
++				15 01 00 00 00 00 02 12 80
++				15 01 00 00 00 00 02 15 6D
++				15 01 00 00 00 00 02 16 0B
++				15 01 00 00 00 00 02 29 0A
++				15 01 00 00 00 00 02 30 FF
++				15 01 00 00 00 00 02 31 FF
++				15 01 00 00 00 00 02 32 FF
++				15 01 00 00 00 00 02 33 FF
++				15 01 00 00 00 00 02 34 FF
++				15 01 00 00 00 00 02 35 FF
++				15 01 00 00 00 00 02 36 FF
++				15 01 00 00 00 00 02 37 FF
++				15 01 00 00 00 00 02 38 FC
++				15 01 00 00 00 00 02 39 F8
++				15 01 00 00 00 00 02 3A F4
++				15 01 00 00 00 00 02 3B F1
++				15 01 00 00 00 00 02 3D EE
++				15 01 00 00 00 00 02 3F EB
++				15 01 00 00 00 00 02 40 E8
++				15 01 00 00 00 00 02 41 E5
++
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 51 FF
++				15 01 00 00 00 00 02 53 2C
++				15 01 00 00 00 00 02 55 01
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672-1080p-video.dtsi
+index fb9f43c8056a..7de57a4694e7 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672-1080p-video.dtsi
+@@ -85,5 +85,35 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 07 20
++				15 00 00 00 00 00 02 08 05
++				15 00 00 00 00 00 02 09 00
++				15 00 00 00 00 00 02 10 95
++				15 00 00 00 00 00 02 30 FF
++				15 00 00 00 00 00 02 31 FF
++				15 00 00 00 00 00 02 32 FF
++				15 00 00 00 00 00 02 33 FF
++				15 00 00 00 00 00 02 34 FF
++				15 00 00 00 00 00 02 35 FF
++				15 00 00 00 00 00 02 36 FF
++				15 00 00 00 00 00 02 37 FF
++				15 00 00 00 00 00 02 38 FF
++				15 00 00 00 00 00 02 39 FF
++				15 00 00 00 00 00 02 3A FF
++				15 00 00 00 00 00 02 3B F9
++				15 00 00 00 00 00 02 3D D9
++				15 00 00 00 00 00 02 3F B9
++				15 00 00 00 00 00 02 40 AB
++				15 00 00 00 00 00 02 41 98
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 55 01
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672a-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672a-1080p-video.dtsi
+index 0f7465832ae9..13cc5a54d4cf 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672a-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-nt36672a-1080p-video.dtsi
+@@ -111,5 +111,168 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x9c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 FB 01
++				15 00 00 00 00 00 02 01 84
++				15 00 00 00 00 00 02 05 04
++				15 00 00 00 00 00 02 05 2D
++				15 00 00 00 00 00 02 06 00
++				15 00 00 00 00 00 02 07 60
++				15 00 00 00 00 00 02 11 01
++				15 00 00 00 00 00 02 12 8A
++				15 00 00 00 00 00 02 15 6A
++				15 00 00 00 00 00 02 16 0B
++				15 00 00 00 00 00 02 19 00
++				15 00 00 00 00 00 02 1A 04
++				15 00 00 00 00 00 02 1B 08
++				15 00 00 00 00 00 02 1C 0C
++				15 00 00 00 00 00 02 1D 10
++				15 00 00 00 00 00 02 1E 2A
++				15 00 00 00 00 00 02 1F 3F
++				15 00 00 00 00 00 02 20 3F
++				15 00 00 00 00 00 02 21 30
++				15 01 00 00 00 00 02 22 2E
++				15 00 00 00 00 00 02 23 30
++				15 00 00 00 00 00 02 24 37
++				15 00 00 00 00 00 02 25 38
++				15 00 00 00 00 00 02 26 2C
++				15 00 00 00 00 00 02 27 24
++				15 00 00 00 00 00 02 28 28
++				15 00 00 00 00 00 02 29 80
++				15 00 00 00 00 00 02 30 FD
++				15 00 00 00 00 00 02 31 FC
++				15 00 00 00 00 00 02 32 F8
++				15 00 00 00 00 00 02 33 F6
++				15 00 00 00 00 00 02 34 F5
++				15 00 00 00 00 00 02 35 F4
++				15 00 00 00 00 00 02 36 F3
++				15 00 00 00 00 00 02 37 F3
++				15 00 00 00 00 00 02 38 F2
++				15 00 00 00 00 00 02 39 F0
++				15 00 00 00 00 00 02 3A EE
++				15 00 00 00 00 00 02 3B EC
++				15 01 00 00 00 00 02 3D EA
++				15 00 00 00 00 00 02 3F E8
++				15 00 00 00 00 00 02 40 E6
++				15 00 00 00 00 00 02 41 E5
++				15 00 00 00 00 00 02 FF 10
++				15 00 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 01
++		];
++		cm,mdss-livedisplay-cabc-image-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 FB 01
++				//dimming enable
++				15 00 00 00 00 00 02 01 84
++				15 00 00 00 00 00 02 05 04
++				15 00 00 00 00 00 02 05 2D
++				15 00 00 00 00 00 02 06 00
++				//PWM Feq=30KHz
++				15 00 00 00 00 00 02 07 60
++				//resolution 1080*2340
++				15 00 00 00 00 00 02 11 01
++				15 00 00 00 00 00 02 12 8A
++				15 00 00 00 00 00 02 15 6A
++				15 01 00 00 00 00 02 16 0B
++				//CABC Gamma
++				15 00 00 00 00 00 02 19 00
++				15 00 00 00 00 00 02 1A 04
++				15 00 00 00 00 00 02 1B 08
++				15 00 00 00 00 00 02 1C 0C
++				15 00 00 00 00 00 02 1D 10
++				15 00 00 00 00 00 02 1E 2A
++				15 00 00 00 00 00 02 1F 3F
++				15 00 00 00 00 00 02 20 3F
++				15 00 00 00 00 00 02 21 30
++				15 01 00 00 00 00 02 22 2E
++				15 00 00 00 00 00 02 23 30
++				15 00 00 00 00 00 02 24 37
++				15 00 00 00 00 00 02 25 38
++				15 00 00 00 00 00 02 26 2C
++				15 00 00 00 00 00 02 27 24
++				15 00 00 00 00 00 02 28 28
++				//STILL mode
++				15 00 00 00 00 00 02 2A 3F
++				//Still_PWM DUTY
++				15 00 00 00 00 00 02 45 E4
++				15 00 00 00 00 00 02 46 E4
++				15 01 00 00 00 00 02 47 E4
++				15 00 00 00 00 00 02 48 E4
++				15 00 00 00 00 00 02 49 E4
++				15 00 00 00 00 00 02 4A E4
++				15 00 00 00 00 00 02 4B D0
++				15 00 00 00 00 00 02 4C B2
++				15 00 00 00 00 00 02 4D AF
++				15 00 00 00 00 00 02 4E AA
++				15 00 00 00 00 00 02 4F A4
++				15 00 00 00 00 00 02 50 9A
++				15 01 00 00 00 00 02 51 90
++				15 00 00 00 00 00 02 52 85
++				15 00 00 00 00 00 02 53 7A
++				15 01 00 00 00 00 02 54 66
++				15 01 00 00 00 00 02 FF 10
++				15 00 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 02
++		];
++		cm,mdss-livedisplay-cabc-video-cmd = [
++				15 01 00 00 00 00 02 FF 23
++				15 00 00 00 00 00 02 FB 01
++				//dimming enable
++				15 00 00 00 00 00 02 01 84
++				15 00 00 00 00 00 02 05 04
++				15 00 00 00 00 00 02 05 2D
++				15 00 00 00 00 00 02 06 00
++				//PWM Feq=30KHz
++				15 00 00 00 00 00 02 07 60
++				//resolution 1080*2340
++				15 00 00 00 00 00 02 11 01
++				15 00 00 00 00 00 02 12 8A
++				15 00 00 00 00 00 02 15 6A
++				15 01 00 00 00 00 02 16 0B
++				//CABC Gamma
++				15 00 00 00 00 00 02 19 00
++				15 00 00 00 00 00 02 1A 04
++				15 00 00 00 00 00 02 1B 08
++				15 00 00 00 00 00 02 1C 0C
++				15 00 00 00 00 00 02 1D 10
++				15 00 00 00 00 00 02 1E 2A
++				15 00 00 00 00 00 02 1F 3F
++				15 00 00 00 00 00 02 20 3F
++				15 00 00 00 00 00 02 21 30
++				15 01 00 00 00 00 02 22 2E
++				15 00 00 00 00 00 02 23 30
++				15 00 00 00 00 00 02 24 37
++				15 00 00 00 00 00 02 25 38
++				15 00 00 00 00 00 02 26 2C
++				15 00 00 00 00 00 02 27 24
++				15 00 00 00 00 00 02 28 28
++				//MOVING mode
++				15 00 00 00 00 00 02 2B 87
++				15 00 00 00 00 00 02 58 E4
++				15 00 00 00 00 00 02 59 E4
++				15 01 00 00 00 00 02 5A E4
++				15 00 00 00 00 00 02 5B E4
++				15 00 00 00 00 00 02 5C E4
++				15 00 00 00 00 00 02 5D E4
++				15 00 00 00 00 00 02 5E DF
++				15 00 00 00 00 00 02 5F DA
++				15 00 00 00 00 00 02 60 D7
++				15 00 00 00 00 00 02 61 D0
++				15 00 00 00 00 00 02 62 CD
++				15 00 00 00 00 00 02 63 CA
++				15 01 00 00 00 00 02 64 C8
++				15 00 00 00 00 00 02 65 C1
++				15 00 00 00 00 00 02 66 BB
++				15 01 00 00 00 00 02 67 B3
++				15 01 00 00 00 00 02 FF 10
++				15 00 00 00 00 00 02 FB 01
++				15 01 00 00 00 00 02 55 03
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 FF 10
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+diff --git a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-td4310-1080p-video.dtsi b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-td4310-1080p-video.dtsi
+index 6bbc7a4834d1..e124f1779efe 100644
+--- a/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-td4310-1080p-video.dtsi
++++ b/arch/arm64/boot/dts/vendor/qcom/xiaomi/longcheer/common/display/dsi-panel-tianma-td4310-1080p-video.dtsi
+@@ -84,5 +84,15 @@
+ 		qcom,mdss-dsi-panel-status-read-length = <1>;
+ 		qcom,mdss-dsi-panel-status-value = <0x1c>;
+ 		qcom,mdss-dsi-panel-max-error-count = <3>;
++
++		cm,mdss-livedisplay-cabc-ui-cmd = [
++				15 00 00 00 00 00 02 55 01
++				29 00 00 00 00 00 08 B8 89 51 0d 00 02 00 00
++				29 00 00 00 00 00 1A CE 55 40 4d 6a 75 97 a7 b6 c9 d0 d4 e7 e8 e9 f2 fb ff 04 00 00 04 46 04 69 5a
++				29 01 00 00 00 00 0A F9 64 FF E0 BE 00 8D BF 80 00
++		];
++		cm,mdss-livedisplay-cabc-cmd = [
++				15 01 00 00 00 00 02 55 00
++		];
+ 	};
+ };
+-- 
+2.49.0
+
