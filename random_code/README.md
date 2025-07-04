@@ -5,5 +5,10 @@ Code written by me for testing sht.
 #### Compile
      gcc -o rumble rumble.c
 
+#### Compile for arm64
+     install termux
+     install clang, pkg in clang
+     gcc -o rumble rumble.c
+
 ### pre-compiled include
-     for /dev/input/event22
+     for x64
