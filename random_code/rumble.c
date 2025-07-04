@@ -41,23 +41,27 @@ void play_rumble(int fd, uint16_t strong, uint16_t weak, int duration_ms) {
 }
 
 int main() {
-    char device[256];
-    const char *default_device = "/dev/input/event22";
+    char device_name[128];
+    char device_path[256];
+    const char *device_dir = "/dev/input/";
+    const char *default_device_name = "event22";
 
-    printf("Enter event device path (default %s): ", default_device);
-    if (fgets(device, sizeof(device), stdin) == NULL) {
-        strcpy(device, default_device);
+    printf("Enter event device name (default %s): ", default_device_name);
+    if (fgets(device_name, sizeof(device_name), stdin) == NULL) {
+        strcpy(device_name, default_device_name);
     } else {
-        size_t len = strlen(device);
-        if (len > 0 && device[len - 1] == '\n') {
-            device[len - 1] = '\0';
+        size_t len = strlen(device_name);
+        if (len > 0 && device_name[len - 1] == '\n') {
+            device_name[len - 1] = '\0';
         }
-        if (strlen(device) == 0) {
-            strcpy(device, default_device);
+        if (strlen(device_name) == 0) {
+            strcpy(device_name, default_device_name);
         }
     }
 
-    int fd = open(device, O_RDWR);
+    snprintf(device_path, sizeof(device_path), "%s%s", device_dir, device_name);
+
+    int fd = open(device_path, O_RDWR);
     if (fd < 0) {
         perror("open");
         return 1;
