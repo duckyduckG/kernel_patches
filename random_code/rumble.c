@@ -8,26 +8,22 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 
-int main() {
-    int fd = open("/dev/input/event22", O_RDWR);
-    if (fd < 0) {
-        perror("open");
-        return 1;
-    }
-
+void play_rumble(int fd, uint16_t strong, uint16_t weak, int duration_ms) {
     struct ff_effect effect;
     memset(&effect, 0, sizeof(effect));
     effect.type = FF_RUMBLE;
     effect.id = -1;
-    effect.u.rumble.strong_magnitude = 0xc000;
-    effect.u.rumble.weak_magnitude = 0x6000;
-    effect.replay.length = 2000;
+    effect.u.rumble.strong_magnitude = strong;
+    effect.u.rumble.weak_magnitude = weak;
+    effect.replay.length = duration_ms;
     effect.replay.delay = 0;
 
     if (ioctl(fd, EVIOCSFF, &effect) == -1) {
         perror("upload effect");
-        return 1;
+        return;
     }
 
     struct input_event play;
@@ -38,10 +34,55 @@ int main() {
 
     if (write(fd, &play, sizeof(play)) == -1) {
         perror("play effect");
+        return;
+    }
+
+    usleep(duration_ms * 1000);
+}
+
+int main() {
+    const char *device = "/dev/input/event22";  // Update as needed
+    int fd = open(device, O_RDWR);
+    if (fd < 0) {
+        perror("open");
         return 1;
     }
 
-    sleep(2); // let it sing
-    close(fd);
+    printf("Select rumble type:\n");
+    printf("1. Weak motor only\n");
+    printf("2. Strong motor only\n");
+    printf("3. Both (Rumble)\n");
+    printf("4. Test both with pulse (5x pulses)\n");
+    printf("Enter choice: ");
+
+    int choice;
+    scanf("%d", &choice);
+
+    switch (choice) {
+        case 1:
+            printf("Playing weak motor...\n");
+            play_rumble(fd, 0x0000, 0x7FFF, 1000);
+            break;
+        case 2:
+            printf("Playing strong motor...\n");
+            play_rumble(fd, 0x7FFF, 0x0000, 1000);
+            break;
+        case 3:
+            printf("Playing both motors...\n");
+            play_rumble(fd, 0x6000, 0x6000, 1500);
+            break;
+        case 4:
+            printf("Playing pulse test (5x short rumbles)...\n");
+            for (int i = 0; i < 5; i++) {
+                play_rumble(fd, 0x4000, 0x2000, 200);
+                usleep(200 * 1000);
+            }
+            break;
+        default:
+            printf("Invalid choice.\n");
+            break;
+    }
+
+    close(fd); // let it sing
     return 0;
 }
