@@ -1,0 +1,29 @@
+From c91d81d204baa6e5318cecedd588502989706d04 Mon Sep 17 00:00:00 2001
+From: duckyduckg <duckyduckg65@gmail.com>
+Date: Fri, 4 Jul 2025 16:14:36 +0500
+Subject: [PATCH] fixup! drivers: led: led-core: add rgb in const led_colors
+
+this was missed in prev patchs.
+
+from commit: https://github.com/aosp-mirror/kernel_common/commit/54212f5a1ba3123281877e54c1e5f672bf7563d8
+
+Signed-off-by: duckyduckg <duckyduckg65@gmail.com>
+---
+ drivers/leds/led-core.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 0ee2042dc359..6f942b9eebe8 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -40,6 +40,7 @@ const char * const led_colors[LED_COLOR_ID_MAX] = {
+ 	[LED_COLOR_ID_YELLOW] = "yellow",
+ 	[LED_COLOR_ID_IR] = "ir",
+ 	[LED_COLOR_ID_MULTI] = "multicolor",
++	[LED_COLOR_ID_RGB] = "rgb",
+ };
+ EXPORT_SYMBOL_GPL(led_colors);
+ 
+-- 
+2.50.0
+

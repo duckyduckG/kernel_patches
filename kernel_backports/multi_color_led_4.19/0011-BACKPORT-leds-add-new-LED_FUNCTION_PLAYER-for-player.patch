@@ -1,0 +1,45 @@
+From 2086514d22053a3c4b1a352e95b6f1c28084d3bc Mon Sep 17 00:00:00 2001
+From: Roderick Colenbrander <roderick.colenbrander@sony.com>
+Date: Fri, 4 Jul 2025 16:08:06 +0500
+Subject: [PATCH] BACKPORT: leds: add new LED_FUNCTION_PLAYER for player LEDs
+ for game controllers. Player LEDs are commonly found on game controllers from
+ Nintendo and Sony to indicate a player ID across a number of LEDs. For
+ example, "Player 2" might be indicated as "-x--" on a device with 4 LEDs
+ where "x" means on.
+
+This patch introduces LED_FUNCTION_PLAYER1-5 defines to properly indicate
+player LEDs from the kernel. Until now there was no good standard, which
+resulted in inconsistent behavior across xpad, hid-sony, hid-wiimote and
+other drivers. Moving forward new drivers should use LED_FUNCTION_PLAYERx.
+
+Note: management of Player IDs is left to user space, though a kernel
+driver may pick a default value.
+
+Signed-off-by: Roderick Colenbrander <roderick.colenbrander@sony.com>
+Acked-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ include/dt-bindings/leds/common.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/include/dt-bindings/leds/common.h b/include/dt-bindings/leds/common.h
+index a463ce6a8794..0b2cf6dc6a92 100644
+--- a/include/dt-bindings/leds/common.h
++++ b/include/dt-bindings/leds/common.h
+@@ -58,6 +58,13 @@
+ #define LED_FUNCTION_MICMUTE "micmute"
+ #define LED_FUNCTION_MUTE "mute"
+ 
++/* Used for player LEDs as found on game controllers from e.g. Nintendo, Sony. */
++#define LED_FUNCTION_PLAYER1 "player-1"
++#define LED_FUNCTION_PLAYER2 "player-2"
++#define LED_FUNCTION_PLAYER3 "player-3"
++#define LED_FUNCTION_PLAYER4 "player-4"
++#define LED_FUNCTION_PLAYER5 "player-5"
++
+ /* Miscelleaus functions. Use functions above if you can. */
+ #define LED_FUNCTION_ACTIVITY "activity"
+ #define LED_FUNCTION_ALARM "alarm"
+-- 
+2.50.0
+

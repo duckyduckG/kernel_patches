@@ -1,0 +1,56 @@
+From 4247a362c22f3c5875fb66b892ce0417977f745a Mon Sep 17 00:00:00 2001
+From: Olliver Schinagl <oliver@schinagl.nl>
+Date: Fri, 4 Jul 2025 16:12:35 +0500
+Subject: [PATCH] BACKPORT: dt-bindings: leds: Expand LED_COLOR_ID definitions
+
+In commit 853a78a (dt-bindings: leds: Add LED_COLOR_ID definitions,
+Sun Jun 9 20:19:04 2019 +0200) the most basic color definitions where
+added. However, there's a little more very common LED colors.
+
+While the documentation states 'add what is missing', engineers tend to
+be lazy and will just use what currently exists. So this patch will take
+(a) list from online retailers [0], [1], [2] and use the common LED colors from
+there, this being reasonable as this is what is currently available to purchase.
+
+Note, that LIME seems to be the modern take to 'Yellow-green' or
+'Yellowish-green' from some older datasheets.
+
+[0]: https://www.digikey.com/en/products/filter/led-lighting-color/125
+[1]: https://eu.mouser.com/c/optoelectronics/led-lighting/led-emitters/standard-leds-smd
+[2]: https://nl.farnell.com/en-NL/c/optoelectronics-displays/led-products/standard-single-colour-leds-under-75ma
+
+Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
+Acked-by: Krzysztof Kozlowski <krzysztof.kozlowski@linaro.org>
+Acked-by: Alexander Dahl <ada@thorsis.com>
+Acked-by: Jacek Anaszewski <jacek.anaszewski@gmail.com>
+Link: https://lore.kernel.org/r/20220830134613.1564059-1-oliver@schinagl.nl
+Signed-off-by: Rob Herring <robh@kernel.org>
+---
+ include/dt-bindings/leds/common.h | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/include/dt-bindings/leds/common.h b/include/dt-bindings/leds/common.h
+index 0b2cf6dc6a92..9a0d33d027ff 100644
+--- a/include/dt-bindings/leds/common.h
++++ b/include/dt-bindings/leds/common.h
+@@ -30,8 +30,15 @@
+ #define LED_COLOR_ID_VIOLET	5
+ #define LED_COLOR_ID_YELLOW	6
+ #define LED_COLOR_ID_IR		7
+-#define LED_COLOR_ID_MULTI	8
+-#define LED_COLOR_ID_MAX	9
++#define LED_COLOR_ID_MULTI	8	/* For multicolor LEDs */
++#define LED_COLOR_ID_RGB	9	/* For multicolor LEDs that can do arbitrary color,
++					   so this would include RGBW and similar */
++#define LED_COLOR_ID_PURPLE	10
++#define LED_COLOR_ID_ORANGE	11
++#define LED_COLOR_ID_PINK	12
++#define LED_COLOR_ID_CYAN	13
++#define LED_COLOR_ID_LIME	14
++#define LED_COLOR_ID_MAX	15
+ 
+ /* Standard LED functions */
+ /* Keyboard LEDs, usually it would be input4::capslock etc. */
+-- 
+2.50.0
+
