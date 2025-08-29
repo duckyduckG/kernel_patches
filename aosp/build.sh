@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Repo Init
+repo init -u https://github.com/LineageOS/android.git -b lineage-22.2 --git-lfs --no-clone-bundle
+
+# Sync the repositories
+/opt/crave/resync.sh
+
 # Remove existing directories
 
 # remove device trees
@@ -50,7 +56,6 @@ git clone https://github.com/duckyduckG/display.git hardware/qcom-caf/sdm845/dis
 git clone https://github.com/duckyduckG/android_device_lineage_sepolicy.git -b lineage-22.2 device/lineage/sepolicy
 git clone https://github.com/duckyduckG/android_device_qcom_sepolicy_vndr.git -b lineage-22.2-legacy-um device/qcom/sepolicy_vndr/legacy-um
 
-#lunch
+# lineageos-brunch
 source build/envsetup.sh
-lunch lineage_beryllium-bp2a-userdebug
-m lineage
+brunch beryllium
