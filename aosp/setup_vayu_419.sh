@@ -12,6 +12,11 @@ rm -rf kernel/xiaomi/sm8150
 rm -rf hardware/xiaomi
 # Clone repositories #
 
+# remove hals
+rm -rf hardware/qcom-caf/sm8150/media
+rm -rf hardware/qcom-caf/sm8150/audio
+rm -rf hardware/qcom-caf/sm8150/display
+
 # Device tree - vayu
 git clone https://github.com/duckyduckG/android_device_xiaomi_vayu_419.git -b lineage-22.2 device/xiaomi/vayu
 # Device tree - sm8150-common
@@ -30,3 +35,10 @@ git clone https://github.com/duckyduckG/devicetree_qcom-sm8150_419.git kernel/xi
 
 # Hardware
 git clone https://github.com/duckyduckG/android_hardware_xiaomi.git -b lineage-22.2 hardware/xiaomi
+
+# Hals
+git clone https://github.com/duckyduckG/android_hardware_qcom_audio.git -b lineage-22.2-caf-sm8250 hardware/qcom-caf/sm8150/audio
+# media
+git clone https://github.com/duckyduckG/android_hardware_qcom_media.git -b lineage-22.2-caf-sm8150-419 hardware/qcom-caf/sm8150/media
+# display
+git clone https://github.com/duckyduckG/android_hardware_qcom_display.git -b lineage-22.2-caf-sm8150-419 hardware/qcom-caf/sm8150/display
