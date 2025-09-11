@@ -28,7 +28,7 @@ git clone https://github.com/duckyduckG/proprietary_vendor_xiaomi_vayu_419.git -
 git clone https://github.com/duckyduckG/proprietary_vendor_xiaomi_sm8150-common_419.git -b lineage-22.2 vendor/xiaomi/sm8150-common
 
 # Kernel
-git clone https://github.com/duckyduckG/android_kernel_xiaomi_sm8150_419.git -b SM8150-419-T-AUDIO kernel/xiaomi/sm8150
+git clone https://github.com/duckyduckG/android_kernel_xiaomi_sm8150_419.git kernel/xiaomi/sm8150
 # kernel device tree
 git clone https://github.com/duckyduckG/devicetree_xiaomi_sm8150_419.git kernel/xiaomi/sm8150/arch/arm64/boot/dts/xiaomi
 git clone https://github.com/duckyduckG/devicetree_qcom-sm8150_419.git kernel/xiaomi/sm8150/arch/arm64/boot/dts/qcom-sm8150
