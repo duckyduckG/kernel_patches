@@ -44,7 +44,7 @@ git clone https://github.com/duckyduckG/android_hardware_xiaomi.git -b lineage-2
 # Hals
 git clone https://github.com/duckyduckG/android_hardware_qcom_media.git -b lineage-22.2-caf-sm8150 hardware/qcom-caf/sdm845/media
 git clone https://github.com/duckyduckG/android_hardware_qcom_audio.git -b lineage-22.2-caf-sm8250 hardware/qcom-caf/sdm845/audio
-git clone https://github.com/duckyduckG/android_hardware_qcom_display.git -b lineage-22.2-caf-sm8250 hardware/qcom-caf/sdm845/display
+git clone https://github.com/duckyduckG/display.git hardware/qcom-caf/sdm845/display
 
 # Sepolicy
 git clone https://github.com/duckyduckG/android_device_lineage_sepolicy.git -b lineage-22.2 device/lineage/sepolicy
