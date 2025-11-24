@@ -15,6 +15,8 @@ rm -rf hardware/xiaomi
 rm -rf hardware/qcom-caf/sm8150/media
 rm -rf hardware/qcom-caf/sm8150/audio
 rm -rf hardware/qcom-caf/sm8150/display
+# common
+rm -rf hardware/qcom-caf/common
 # remove old end #
 
 # Clone repositories start #
@@ -40,4 +42,6 @@ git clone https://github.com/duckyduckG/android_hardware_qcom_audio.git -b linea
 git clone https://github.com/duckyduckG/android_hardware_qcom_media.git -b lineage-23.0-caf-sm8150-419 hardware/qcom-caf/sm8150/media
 # display
 git clone https://github.com/duckyduckG/android_hardware_qcom_display.git -b lineage-23.0-caf-sm8250 hardware/qcom-caf/sm8150/display
+# qcom-caf_common
+git clone https://github.com/duckyduckG/android_hardware_qcom-caf_common.git -b lineage-23.0 hardware/qcom-caf/common
 # Clone repositories end #
