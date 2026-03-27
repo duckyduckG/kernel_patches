@@ -19,9 +19,9 @@ rm -rf kernel/xiaomi/sdm845
 # remove hardware
 rm -rf hardware/xiaomi
 # remove hals
-rm -rf hardware/qcom-caf/sdm845/media
-rm -rf hardware/qcom-caf/sdm845/audio
-rm -rf hardware/qcom-caf/sdm845/display
+rm -rf hardware/qcom-caf/sm8250/media
+rm -rf hardware/qcom-caf/sm8250/audio
+rm -rf hardware/qcom-caf/sm8250/display
 # remove sepolicy
 rm -rf device/lineage/sepolicy
 rm -rf device/qcom/sepolicy_vndr/legacy-um
@@ -63,9 +63,9 @@ git clone https://github.com/duckyduckG/android_kernel_xiaomi_sdm845_419.git -b 
 git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-23.2 hardware/xiaomi
 
 # Hals
-git clone https://github.com/duckyduckG/android_hardware_qcom_media.git -b lineage-23.1-caf-sm8150 hardware/qcom-caf/sdm845/media
-git clone https://github.com/duckyduckG/android_hardware_qcom_audio.git -b lineage-23.2-caf-sm8250 hardware/qcom-caf/sdm845/audio
-git clone https://github.com/duckyduckG/android_hardware_qcom_display.git -b lineage-23.2-caf-sm8250 hardware/qcom-caf/sdm845/display
+git clone https://github.com/duckyduckG/android_hardware_qcom_media.git -b lineage-23.1-caf-sm8150 hardware/qcom-caf/sm8250/media
+git clone https://github.com/duckyduckG/android_hardware_qcom_audio.git -b lineage-23.2-caf-sm8250 hardware/qcom-caf/sm8250/audio
+git clone https://github.com/duckyduckG/android_hardware_qcom_display.git -b lineage-23.2-caf-sm8250 hardware/qcom-caf/sm8250/display
 
 # Sepolicy
 git clone https://github.com/duckyduckG/android_device_lineage_sepolicy.git -b lineage-23.2 device/lineage/sepolicy
