@@ -31,7 +31,7 @@ git clone https://github.com/duckyduckG/proprietary_vendor_xiaomi_vayu_419.git -
 git clone https://github.com/duckyduckG/proprietary_vendor_xiaomi_sm8150-common_419.git -b lineage-23.2 vendor/xiaomi/sm8150-common
 
 # Kernel
-git clone https://github.com/duckyduckG/android_kernel_xiaomi_sm8150_419.git -b lineage-23.0_vayu kernel/xiaomi/sm8150
+git clone https://github.com/duckyduckG/android_kernel_xiaomi_sm8150_419.git -b lineage-23.2_xiaomi kernel/xiaomi/sm8150
 
 # Hardware
 git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-23.2 hardware/xiaomi
@@ -39,7 +39,7 @@ git clone https://github.com/LineageOS/android_hardware_xiaomi.git -b lineage-23
 # Hals
 git clone https://github.com/duckyduckG/android_hardware_qcom_audio.git -b lineage-23.2-caf-sm8250 hardware/qcom-caf/sm8150/audio
 # media
-git clone https://github.com/duckyduckG/android_hardware_qcom_media.git -b lineage-23.0-caf-sm8150-419 hardware/qcom-caf/sm8150/media
+git clone https://github.com/duckyduckG/android_hardware_qcom_media.git -b lineage-23.2-caf-sm8250_419 hardware/qcom-caf/sm8150/media
 # display
 git clone https://github.com/duckyduckG/android_hardware_qcom_display.git -b lineage-23.2-caf-sm8250 hardware/qcom-caf/sm8150/display
 # qcom-caf_common
